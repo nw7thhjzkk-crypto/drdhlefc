@@ -44,7 +44,7 @@ export async function createTrainer(formData: FormData) {
 
   const { data: authData, error: authError } = await adminAuthClient.auth.admin.createUser({
     email,
-    password: Math.random().toString(36).slice(-8) + 'A1!',
+    password: crypto.randomUUID() + 'A1!',
     email_confirm: true,
     user_metadata: { role: 'trainer', full_name: name }
   });
