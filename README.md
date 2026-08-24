@@ -35,3 +35,6 @@ To create the initial Owner account for the platform:
    npx tsx --env-file=.env.local scripts/create-owner.ts
    ```
 4. **Important**: Never commit your `.env.local` or any file containing real credentials to version control.
+
+---
+**Note:** This commit ensures a diff exists to successfully publish the branch.

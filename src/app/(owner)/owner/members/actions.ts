@@ -247,3 +247,118 @@ export async function addAssessment(memberId: string, formData: FormData) {
   revalidatePath(`/owner/members/${memberId}`);
   return { success: true };
 }
+
+export async function assignMembership(memberId: string, formData: FormData) {
+  const supabase = await createClient();
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+
+  const plan_id = formData.get("plan_id") as string;
+  const start_date = formData.get("start_date") as string;
+  const total_amount = parseFloat(formData.get("total_amount") as string);
+  const paid_amount = parseFloat(formData.get("paid_amount") as string) || 0;
+
+  if (!plan_id || !start_date || isNaN(total_amount)) {
+    return { error: "Missing required fields" };
+  }
+
+  // Fetch plan duration to calculate end date
+  const { data: plan } = await supabase.from("membership_plans").select("duration_days").eq("id", plan_id).single();
+  if (!plan) return { error: "Invalid plan" };
+
+  const start = new Date(start_date);
+  const end = new Date(start);
+  end.setDate(start.getDate() + plan.duration_days);
+  const end_date = end.toISOString().split('T')[0];
+
+  const pending_amount = total_amount - paid_amount;
+  const status = pending_amount <= 0 ? "active" : "pending_payment";
+
+  const { data, error } = await supabase
+    .from("memberships")
+    .insert({
+      member_id: memberId,
+      plan_id,
+      start_date,
+      end_date,
+      total_amount,
+      paid_amount,
+      pending_amount,
+      status
+    })
+    .select("id")
+    .single();
+
+  if (error) return { error: error.message };
+
+  if (userId) {
+    await supabase.from("audit_logs").insert({
+      actor_profile_id: userId,
+      action: "assign_membership",
+      entity_type: "membership",
+      entity_id: data.id,
+      member_id: memberId,
+      details: { plan_id, start_date, end_date }
+    });
+  }
+
+  revalidatePath(`/owner/members/${memberId}`);
+  return { success: true };
+}
+
+export async function assignTrainer(memberId: string, trainerId: string) {
+  const supabase = await createClient();
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+
+  if (!trainerId) return { error: "Trainer ID required" };
+
+  const { error } = await supabase
+    .from("member_trainers")
+    .insert({
+      member_id: memberId,
+      trainer_id: trainerId,
+      is_primary: true
+    });
+
+  if (error) return { error: error.message };
+
+  if (userId) {
+    await supabase.from("audit_logs").insert({
+      actor_profile_id: userId,
+      action: "assign_trainer",
+      entity_type: "member_trainer",
+      member_id: memberId,
+      details: { trainer_id: trainerId }
+    });
+  }
+
+  revalidatePath(`/owner/members/${memberId}`);
+  return { success: true };
+}
+
+export async function unassignTrainer(assignmentId: string, memberId: string) {
+  const supabase = await createClient();
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+
+  const { error } = await supabase
+    .from("member_trainers")
+    .delete()
+    .eq("id", assignmentId);
+
+  if (error) return { error: error.message };
+
+  if (userId) {
+    await supabase.from("audit_logs").insert({
+      actor_profile_id: userId,
+      action: "unassign_trainer",
+      entity_type: "member_trainer",
+      member_id: memberId,
+      details: { assignment_id: assignmentId }
+    });
+  }
+
+  revalidatePath(`/owner/members/${memberId}`);
+  return { success: true };
+}
