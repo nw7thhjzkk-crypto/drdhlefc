@@ -2,26 +2,20 @@
 
 import { createMember } from "../actions";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import Link from "next/link";
+import { useFormMutation } from "@/hooks/useFormMutation";
 
 export default function NewMemberPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(formData: FormData) {
-    setLoading(true);
-    setError(null);
-    const res = await createMember(formData);
-
-    if (res.error) {
-      setError(res.error);
-      setLoading(false);
-    } else if (res.success && res.memberId) {
-      router.push(`/owner/members/${res.memberId}`);
+  const { handleSubmit, isPending: loading, error } = useFormMutation(
+    createMember,
+    (res: { memberId?: string }) => {
+      if (res.memberId) {
+        router.push(`/owner/members/${res.memberId}`);
+      }
     }
-  }
+  );
 
   return (
     <div className="p-8 max-w-3xl mx-auto">
