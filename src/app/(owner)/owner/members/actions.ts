@@ -117,9 +117,9 @@ export async function updateMember(id: string, formData: FormData) {
   const supabase = await createClient();
 
   const updates: Record<string, string | null> = {};
-  const allowedKeys = ["name", "email", "phone", "dob", "gender", "address", "emergency_contact_name", "emergency_contact_phone", "primary_goal", "secondary_goal", "fitness_level", "diet_preference", "training_experience", "notes"];
+  const allowedKeys = new Set(["name", "email", "phone", "dob", "gender", "address", "emergency_contact_name", "emergency_contact_phone", "primary_goal", "secondary_goal", "fitness_level", "diet_preference", "training_experience", "notes"]);
   formData.forEach((value, key) => {
-    if (allowedKeys.includes(key)) {
+    if (allowedKeys.has(key)) {
       updates[key] = value ? (value as string) : null;
     }
   });
