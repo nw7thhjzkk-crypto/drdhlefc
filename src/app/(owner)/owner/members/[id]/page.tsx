@@ -8,24 +8,28 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
   const supabase = await createClient();
   const { id } = await params;
 
-  const { data: member, error } = await supabase
-    .from("members")
-    .select(`
-      *,
-      member_trainers(id, trainer_id, trainers(name)),
-      memberships(id, start_date, end_date, total_amount, paid_amount, pending_amount, status, payments(amount, method, paid_at), membership_plans(id, name, price)),
-      assessments(*)
-    `)
-    .eq("id", id)
-    .single();
+  const [
+    { data: member, error },
+    { data: plans },
+    { data: allTrainers }
+  ] = await Promise.all([
+    supabase
+      .from("members")
+      .select(`
+        *,
+        member_trainers(id, trainer_id, trainers(name)),
+        memberships(id, start_date, end_date, total_amount, paid_amount, pending_amount, status, payments(amount, method, paid_at), membership_plans(id, name, price)),
+        assessments(*)
+      `)
+      .eq("id", id)
+      .single(),
+    supabase.from("membership_plans").select("*").eq("status", "active"),
+    supabase.from("trainers").select("id, name").eq("status", "active")
+  ]);
 
   if (error || !member) {
     redirect("/owner/members");
   }
-
-  // Fetch available plans and trainers for assignment
-  const { data: plans } = await supabase.from("membership_plans").select("*").eq("status", "active");
-  const { data: allTrainers } = await supabase.from("trainers").select("id, name").eq("status", "active");
 
   const trainerAssignment = member.member_trainers?.[0];
   const trainer = trainerAssignment?.trainers;
