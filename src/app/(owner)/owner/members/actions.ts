@@ -25,7 +25,14 @@ export async function createMember(formData: FormData) {
   let photo_url = null;
 
   if (photo && photo.size > 0) {
-    const fileExt = photo.name.split('.').pop();
+    const fileExt = photo.name.split('.').pop()?.toLowerCase();
+
+    // Validate file extension to prevent arbitrary file upload
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    if (!fileExt || !allowedExtensions.includes(fileExt)) {
+      return { error: "Invalid file extension. Only image files (jpg, jpeg, png, webp, gif) are allowed." };
+    }
+
     const fileName = `${Math.random()}.${fileExt}`;
     const filePath = `members/${fileName}`;
 
@@ -126,7 +133,14 @@ export async function updateMember(id: string, formData: FormData) {
 
   const photo = formData.get("photo") as File;
   if (photo && photo.size > 0) {
-    const fileExt = photo.name.split('.').pop();
+    const fileExt = photo.name.split('.').pop()?.toLowerCase();
+
+    // Validate file extension to prevent arbitrary file upload
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    if (!fileExt || !allowedExtensions.includes(fileExt)) {
+      return { error: "Invalid file extension. Only image files (jpg, jpeg, png, webp, gif) are allowed." };
+    }
+
     const fileName = `${Math.random()}.${fileExt}`;
     const filePath = `members/${fileName}`;
 
