@@ -3,8 +3,27 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
+import { type SupabaseClient } from "@supabase/supabase-js";
+
+async function verifyOwner(supabase: SupabaseClient) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  return profile?.role === 'owner';
+}
+
+
 export async function createMember(formData: FormData) {
   const supabase = await createClient();
+
+  const isAuthorized = await verifyOwner(supabase);
+  if (!isAuthorized) return { error: "Unauthorized" };
 
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
@@ -116,6 +135,9 @@ export async function createMember(formData: FormData) {
 export async function updateMember(id: string, formData: FormData) {
   const supabase = await createClient();
 
+  const isAuthorized = await verifyOwner(supabase);
+  if (!isAuthorized) return { error: "Unauthorized" };
+
   const updates: Record<string, string | null> = {};
   const allowedKeys = ["name", "email", "phone", "dob", "gender", "address", "emergency_contact_name", "emergency_contact_phone", "primary_goal", "secondary_goal", "fitness_level", "diet_preference", "training_experience", "notes"];
   formData.forEach((value, key) => {
@@ -171,6 +193,9 @@ export async function updateMember(id: string, formData: FormData) {
 export async function archiveMember(id: string) {
   const supabase = await createClient();
 
+  const isAuthorized = await verifyOwner(supabase);
+  if (!isAuthorized) return { error: "Unauthorized" };
+
   const { error } = await supabase
     .from('members')
     .update({ status: 'inactive' })
@@ -199,6 +224,9 @@ export async function archiveMember(id: string) {
 
 export async function addAssessment(memberId: string, formData: FormData) {
   const supabase = await createClient();
+
+  const isAuthorized = await verifyOwner(supabase);
+  if (!isAuthorized) return { error: "Unauthorized" };
 
   const height_cm = parseFloat(formData.get("height_cm") as string);
   const weight_kg = parseFloat(formData.get("weight_kg") as string);
@@ -250,6 +278,9 @@ export async function addAssessment(memberId: string, formData: FormData) {
 
 export async function assignMembership(memberId: string, formData: FormData) {
   const supabase = await createClient();
+
+  const isAuthorized = await verifyOwner(supabase);
+  if (!isAuthorized) return { error: "Unauthorized" };
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
 
@@ -308,6 +339,9 @@ export async function assignMembership(memberId: string, formData: FormData) {
 
 export async function assignTrainer(memberId: string, trainerId: string) {
   const supabase = await createClient();
+
+  const isAuthorized = await verifyOwner(supabase);
+  if (!isAuthorized) return { error: "Unauthorized" };
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
 
@@ -339,6 +373,9 @@ export async function assignTrainer(memberId: string, trainerId: string) {
 
 export async function unassignTrainer(assignmentId: string, memberId: string) {
   const supabase = await createClient();
+
+  const isAuthorized = await verifyOwner(supabase);
+  if (!isAuthorized) return { error: "Unauthorized" };
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
 
