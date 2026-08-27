@@ -24,7 +24,7 @@ export async function createTrainer(formData: FormData) {
 
   if (photo && photo.size > 0) {
     const fileExt = photo.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
     const filePath = `trainers/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
@@ -110,7 +110,7 @@ export async function updateTrainer(id: string, formData: FormData) {
   const photo = formData.get("photo") as File;
   if (photo && photo.size > 0) {
     const fileExt = photo.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
     const filePath = `trainers/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
