@@ -27,18 +27,18 @@ export default async function OwnerDashboard() {
   const firstDayOfYear = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
 
   // Revenue Queries
-  const { data: todayPayments } = await supabase.from("payments").select("amount").gte("paid_at", todayStr).lt("paid_at", tomorrowStr);
-  const todaysCollection = todayPayments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+  const { data: todayPayments } = await supabase.from("payments").select("sum:amount.sum()").gte("paid_at", todayStr).lt("paid_at", tomorrowStr);
+  const todaysCollection = todayPayments?.[0]?.sum ? Number(todayPayments[0].sum) : 0;
 
-  const { data: monthPayments } = await supabase.from("payments").select("amount").gte("paid_at", firstDayOfMonth);
-  const monthlyCollection = monthPayments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+  const { data: monthPayments } = await supabase.from("payments").select("sum:amount.sum()").gte("paid_at", firstDayOfMonth);
+  const monthlyCollection = monthPayments?.[0]?.sum ? Number(monthPayments[0].sum) : 0;
 
-  const { data: yearPayments } = await supabase.from("payments").select("amount").gte("paid_at", firstDayOfYear);
-  const yearlyCollection = yearPayments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+  const { data: yearPayments } = await supabase.from("payments").select("sum:amount.sum()").gte("paid_at", firstDayOfYear);
+  const yearlyCollection = yearPayments?.[0]?.sum ? Number(yearPayments[0].sum) : 0;
 
   // Pending Receivables
-  const { data: pendingMemberships } = await supabase.from("memberships").select("pending_amount").gt("pending_amount", 0);
-  const totalPending = pendingMemberships?.reduce((sum, m) => sum + Number(m.pending_amount), 0) || 0;
+  const { data: pendingMemberships } = await supabase.from("memberships").select("sum:pending_amount.sum()").gt("pending_amount", 0);
+  const totalPending = pendingMemberships?.[0]?.sum ? Number(pendingMemberships[0].sum) : 0;
 
   // 2. Chart Data Queries
   const { data: genderData } = await supabase.from("members").select("gender").eq("status", "active");
