@@ -5,8 +5,19 @@ import { revalidatePath } from "next/cache";
 
 export async function createTrainer(formData: FormData) {
   const supabase = await createClient();
-  const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData?.session?.user?.id;
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { error: "Unauthorized" };
+  }
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (profile?.role !== 'owner') {
+    return { error: "Unauthorized: Insufficient permissions" };
+  }
+  const userId = user.id;
 
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
@@ -51,7 +62,7 @@ export async function createTrainer(formData: FormData) {
 
   if (authError) return { error: authError.message };
 
-  const profile_id = authData.user.id;
+  const profile_id = authData.user?.id;
 
   const { data: trainerData, error: trainerError } = await supabase
     .from('trainers')
@@ -91,8 +102,19 @@ export async function createTrainer(formData: FormData) {
 
 export async function updateTrainer(id: string, formData: FormData) {
   const supabase = await createClient();
-  const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData?.session?.user?.id;
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { error: "Unauthorized" };
+  }
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (profile?.role !== 'owner') {
+    return { error: "Unauthorized: Insufficient permissions" };
+  }
+  const userId = user.id;
 
   const allowedKeys = ["name", "email", "phone", "qualification", "specialization", "joining_date", "notes", "status"];
   const updates: Record<string, string | null> = {};

@@ -5,6 +5,18 @@ import { revalidatePath } from "next/cache";
 
 export async function createMember(formData: FormData) {
   const supabase = await createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { error: "Unauthorized" };
+  }
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (profile?.role !== 'owner') {
+    return { error: "Unauthorized: Insufficient permissions" };
+  }
 
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
@@ -62,7 +74,7 @@ export async function createMember(formData: FormData) {
     return { error: authError.message };
   }
 
-  const profile_id = authData.user.id;
+  const profile_id = authData.user?.id;
 
   // 2. Insert into members table
   const member_code = `DHL-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -97,10 +109,9 @@ export async function createMember(formData: FormData) {
   }
 
   // 3. Log to audit_logs
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (sessionData?.session?.user) {
+  if (user) {
     await supabase.from('audit_logs').insert({
-      actor_profile_id: sessionData.session.user.id,
+      actor_profile_id: user.id,
       action: 'create_member',
       entity_type: 'member',
       entity_id: memberData.id,
@@ -115,6 +126,18 @@ export async function createMember(formData: FormData) {
 
 export async function updateMember(id: string, formData: FormData) {
   const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { error: "Unauthorized" };
+  }
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (profile?.role !== 'owner') {
+    return { error: "Unauthorized: Insufficient permissions" };
+  }
 
   const updates: Record<string, string | null> = {};
   const allowedKeys = ["name", "email", "phone", "dob", "gender", "address", "emergency_contact_name", "emergency_contact_phone", "primary_goal", "secondary_goal", "fitness_level", "diet_preference", "training_experience", "notes"];
@@ -151,10 +174,9 @@ export async function updateMember(id: string, formData: FormData) {
     return { error: error.message };
   }
 
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (sessionData?.session?.user) {
+  if (user) {
     await supabase.from('audit_logs').insert({
-      actor_profile_id: sessionData.session.user.id,
+      actor_profile_id: user.id,
       action: 'update_member',
       entity_type: 'member',
       entity_id: id,
@@ -170,6 +192,18 @@ export async function updateMember(id: string, formData: FormData) {
 
 export async function archiveMember(id: string) {
   const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { error: "Unauthorized" };
+  }
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (profile?.role !== 'owner') {
+    return { error: "Unauthorized: Insufficient permissions" };
+  }
 
   const { error } = await supabase
     .from('members')
@@ -180,10 +214,9 @@ export async function archiveMember(id: string) {
     return { error: error.message };
   }
 
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (sessionData?.session?.user) {
+  if (user) {
     await supabase.from('audit_logs').insert({
-      actor_profile_id: sessionData.session.user.id,
+      actor_profile_id: user.id,
       action: 'archive_member',
       entity_type: 'member',
       entity_id: id,
@@ -199,6 +232,18 @@ export async function archiveMember(id: string) {
 
 export async function addAssessment(memberId: string, formData: FormData) {
   const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { error: "Unauthorized" };
+  }
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (profile?.role !== 'owner') {
+    return { error: "Unauthorized: Insufficient permissions" };
+  }
 
   const height_cm = parseFloat(formData.get("height_cm") as string);
   const weight_kg = parseFloat(formData.get("weight_kg") as string);
@@ -211,8 +256,7 @@ export async function addAssessment(memberId: string, formData: FormData) {
     bmi = parseFloat((weight_kg / (height_m * height_m)).toFixed(2));
   }
 
-  const { data: sessionData } = await supabase.auth.getSession();
-  const recorded_by = sessionData?.session?.user?.id;
+  const recorded_by = user.id;
 
   const { data, error } = await supabase
     .from('assessments')
@@ -250,8 +294,19 @@ export async function addAssessment(memberId: string, formData: FormData) {
 
 export async function assignMembership(memberId: string, formData: FormData) {
   const supabase = await createClient();
-  const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData?.session?.user?.id;
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { error: "Unauthorized" };
+  }
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (profile?.role !== 'owner') {
+    return { error: "Unauthorized: Insufficient permissions" };
+  }
+  const userId = user.id;
 
   const plan_id = formData.get("plan_id") as string;
   const start_date = formData.get("start_date") as string;
@@ -308,8 +363,19 @@ export async function assignMembership(memberId: string, formData: FormData) {
 
 export async function assignTrainer(memberId: string, trainerId: string) {
   const supabase = await createClient();
-  const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData?.session?.user?.id;
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { error: "Unauthorized" };
+  }
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (profile?.role !== 'owner') {
+    return { error: "Unauthorized: Insufficient permissions" };
+  }
+  const userId = user.id;
 
   if (!trainerId) return { error: "Trainer ID required" };
 
@@ -339,8 +405,19 @@ export async function assignTrainer(memberId: string, trainerId: string) {
 
 export async function unassignTrainer(assignmentId: string, memberId: string) {
   const supabase = await createClient();
-  const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData?.session?.user?.id;
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { error: "Unauthorized" };
+  }
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (profile?.role !== 'owner') {
+    return { error: "Unauthorized: Insufficient permissions" };
+  }
+  const userId = user.id;
 
   const { error } = await supabase
     .from("member_trainers")

@@ -5,8 +5,19 @@ import { revalidatePath } from "next/cache";
 
 export async function recordPayment(formData: FormData) {
   const supabase = await createClient();
-  const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData?.session?.user?.id;
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { error: "Unauthorized" };
+  }
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (profile?.role !== 'owner') {
+    return { error: "Unauthorized: Insufficient permissions" };
+  }
+  const userId = user.id;
 
   const member_id = formData.get("member_id") as string;
   const membership_id = formData.get("membership_id") as string;
