@@ -4,6 +4,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 
+interface Payment {
+  amount: number;
+  method: string;
+  paid_at: string;
+}
+
 export default async function MemberProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
   const { id } = await params;
@@ -192,7 +198,7 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
                   <div className="mt-4 pt-4 border-t border-gray-100">
                     <p className="font-medium text-gray-700 mb-2">Payment History:</p>
                     <ul className="space-y-1">
-                      {membership.payments.map((p: any /* eslint-disable-line @typescript-eslint/no-explicit-any */, i: number) => (
+                      {membership.payments.map((p: Payment, i: number) => (
                         <li key={i} className="text-xs text-gray-600">
                           {new Date(p.paid_at).toLocaleDateString()} - ${p.amount} ({p.method})
                         </li>
