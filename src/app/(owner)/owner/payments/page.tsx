@@ -1,10 +1,11 @@
 import { createClient } from "@/utils/supabase/server";
+import { QueryData } from "@supabase/supabase-js";
 import { recordPayment } from "./actions";
 
 export default async function PaymentsPage() {
   const supabase = await createClient();
 
-  const { data: payments } = await supabase
+  const paymentsQuery = supabase
     .from("payments")
     .select(`
       *,
@@ -12,6 +13,10 @@ export default async function PaymentsPage() {
       memberships (membership_plans (name))
     `)
     .order("paid_at", { ascending: false });
+
+  type PaymentsWithRelations = QueryData<typeof paymentsQuery>;
+
+  const { data: payments } = await paymentsQuery;
 
   // Get active members for the payment form
   const { data: membersWithMemberships } = await supabase
@@ -96,14 +101,14 @@ export default async function PaymentsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {payments?.map((payment) => (
+                {(payments as PaymentsWithRelations | null)?.map((payment) => (
                   <tr key={payment.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(payment.paid_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{(payment.members as any /* eslint-disable-line @typescript-eslint/no-explicit-any */)?.name}</div>
-                      <div className="text-sm text-gray-500">{(payment.memberships as any /* eslint-disable-line @typescript-eslint/no-explicit-any */)?.membership_plans?.name}</div>
+                      <div className="text-sm font-medium text-gray-900">{payment.members?.name}</div>
+                      <div className="text-sm text-gray-500">{payment.memberships?.membership_plans?.name}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
                       ${payment.amount}
