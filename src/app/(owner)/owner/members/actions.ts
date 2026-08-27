@@ -2,6 +2,60 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { SupabaseClient } from "@supabase/supabase-js";
+
+async function createAuthUser(email: string, name: string) {
+  const { createClient: createSupabaseClient } = await import('@supabase/supabase-js');
+  const adminAuthClient = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const { data: authData, error: authError } = await adminAuthClient.auth.admin.createUser({
+    email,
+    password: crypto.randomUUID() + 'A1!', // Generate random password
+    email_confirm: true,
+    user_metadata: { role: 'member', full_name: name }
+  });
+
+  return { authData, authError };
+}
+
+async function logAuditAction(
+  supabase: SupabaseClient,
+  userId: string,
+  action: string,
+  entity_type: string,
+  entity_id: string | null,
+  member_id: string | null,
+  details: Record<string, unknown>
+) {
+  return await supabase.from('audit_logs').insert({
+    actor_profile_id: userId,
+    action,
+    entity_type,
+    entity_id,
+    member_id,
+    details
+  });
+}
+
+async function uploadMemberPhoto(supabase: SupabaseClient, photo: File) {
+  const fileExt = photo.name.split('.').pop();
+  const fileName = `${Math.random()}.${fileExt}`;
+  const filePath = `members/${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('member-photos')
+    .upload(filePath, photo);
+
+  if (uploadError) {
+    return { error: uploadError.message };
+  }
+
+  const { data } = supabase.storage.from('member-photos').getPublicUrl(filePath);
+  return { publicUrl: data.publicUrl as string };
+}
 
 export async function createMember(formData: FormData) {
   const supabase = await createClient();
@@ -25,41 +79,21 @@ export async function createMember(formData: FormData) {
   let photo_url = null;
 
   if (photo && photo.size > 0) {
-    const fileExt = photo.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `members/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('member-photos')
-      .upload(filePath, photo);
-
-    if (uploadError) {
-      return { error: uploadError.message };
+    const uploadResult = await uploadMemberPhoto(supabase, photo);
+    if (uploadResult.error) {
+      return { error: uploadResult.error };
     }
-
-    const { data } = supabase.storage.from('member-photos').getPublicUrl(filePath);
-    photo_url = data.publicUrl;
+    photo_url = uploadResult.publicUrl;
   }
 
   // 1. Create auth user using Admin API (service role required, normally handled differently but keeping it simple for the action)
   // Note: For a real app, creating auth users from a server action requires the service role key,
   // but `@supabase/ssr` `createServerClient` uses the anon key by default.
   // We'll initialize a service role client just for the admin creation part.
-  const { createClient: createSupabaseClient } = await import('@supabase/supabase-js');
-  const adminAuthClient = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const { authData, authError } = await createAuthUser(email, name);
 
-  const { data: authData, error: authError } = await adminAuthClient.auth.admin.createUser({
-    email,
-    password: crypto.randomUUID() + 'A1!', // Generate random password
-    email_confirm: true,
-    user_metadata: { role: 'member', full_name: name }
-  });
-
-  if (authError) {
-    return { error: authError.message };
+  if (authError || !authData?.user) {
+    return { error: authError?.message || "Failed to create user" };
   }
 
   const profile_id = authData.user.id;
@@ -99,14 +133,15 @@ export async function createMember(formData: FormData) {
   // 3. Log to audit_logs
   const { data: sessionData } = await supabase.auth.getSession();
   if (sessionData?.session?.user) {
-    await supabase.from('audit_logs').insert({
-      actor_profile_id: sessionData.session.user.id,
-      action: 'create_member',
-      entity_type: 'member',
-      entity_id: memberData.id,
-      member_id: memberData.id,
-      details: { name, email, member_code }
-    });
+    await logAuditAction(
+      supabase,
+      sessionData.session.user.id,
+      'create_member',
+      'member',
+      memberData.id,
+      memberData.id,
+      { name, email, member_code }
+    );
   }
 
   revalidatePath("/owner/members");
@@ -126,20 +161,13 @@ export async function updateMember(id: string, formData: FormData) {
 
   const photo = formData.get("photo") as File;
   if (photo && photo.size > 0) {
-    const fileExt = photo.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `members/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('member-photos')
-      .upload(filePath, photo);
-
-    if (uploadError) {
-      return { error: uploadError.message };
+    const uploadResult = await uploadMemberPhoto(supabase, photo);
+    if (uploadResult.error) {
+      return { error: uploadResult.error };
     }
-
-    const { data } = supabase.storage.from('member-photos').getPublicUrl(filePath);
-    updates.photo_url = data.publicUrl;
+    if (uploadResult.publicUrl) {
+      updates.photo_url = uploadResult.publicUrl;
+    }
   }
 
   const { error } = await supabase
@@ -153,14 +181,15 @@ export async function updateMember(id: string, formData: FormData) {
 
   const { data: sessionData } = await supabase.auth.getSession();
   if (sessionData?.session?.user) {
-    await supabase.from('audit_logs').insert({
-      actor_profile_id: sessionData.session.user.id,
-      action: 'update_member',
-      entity_type: 'member',
-      entity_id: id,
-      member_id: id,
-      details: updates
-    });
+    await logAuditAction(
+      supabase,
+      sessionData.session.user.id,
+      'update_member',
+      'member',
+      id,
+      id,
+      updates
+    );
   }
 
   revalidatePath(`/owner/members/${id}`);
@@ -182,14 +211,15 @@ export async function archiveMember(id: string) {
 
   const { data: sessionData } = await supabase.auth.getSession();
   if (sessionData?.session?.user) {
-    await supabase.from('audit_logs').insert({
-      actor_profile_id: sessionData.session.user.id,
-      action: 'archive_member',
-      entity_type: 'member',
-      entity_id: id,
-      member_id: id,
-      details: { status: 'inactive' }
-    });
+    await logAuditAction(
+      supabase,
+      sessionData.session.user.id,
+      'archive_member',
+      'member',
+      id,
+      id,
+      { status: 'inactive' }
+    );
   }
 
   revalidatePath(`/owner/members/${id}`);
@@ -234,14 +264,15 @@ export async function addAssessment(memberId: string, formData: FormData) {
   }
 
   if (recorded_by) {
-    await supabase.from('audit_logs').insert({
-      actor_profile_id: recorded_by,
-      action: 'add_assessment',
-      entity_type: 'assessment',
-      entity_id: data.id,
-      member_id: memberId,
-      details: { height_cm, weight_kg, bmi, body_fat_pct }
-    });
+    await logAuditAction(
+      supabase,
+      recorded_by,
+      'add_assessment',
+      'assessment',
+      data.id,
+      memberId,
+      { height_cm, weight_kg, bmi, body_fat_pct }
+    );
   }
 
   revalidatePath(`/owner/members/${memberId}`);
@@ -292,14 +323,15 @@ export async function assignMembership(memberId: string, formData: FormData) {
   if (error) return { error: error.message };
 
   if (userId) {
-    await supabase.from("audit_logs").insert({
-      actor_profile_id: userId,
-      action: "assign_membership",
-      entity_type: "membership",
-      entity_id: data.id,
-      member_id: memberId,
-      details: { plan_id, start_date, end_date }
-    });
+    await logAuditAction(
+      supabase,
+      userId,
+      "assign_membership",
+      "membership",
+      data.id,
+      memberId,
+      { plan_id, start_date, end_date }
+    );
   }
 
   revalidatePath(`/owner/members/${memberId}`);
@@ -324,13 +356,15 @@ export async function assignTrainer(memberId: string, trainerId: string) {
   if (error) return { error: error.message };
 
   if (userId) {
-    await supabase.from("audit_logs").insert({
-      actor_profile_id: userId,
-      action: "assign_trainer",
-      entity_type: "member_trainer",
-      member_id: memberId,
-      details: { trainer_id: trainerId }
-    });
+    await logAuditAction(
+      supabase,
+      userId,
+      "assign_trainer",
+      "member_trainer",
+      null, // member_trainer doesn't return an entity_id here
+      memberId,
+      { trainer_id: trainerId }
+    );
   }
 
   revalidatePath(`/owner/members/${memberId}`);
@@ -350,13 +384,15 @@ export async function unassignTrainer(assignmentId: string, memberId: string) {
   if (error) return { error: error.message };
 
   if (userId) {
-    await supabase.from("audit_logs").insert({
-      actor_profile_id: userId,
-      action: "unassign_trainer",
-      entity_type: "member_trainer",
-      member_id: memberId,
-      details: { assignment_id: assignmentId }
-    });
+    await logAuditAction(
+      supabase,
+      userId,
+      "unassign_trainer",
+      "member_trainer",
+      null,
+      memberId,
+      { assignment_id: assignmentId }
+    );
   }
 
   revalidatePath(`/owner/members/${memberId}`);
