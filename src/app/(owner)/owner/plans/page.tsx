@@ -4,9 +4,20 @@ import { createPlan, updatePlan } from "./actions";
 import { useState, useEffect } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 
+export interface Plan {
+  id: string;
+  name: string;
+  duration_days: number;
+  price: number;
+  plan_type: string;
+  description: string;
+  status: string;
+  created_at?: string;
+}
+
 export default function PlansPage() {
-  const [plans, setPlans] = useState<any[] /* eslint-disable-line @typescript-eslint/no-explicit-any */>([]);
-  const [editingPlan, setEditingPlan] = useState<any /* eslint-disable-line @typescript-eslint/no-explicit-any */ | null>(null);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
