@@ -6,12 +6,7 @@ import DashboardCharts from "./DashboardCharts"; // Client component for charts
 export default async function OwnerDashboard() {
   const supabase = await createClient();
 
-  // 1. KPI Queries
-  const { count: totalMembers } = await supabase.from("members").select("*", { count: "exact", head: true });
-  const { count: activeMembers } = await supabase.from("members").select("*", { count: "exact", head: true }).eq("status", "active");
-  const { count: inactiveMembers } = await supabase.from("members").select("*", { count: "exact", head: true }).eq("status", "inactive");
-
-  // Date calculations
+  // Date calculations (Moved up for query parameters)
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
 
@@ -26,22 +21,55 @@ export default async function OwnerDashboard() {
   const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
   const firstDayOfYear = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
 
-  // Revenue Queries
-  const { data: todayPayments } = await supabase.from("payments").select("amount").gte("paid_at", todayStr).lt("paid_at", tomorrowStr);
+  const currentMonthNum = today.getMonth() + 1; // 1-12
+
+  // Execute all database queries in parallel
+  const [
+    { count: totalMembers },
+    { count: activeMembers },
+    { count: inactiveMembers },
+    { data: todayPayments },
+    { data: monthPayments },
+    { data: yearPayments },
+    { data: pendingMemberships },
+    { data: genderData },
+    { data: expiringMemberships },
+    { count: expiredMemberships },
+    { data: membersWithDob }
+  ] = await Promise.all([
+    supabase.from("members").select("*", { count: "exact", head: true }),
+    supabase.from("members").select("*", { count: "exact", head: true }).eq("status", "active"),
+    supabase.from("members").select("*", { count: "exact", head: true }).eq("status", "inactive"),
+    supabase.from("payments").select("amount").gte("paid_at", todayStr).lt("paid_at", tomorrowStr),
+    supabase.from("payments").select("amount").gte("paid_at", firstDayOfMonth),
+    supabase.from("payments").select("amount").gte("paid_at", firstDayOfYear),
+    supabase.from("memberships").select("pending_amount").gt("pending_amount", 0),
+    supabase.from("members").select("gender").eq("status", "active"),
+    supabase
+      .from("memberships")
+      .select(`
+        id, end_date, members(id, name, member_code), membership_plans(name)
+      `)
+      .eq("status", "active")
+      .gte("end_date", todayStr)
+      .lte("end_date", thirtyDaysStr)
+      .order("end_date", { ascending: true })
+      .limit(10),
+    supabase
+      .from("memberships")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "expired")
+      .lt("end_date", todayStr),
+    supabase.from("members").select("id, name, dob").eq("status", "active").not("dob", "is", null)
+  ]);
+
+  // Data manipulations
   const todaysCollection = todayPayments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
-
-  const { data: monthPayments } = await supabase.from("payments").select("amount").gte("paid_at", firstDayOfMonth);
   const monthlyCollection = monthPayments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
-
-  const { data: yearPayments } = await supabase.from("payments").select("amount").gte("paid_at", firstDayOfYear);
   const yearlyCollection = yearPayments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
 
-  // Pending Receivables
-  const { data: pendingMemberships } = await supabase.from("memberships").select("pending_amount").gt("pending_amount", 0);
   const totalPending = pendingMemberships?.reduce((sum, m) => sum + Number(m.pending_amount), 0) || 0;
 
-  // 2. Chart Data Queries
-  const { data: genderData } = await supabase.from("members").select("gender").eq("status", "active");
   const genderCount: Record<string, number> = { Male: 0, Female: 0, Other: 0 };
   genderData?.forEach(m => {
     if (m.gender && genderCount[m.gender] !== undefined) genderCount[m.gender]++;
@@ -54,31 +82,9 @@ export default async function OwnerDashboard() {
     { name: "Current Month", revenue: monthlyCollection }
   ];
 
-  // 3. Lists
-  // Upcoming Expiries (next 30 days)
-  const { data: expiringMemberships } = await supabase
-    .from("memberships")
-    .select(`
-      id, end_date, members(id, name, member_code), membership_plans(name)
-    `)
-    .eq("status", "active")
-    .gte("end_date", todayStr)
-    .lte("end_date", thirtyDaysStr)
-    .order("end_date", { ascending: true })
-    .limit(10);
-
-  // Expired Memberships
-  const { count: expiredMemberships } = await supabase
-    .from("memberships")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "expired")
-    .lt("end_date", todayStr); // Or simply checking where end_date < today
-
   // Birthdays this month
-  const currentMonthNum = today.getMonth() + 1; // 1-12
   // Supabase doesn't have a direct EXTRACT(MONTH) function easily available in JS client without RPC,
   // so we'll fetch active members with DOB and filter in memory for scaffolding.
-  const { data: membersWithDob } = await supabase.from("members").select("id, name, dob").eq("status", "active").not("dob", "is", null);
   const birthdaysThisMonth = membersWithDob?.filter(m => {
     if (!m.dob) return false;
     const dobMonth = new Date(m.dob).getMonth() + 1;
