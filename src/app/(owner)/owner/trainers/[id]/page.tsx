@@ -3,12 +3,13 @@ import { updateTrainer } from "../actions";
 import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
+import { QueryData } from "@supabase/supabase-js";
 
 export default async function TrainerProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
   const { id } = await params;
 
-  const { data: trainer, error } = await supabase
+  const trainerQuery = supabase
     .from("trainers")
     .select(`
       *,
@@ -17,11 +18,23 @@ export default async function TrainerProfilePage({ params }: { params: Promise<{
     .eq("id", id)
     .single();
 
+  type TrainerWithMembers = QueryData<typeof trainerQuery>;
+
+  const { data: trainer, error } = await trainerQuery;
+
   if (error || !trainer) {
     redirect("/owner/trainers");
   }
 
-  const assignedMembers = trainer.member_trainers?.map((mt: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => mt.members).filter(Boolean) || [];
+  const memberTrainers = trainer.member_trainers as NonNullable<TrainerWithMembers["member_trainers"]>;
+
+  type MemberTrainerType = NonNullable<TrainerWithMembers["member_trainers"]>[number];
+  // Extracting the item type cleanly whether it's an array or not, without using 'any'.
+  type MemberType = MemberTrainerType["members"] extends (infer U)[] ? U : MemberTrainerType["members"];
+
+  const assignedMembers = memberTrainers
+    ?.map((mt: MemberTrainerType) => (Array.isArray(mt.members) ? mt.members[0] : mt.members) as MemberType)
+    .filter((m: MemberType | null | undefined): m is NonNullable<MemberType> => Boolean(m)) || [];
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -126,7 +139,7 @@ export default async function TrainerProfilePage({ params }: { params: Promise<{
             <h2 className="text-xl font-semibold mb-4 border-b pb-2">Assigned Members ({assignedMembers.length})</h2>
             {assignedMembers.length > 0 ? (
               <ul className="space-y-3">
-                {assignedMembers.map((m: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => (
+                {assignedMembers.map((m: NonNullable<MemberType>) => (
                   <li key={m.id} className="flex justify-between items-center">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{m.name}</p>
