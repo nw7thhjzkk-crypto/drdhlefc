@@ -1,10 +1,11 @@
+import { type QueryData } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import { recordPayment } from "./actions";
 
 export default async function PaymentsPage() {
   const supabase = await createClient();
 
-  const { data: payments } = await supabase
+  const paymentsQuery = supabase
     .from("payments")
     .select(`
       *,
@@ -13,8 +14,10 @@ export default async function PaymentsPage() {
     `)
     .order("paid_at", { ascending: false });
 
+  const { data: payments } = await paymentsQuery;
+
   // Get active members for the payment form
-  const { data: membersWithMemberships } = await supabase
+  const membersQuery = supabase
     .from("members")
     .select(`
       id,
@@ -23,6 +26,11 @@ export default async function PaymentsPage() {
     `)
     .eq("status", "active")
     .eq("memberships.status", "active"); // simplified for now
+
+  type MembersWithMembershipsType = QueryData<typeof membersQuery>;
+  type PaymentType = QueryData<typeof paymentsQuery>[number];
+
+  const { data: membersWithMemberships } = (await membersQuery) as { data: MembersWithMembershipsType | null };
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -51,9 +59,12 @@ export default async function PaymentsPage() {
               <select name="membership_id" required className="mt-1 block w-full border border-gray-300 rounded p-2">
                 <option value="">Select Membership...</option>
                 {membersWithMemberships?.map(m =>
-                  m.memberships?.map((ms: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => (
-                    <option key={ms.id} value={ms.id}>{m.name} - {ms.membership_plans?.name} (${ms.pending_amount} pending)</option>
-                  ))
+                  m.memberships?.map((ms) => {
+                    const plan = Array.isArray(ms.membership_plans) ? ms.membership_plans[0] : ms.membership_plans;
+                    return (
+                      <option key={ms.id} value={ms.id}>{m.name} - {plan?.name} (${ms.pending_amount} pending)</option>
+                    )
+                  })
                 )}
               </select>
             </div>
@@ -96,14 +107,18 @@ export default async function PaymentsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {payments?.map((payment) => (
+                {(payments as PaymentType[])?.map((payment) => {
+                  const member = Array.isArray(payment.members) ? payment.members[0] : payment.members;
+                  const membership = Array.isArray(payment.memberships) ? payment.memberships[0] : payment.memberships;
+                  const plan = membership ? (Array.isArray(membership.membership_plans) ? membership.membership_plans[0] : membership.membership_plans) : null;
+                  return (
                   <tr key={payment.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(payment.paid_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{(payment.members as any /* eslint-disable-line @typescript-eslint/no-explicit-any */)?.name}</div>
-                      <div className="text-sm text-gray-500">{(payment.memberships as any /* eslint-disable-line @typescript-eslint/no-explicit-any */)?.membership_plans?.name}</div>
+                      <div className="text-sm font-medium text-gray-900">{member?.name}</div>
+                      <div className="text-sm text-gray-500">{plan?.name}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
                       ${payment.amount}
@@ -113,7 +128,7 @@ export default async function PaymentsPage() {
                       {payment.reference && <span className="block text-xs text-gray-400">Ref: {payment.reference}</span>}
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           </div>
