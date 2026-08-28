@@ -26,7 +26,7 @@ export async function createMember(formData: FormData) {
 
   if (photo && photo.size > 0) {
     const fileExt = photo.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
     const filePath = `members/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
@@ -65,7 +65,7 @@ export async function createMember(formData: FormData) {
   const profile_id = authData.user.id;
 
   // 2. Insert into members table
-  const member_code = `DHL-${Math.floor(1000 + Math.random() * 9000)}`;
+  const member_code = `DHL-${Math.floor(1000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 9000))}`;
 
   const { data: memberData, error: memberError } = await supabase
     .from('members')
@@ -127,7 +127,7 @@ export async function updateMember(id: string, formData: FormData) {
   const photo = formData.get("photo") as File;
   if (photo && photo.size > 0) {
     const fileExt = photo.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
     const filePath = `members/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
