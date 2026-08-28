@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { uploadPhoto, createAuthUser } from "@/utils/helpers";
 
 export async function createTrainer(formData: FormData) {
   const supabase = await createClient();
@@ -20,38 +21,11 @@ export async function createTrainer(formData: FormData) {
   const notes = formData.get("notes") as string;
   const photo = formData.get("photo") as File;
 
-  let photo_url = null;
+  const { url: photo_url, error: photoError } = await uploadPhoto(supabase, photo, 'trainers');
+  if (photoError) return { error: photoError };
 
-  if (photo && photo.size > 0) {
-    const fileExt = photo.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `trainers/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('member-photos') // Using existing bucket
-      .upload(filePath, photo);
-
-    if (uploadError) return { error: uploadError.message };
-    const { data } = supabase.storage.from('member-photos').getPublicUrl(filePath);
-    photo_url = data.publicUrl;
-  }
-
-  const { createClient: createSupabaseClient } = await import('@supabase/supabase-js');
-  const adminAuthClient = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  const { data: authData, error: authError } = await adminAuthClient.auth.admin.createUser({
-    email,
-    password: crypto.randomUUID() + 'A1!',
-    email_confirm: true,
-    user_metadata: { role: 'trainer', full_name: name }
-  });
-
-  if (authError) return { error: authError.message };
-
-  const profile_id = authData.user.id;
+  const { userId: profile_id, error: authError } = await createAuthUser(email, name, 'trainer');
+  if (authError || !profile_id) return { error: authError || 'Failed to create auth user' };
 
   const { data: trainerData, error: trainerError } = await supabase
     .from('trainers')
@@ -108,19 +82,9 @@ export async function updateTrainer(id: string, formData: FormData) {
   if (formData.has("salary_deductions")) updates.salary_deductions = formData.get("salary_deductions") as string;
 
   const photo = formData.get("photo") as File;
-  if (photo && photo.size > 0) {
-    const fileExt = photo.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `trainers/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('member-photos')
-      .upload(filePath, photo);
-
-    if (uploadError) return { error: uploadError.message };
-    const { data } = supabase.storage.from('member-photos').getPublicUrl(filePath);
-    updates.photo_url = data.publicUrl;
-  }
+  const { url: photo_url, error: photoError } = await uploadPhoto(supabase, photo, 'trainers');
+  if (photoError) return { error: photoError };
+  if (photo_url) updates.photo_url = photo_url;
 
   const { error } = await supabase.from('trainers').update(updates).eq('id', id);
 
