@@ -26,7 +26,8 @@ export default async function MembersPage({
     `, { count: "exact" });
 
   if (q) {
-    query = query.or(`name.ilike.%${q}%,phone.ilike.%${q}%,email.ilike.%${q}%`);
+    const safeQ = `%${q}%`.replace(/"/g, '""');
+    query = query.or(`name.ilike."${safeQ}",phone.ilike."${safeQ}",email.ilike."${safeQ}"`);
   }
   if (status) {
     query = query.eq("status", status);
