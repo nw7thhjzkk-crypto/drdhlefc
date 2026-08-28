@@ -76,14 +76,12 @@ export default async function OwnerDashboard() {
 
   // Birthdays this month
   const currentMonthNum = today.getMonth() + 1; // 1-12
-  // Supabase doesn't have a direct EXTRACT(MONTH) function easily available in JS client without RPC,
-  // so we'll fetch active members with DOB and filter in memory for scaffolding.
-  const { data: membersWithDob } = await supabase.from("members").select("id, name, dob").eq("status", "active").not("dob", "is", null);
-  const birthdaysThisMonth = membersWithDob?.filter(m => {
-    if (!m.dob) return false;
-    const dobMonth = new Date(m.dob).getMonth() + 1;
-    return dobMonth === currentMonthNum;
-  }) || [];
+  const { data: birthdaysThisMonthData } = await supabase
+    .from("members")
+    .select("id, name, dob")
+    .eq("status", "active")
+    .eq("dob_month", currentMonthNum);
+  const birthdaysThisMonth = birthdaysThisMonthData || [];
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
