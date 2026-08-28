@@ -25,6 +25,8 @@ export default async function OwnerDashboard() {
 
   const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
   const firstDayOfYear = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+  const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 5, 1);
+  const sixMonthsAgoStr = sixMonthsAgo.toISOString().split('T')[0];
 
   // Revenue Queries
   const { data: todayPayments } = await supabase.from("payments").select("amount").gte("paid_at", todayStr).lt("paid_at", tomorrowStr);
@@ -49,10 +51,40 @@ export default async function OwnerDashboard() {
   });
   const chartGenderData = Object.keys(genderCount).map(k => ({ name: k, value: genderCount[k] }));
 
-  // Basic monthly revenue trend (simplified for scaffolding: grouping all payments into current month for demo)
-  const chartRevenueData = [
-    { name: "Current Month", revenue: monthlyCollection }
-  ];
+  // Monthly revenue trend for the last 6 months
+  const { data: recentPayments } = await supabase
+    .from("payments")
+    .select("amount, paid_at")
+    .gte("paid_at", sixMonthsAgoStr)
+    .lt("paid_at", tomorrowStr);
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthlyRevenueMap: Record<string, number> = {};
+
+  // Initialize last 6 months with 0
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    const monthName = monthNames[d.getMonth()];
+    const yearStr = d.getFullYear().toString().slice(-2);
+    monthlyRevenueMap[`${monthName} '${yearStr}`] = 0;
+  }
+
+  recentPayments?.forEach(p => {
+    if (p.paid_at) {
+      const d = new Date(p.paid_at);
+      const monthName = monthNames[d.getMonth()];
+      const yearStr = d.getFullYear().toString().slice(-2);
+      const key = `${monthName} '${yearStr}`;
+      if (monthlyRevenueMap[key] !== undefined) {
+        monthlyRevenueMap[key] += Number(p.amount);
+      }
+    }
+  });
+
+  const chartRevenueData = Object.keys(monthlyRevenueMap).map(k => ({
+    name: k,
+    revenue: monthlyRevenueMap[k]
+  }));
 
   // 3. Lists
   // Upcoming Expiries (next 30 days)
