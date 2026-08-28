@@ -5,8 +5,22 @@ import { revalidatePath } from "next/cache";
 
 export async function createTrainer(formData: FormData) {
   const supabase = await createClient();
-  const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData?.session?.user?.id;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "Unauthorized" };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile || profile.role !== "owner") {
+    return { error: "Unauthorized: Only owners can create trainers." };
+  }
+
+  const userId = user.id;
 
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
@@ -91,8 +105,22 @@ export async function createTrainer(formData: FormData) {
 
 export async function updateTrainer(id: string, formData: FormData) {
   const supabase = await createClient();
-  const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData?.session?.user?.id;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "Unauthorized" };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile || profile.role !== "owner") {
+    return { error: "Unauthorized: Only owners can update trainers." };
+  }
+
+  const userId = user.id;
 
   const allowedKeys = ["name", "email", "phone", "qualification", "specialization", "joining_date", "notes", "status"];
   const updates: Record<string, string | null> = {};
