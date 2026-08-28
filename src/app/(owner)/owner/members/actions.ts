@@ -2,6 +2,8 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { uploadPhoto } from "@/utils/upload";
+import { createAuthUser } from "@/utils/supabase/admin";
 
 export async function createMember(formData: FormData) {
   const supabase = await createClient();
@@ -22,47 +24,21 @@ export async function createMember(formData: FormData) {
   const notes = formData.get("notes") as string;
   const photo = formData.get("photo") as File;
 
-  let photo_url = null;
-
-  if (photo && photo.size > 0) {
-    const fileExt = photo.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `members/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('member-photos')
-      .upload(filePath, photo);
-
-    if (uploadError) {
-      return { error: uploadError.message };
-    }
-
-    const { data } = supabase.storage.from('member-photos').getPublicUrl(filePath);
-    photo_url = data.publicUrl;
+  const { url, error: uploadError } = await uploadPhoto(supabase, photo, 'member-photos', 'members');
+  if (uploadError) {
+    return { error: uploadError };
   }
+  const photo_url = url;
 
   // 1. Create auth user using Admin API (service role required, normally handled differently but keeping it simple for the action)
   // Note: For a real app, creating auth users from a server action requires the service role key,
   // but `@supabase/ssr` `createServerClient` uses the anon key by default.
   // We'll initialize a service role client just for the admin creation part.
-  const { createClient: createSupabaseClient } = await import('@supabase/supabase-js');
-  const adminAuthClient = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const { id: profile_id, error: authError } = await createAuthUser(email, name, 'member');
 
-  const { data: authData, error: authError } = await adminAuthClient.auth.admin.createUser({
-    email,
-    password: crypto.randomUUID() + 'A1!', // Generate random password
-    email_confirm: true,
-    user_metadata: { role: 'member', full_name: name }
-  });
-
-  if (authError) {
-    return { error: authError.message };
+  if (authError || !profile_id) {
+    return { error: authError || "Failed to create user" };
   }
-
-  const profile_id = authData.user.id;
 
   // 2. Insert into members table
   const member_code = `DHL-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -125,21 +101,12 @@ export async function updateMember(id: string, formData: FormData) {
   });
 
   const photo = formData.get("photo") as File;
-  if (photo && photo.size > 0) {
-    const fileExt = photo.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `members/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('member-photos')
-      .upload(filePath, photo);
-
-    if (uploadError) {
-      return { error: uploadError.message };
-    }
-
-    const { data } = supabase.storage.from('member-photos').getPublicUrl(filePath);
-    updates.photo_url = data.publicUrl;
+  const { url, error: uploadError } = await uploadPhoto(supabase, photo, 'member-photos', 'members');
+  if (uploadError) {
+    return { error: uploadError };
+  }
+  if (url) {
+    updates.photo_url = url;
   }
 
   const { error } = await supabase
