@@ -4,7 +4,10 @@ import { PieChart, Pie, Cell, Tooltip as PieTooltip, Legend, BarChart, Bar, XAxi
 
 const COLORS = ["#3b82f6", "#ec4899", "#8b5cf6"];
 
-export default function DashboardCharts({ genderData, revenueData }: { genderData: any[] /* eslint-disable-line @typescript-eslint/no-explicit-any */, revenueData: any[] /* eslint-disable-line @typescript-eslint/no-explicit-any */ }) {
+type GenderData = { name: string; value: number };
+type RevenueData = { name: string; revenue: number };
+
+export default function DashboardCharts({ genderData, revenueData }: { genderData: GenderData[], revenueData: RevenueData[] }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-80">
 

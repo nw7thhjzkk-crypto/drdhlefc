@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { logout } from "@/app/auth/logout/actions";
 import Link from "next/link";
 import DashboardCharts from "./DashboardCharts"; // Client component for charts
+import { QueryData } from "@supabase/supabase-js";
 
 export default async function OwnerDashboard() {
   const supabase = await createClient();
@@ -56,7 +57,7 @@ export default async function OwnerDashboard() {
 
   // 3. Lists
   // Upcoming Expiries (next 30 days)
-  const { data: expiringMemberships } = await supabase
+  const expiringMembershipsQuery = supabase
     .from("memberships")
     .select(`
       id, end_date, members(id, name, member_code), membership_plans(name)
@@ -66,6 +67,10 @@ export default async function OwnerDashboard() {
     .lte("end_date", thirtyDaysStr)
     .order("end_date", { ascending: true })
     .limit(10);
+
+  type ExpiringMembership = QueryData<typeof expiringMembershipsQuery>[number];
+
+  const { data: expiringMemberships } = await expiringMembershipsQuery;
 
   // Expired Memberships
   const { count: expiredMemberships } = await supabase
@@ -138,16 +143,21 @@ export default async function OwnerDashboard() {
               <h2 className="text-lg font-semibold mb-4 text-gray-800">Expiring Memberships (30 days)</h2>
               {expiringMemberships && expiringMemberships.length > 0 ? (
                 <ul className="divide-y divide-gray-100">
-                  {expiringMemberships.map((membership: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => (
-                    <li key={membership.id} className="py-3">
-                      <Link href={`/owner/members/${membership.members?.id}`} className="block hover:bg-gray-50 rounded px-2 -mx-2">
-                        <p className="text-sm font-medium text-gray-900">{membership.members?.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {membership.membership_plans?.name} • Exps: <span className="text-red-600 font-semibold">{membership.end_date}</span>
-                        </p>
-                      </Link>
-                    </li>
-                  ))}
+                  {expiringMemberships.map((membership: ExpiringMembership) => {
+                    const member = Array.isArray(membership.members) ? membership.members[0] : membership.members;
+                    const plan = Array.isArray(membership.membership_plans) ? membership.membership_plans[0] : membership.membership_plans;
+
+                    return (
+                      <li key={membership.id} className="py-3">
+                        <Link href={`/owner/members/${member?.id}`} className="block hover:bg-gray-50 rounded px-2 -mx-2">
+                          <p className="text-sm font-medium text-gray-900">{member?.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {plan?.name} • Exps: <span className="text-red-600 font-semibold">{membership.end_date}</span>
+                          </p>
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : (
                 <p className="text-sm text-gray-500">No upcoming expirations (next 30 days).</p>
