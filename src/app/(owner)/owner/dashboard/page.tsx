@@ -27,13 +27,18 @@ export default async function OwnerDashboard() {
   const firstDayOfYear = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
 
   // Revenue Queries
-  const { data: todayPayments } = await supabase.from("payments").select("amount").gte("paid_at", todayStr).lt("paid_at", tomorrowStr);
+  const [
+    { data: todayPayments },
+    { data: monthPayments },
+    { data: yearPayments }
+  ] = await Promise.all([
+    supabase.from("payments").select("amount").gte("paid_at", todayStr).lt("paid_at", tomorrowStr),
+    supabase.from("payments").select("amount").gte("paid_at", firstDayOfMonth),
+    supabase.from("payments").select("amount").gte("paid_at", firstDayOfYear)
+  ]);
+
   const todaysCollection = todayPayments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
-
-  const { data: monthPayments } = await supabase.from("payments").select("amount").gte("paid_at", firstDayOfMonth);
   const monthlyCollection = monthPayments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
-
-  const { data: yearPayments } = await supabase.from("payments").select("amount").gte("paid_at", firstDayOfYear);
   const yearlyCollection = yearPayments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
 
   // Pending Receivables
