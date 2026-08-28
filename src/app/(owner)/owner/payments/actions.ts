@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 
 export async function recordPayment(formData: FormData) {
   const supabase = await createClient();
@@ -60,13 +61,19 @@ export async function recordPayment(formData: FormData) {
   }
 
   if (userId) {
-    await supabase.from("audit_logs").insert({
-      actor_profile_id: userId,
-      action: "record_payment",
-      entity_type: "payment",
-      entity_id: payment.id,
-      member_id: member_id,
-      details: { amount, method }
+    after(async () => {
+      try {
+        await supabase.from("audit_logs").insert({
+          actor_profile_id: userId,
+          action: "record_payment",
+          entity_type: "payment",
+          entity_id: payment.id,
+          member_id: member_id,
+          details: { amount, method }
+        });
+      } catch (error) {
+        console.error("Failed to insert audit log in after():", error);
+      }
     });
   }
 

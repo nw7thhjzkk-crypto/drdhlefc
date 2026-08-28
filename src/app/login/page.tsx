@@ -38,8 +38,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Note: Phone OTP authentication will be added in a future phase. */}
-
         <p className="mt-8 text-center text-sm text-gray-500">
           Public signup is disabled. Accounts are created by the admin.
         </p>

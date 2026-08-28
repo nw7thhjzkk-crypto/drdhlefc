@@ -3,8 +3,27 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
+import { type SupabaseClient } from "@supabase/supabase-js";
+
+async function verifyOwner(supabase: SupabaseClient) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  return profile?.role === 'owner';
+}
+
+
 export async function createMember(formData: FormData) {
   const supabase = await createClient();
+
+  const isAuthorized = await verifyOwner(supabase);
+  if (!isAuthorized) return { error: "Unauthorized" };
 
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
@@ -25,7 +44,14 @@ export async function createMember(formData: FormData) {
   let photo_url = null;
 
   if (photo && photo.size > 0) {
-    const fileExt = photo.name.split('.').pop();
+    const fileExt = photo.name.split('.').pop()?.toLowerCase();
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    if (!fileExt || !allowedExtensions.includes(fileExt)) {
+      return { error: 'Invalid file extension. Only jpg, jpeg, png, webp, and gif are allowed.' };
+    }
+    if (!photo.type.startsWith('image/')) {
+      return { error: 'Invalid file type. Only images are allowed.' };
+    }
     const fileName = `${Math.random()}.${fileExt}`;
     const filePath = `members/${fileName}`;
 
@@ -55,7 +81,8 @@ export async function createMember(formData: FormData) {
     email,
     password: crypto.randomUUID() + 'A1!', // Generate random password
     email_confirm: true,
-    user_metadata: { role: 'member', full_name: name }
+    user_metadata: { full_name: name },
+    app_metadata: { role: 'member' }
   });
 
   if (authError) {
@@ -97,17 +124,20 @@ export async function createMember(formData: FormData) {
   }
 
   // 3. Log to audit_logs
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (sessionData?.session?.user) {
-    await supabase.from('audit_logs').insert({
-      actor_profile_id: sessionData.session.user.id,
-      action: 'create_member',
-      entity_type: 'member',
-      entity_id: memberData.id,
-      member_id: memberData.id,
-      details: { name, email, member_code }
-    });
-  }
+  supabase.auth.getSession().then(({ data: sessionData }) => {
+    if (sessionData?.session?.user) {
+      Promise.resolve(
+        supabase.from('audit_logs').insert({
+          actor_profile_id: sessionData.session.user.id,
+          action: 'create_member',
+          entity_type: 'member',
+          entity_id: memberData.id,
+          member_id: memberData.id,
+          details: { name, email, member_code }
+        })
+      ).catch((err: unknown) => console.error("Error logging to audit_logs:", err));
+    }
+  }).catch((err: unknown) => console.error("Error fetching session for audit_logs:", err));
 
   revalidatePath("/owner/members");
   return { success: true, memberId: memberData.id };
@@ -116,17 +146,27 @@ export async function createMember(formData: FormData) {
 export async function updateMember(id: string, formData: FormData) {
   const supabase = await createClient();
 
+  const isAuthorized = await verifyOwner(supabase);
+  if (!isAuthorized) return { error: "Unauthorized" };
+
   const updates: Record<string, string | null> = {};
-  const allowedKeys = ["name", "email", "phone", "dob", "gender", "address", "emergency_contact_name", "emergency_contact_phone", "primary_goal", "secondary_goal", "fitness_level", "diet_preference", "training_experience", "notes"];
+  const allowedKeys = new Set(["name", "email", "phone", "dob", "gender", "address", "emergency_contact_name", "emergency_contact_phone", "primary_goal", "secondary_goal", "fitness_level", "diet_preference", "training_experience", "notes"]);
   formData.forEach((value, key) => {
-    if (allowedKeys.includes(key)) {
+    if (allowedKeys.has(key)) {
       updates[key] = value ? (value as string) : null;
     }
   });
 
   const photo = formData.get("photo") as File;
   if (photo && photo.size > 0) {
-    const fileExt = photo.name.split('.').pop();
+    const fileExt = photo.name.split('.').pop()?.toLowerCase();
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    if (!fileExt || !allowedExtensions.includes(fileExt)) {
+      return { error: 'Invalid file extension. Only jpg, jpeg, png, webp, and gif are allowed.' };
+    }
+    if (!photo.type.startsWith('image/')) {
+      return { error: 'Invalid file type. Only images are allowed.' };
+    }
     const fileName = `${Math.random()}.${fileExt}`;
     const filePath = `members/${fileName}`;
 
@@ -171,6 +211,9 @@ export async function updateMember(id: string, formData: FormData) {
 export async function archiveMember(id: string) {
   const supabase = await createClient();
 
+  const isAuthorized = await verifyOwner(supabase);
+  if (!isAuthorized) return { error: "Unauthorized" };
+
   const { error } = await supabase
     .from('members')
     .update({ status: 'inactive' })
@@ -199,6 +242,9 @@ export async function archiveMember(id: string) {
 
 export async function addAssessment(memberId: string, formData: FormData) {
   const supabase = await createClient();
+
+  const isAuthorized = await verifyOwner(supabase);
+  if (!isAuthorized) return { error: "Unauthorized" };
 
   const height_cm = parseFloat(formData.get("height_cm") as string);
   const weight_kg = parseFloat(formData.get("weight_kg") as string);
@@ -250,6 +296,9 @@ export async function addAssessment(memberId: string, formData: FormData) {
 
 export async function assignMembership(memberId: string, formData: FormData) {
   const supabase = await createClient();
+
+  const isAuthorized = await verifyOwner(supabase);
+  if (!isAuthorized) return { error: "Unauthorized" };
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
 
@@ -308,6 +357,9 @@ export async function assignMembership(memberId: string, formData: FormData) {
 
 export async function assignTrainer(memberId: string, trainerId: string) {
   const supabase = await createClient();
+
+  const isAuthorized = await verifyOwner(supabase);
+  if (!isAuthorized) return { error: "Unauthorized" };
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
 
@@ -339,6 +391,9 @@ export async function assignTrainer(memberId: string, trainerId: string) {
 
 export async function unassignTrainer(assignmentId: string, memberId: string) {
   const supabase = await createClient();
+
+  const isAuthorized = await verifyOwner(supabase);
+  if (!isAuthorized) return { error: "Unauthorized" };
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
 

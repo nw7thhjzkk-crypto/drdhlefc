@@ -2,26 +2,20 @@
 
 import { createTrainer } from "../actions";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import Link from "next/link";
+import { useFormMutation } from "@/hooks/useFormMutation";
 
 export default function NewTrainerPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(formData: FormData) {
-    setLoading(true);
-    setError(null);
-    const res = await createTrainer(formData);
-
-    if (res.error) {
-      setError(res.error);
-      setLoading(false);
-    } else if (res.success && res.trainerId) {
-      router.push(`/owner/trainers/${res.trainerId}`);
+  const { handleSubmit, isPending: loading, error } = useFormMutation(
+    createTrainer,
+    (res: { trainerId?: string }) => {
+      if (res.trainerId) {
+        router.push(`/owner/trainers/${res.trainerId}`);
+      }
     }
-  }
+  );
 
   return (
     <div className="p-8 max-w-3xl mx-auto">

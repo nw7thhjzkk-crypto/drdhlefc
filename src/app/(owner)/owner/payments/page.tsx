@@ -1,6 +1,20 @@
 import { createClient } from "@/utils/supabase/server";
 import { recordPayment } from "./actions";
 
+interface MembershipPlan {
+  name: string;
+}
+
+interface Membership {
+  id: string;
+  pending_amount: number;
+  membership_plans: MembershipPlan | MembershipPlan[] | null;
+}
+
+interface Member {
+  name: string;
+}
+
 export default async function PaymentsPage() {
   const supabase = await createClient();
 
@@ -51,9 +65,12 @@ export default async function PaymentsPage() {
               <select name="membership_id" required className="mt-1 block w-full border border-gray-300 rounded p-2">
                 <option value="">Select Membership...</option>
                 {membersWithMemberships?.map(m =>
-                  m.memberships?.map((ms: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => (
-                    <option key={ms.id} value={ms.id}>{m.name} - {ms.membership_plans?.name} (${ms.pending_amount} pending)</option>
-                  ))
+                  m.memberships?.map((ms: Membership) => {
+                    const planName = Array.isArray(ms.membership_plans) ? ms.membership_plans[0]?.name : ms.membership_plans?.name;
+                    return (
+                      <option key={ms.id} value={ms.id}>{m.name} - {planName} (${ms.pending_amount} pending)</option>
+                    );
+                  })
                 )}
               </select>
             </div>
@@ -102,8 +119,12 @@ export default async function PaymentsPage() {
                       {new Date(payment.paid_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{(payment.members as any /* eslint-disable-line @typescript-eslint/no-explicit-any */)?.name}</div>
-                      <div className="text-sm text-gray-500">{(payment.memberships as any /* eslint-disable-line @typescript-eslint/no-explicit-any */)?.membership_plans?.name}</div>
+                      <div className="text-sm font-medium text-gray-900">{(payment.members as Member)?.name}</div>
+                      <div className="text-sm text-gray-500">
+                        {Array.isArray((payment.memberships as Membership)?.membership_plans)
+                          ? ((payment.memberships as Membership)?.membership_plans as MembershipPlan[])[0]?.name
+                          : ((payment.memberships as Membership)?.membership_plans as MembershipPlan)?.name}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
                       ${payment.amount}
