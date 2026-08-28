@@ -1,10 +1,11 @@
 import { createClient } from "@/utils/supabase/server";
 import { recordPayment } from "./actions";
+import { QueryData } from "@supabase/supabase-js";
 
 export default async function PaymentsPage() {
   const supabase = await createClient();
 
-  const { data: payments } = await supabase
+  const paymentsQuery = supabase
     .from("payments")
     .select(`
       *,
@@ -12,9 +13,11 @@ export default async function PaymentsPage() {
       memberships (membership_plans (name))
     `)
     .order("paid_at", { ascending: false });
+  type Payments = QueryData<typeof paymentsQuery>;
+  const { data: payments } = await paymentsQuery;
 
   // Get active members for the payment form
-  const { data: membersWithMemberships } = await supabase
+  const membersWithMembershipsQuery = supabase
     .from("members")
     .select(`
       id,
@@ -23,6 +26,8 @@ export default async function PaymentsPage() {
     `)
     .eq("status", "active")
     .eq("memberships.status", "active"); // simplified for now
+  type MembersWithMemberships = QueryData<typeof membersWithMembershipsQuery>;
+  const { data: membersWithMemberships } = await membersWithMembershipsQuery;
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -38,7 +43,7 @@ export default async function PaymentsPage() {
               <label className="block text-sm font-medium text-gray-700">Member</label>
               <select name="member_id" required className="mt-1 block w-full border border-gray-300 rounded p-2">
                 <option value="">Select Member...</option>
-                {membersWithMemberships?.filter(m => m.memberships && m.memberships.length > 0).map(m => (
+                {membersWithMemberships?.filter((m) => m.memberships && m.memberships.length > 0).map((m) => (
                   <option key={m.id} value={m.id}>{m.name}</option>
                 ))}
               </select>
@@ -50,9 +55,9 @@ export default async function PaymentsPage() {
               <label className="block text-sm font-medium text-gray-700">Membership</label>
               <select name="membership_id" required className="mt-1 block w-full border border-gray-300 rounded p-2">
                 <option value="">Select Membership...</option>
-                {membersWithMemberships?.map(m =>
-                  m.memberships?.map((ms: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => (
-                    <option key={ms.id} value={ms.id}>{m.name} - {ms.membership_plans?.name} (${ms.pending_amount} pending)</option>
+                {membersWithMemberships?.map((m: MembersWithMemberships[0]) =>
+                  m.memberships?.map((ms: NonNullable<MembersWithMemberships[0]["memberships"]>[0]) => (
+                    <option key={ms.id} value={ms.id}>{m.name} - {(Array.isArray(ms.membership_plans) ? ms.membership_plans[0] : ms.membership_plans)?.name} (${ms.pending_amount} pending)</option>
                   ))
                 )}
               </select>
@@ -96,14 +101,18 @@ export default async function PaymentsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {payments?.map((payment) => (
+                {payments?.map((payment: Payments[0]) => (
                   <tr key={payment.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(payment.paid_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{(payment.members as any /* eslint-disable-line @typescript-eslint/no-explicit-any */)?.name}</div>
-                      <div className="text-sm text-gray-500">{(payment.memberships as any /* eslint-disable-line @typescript-eslint/no-explicit-any */)?.membership_plans?.name}</div>
+                      <div className="text-sm font-medium text-gray-900">{payment.members?.name}</div>
+                      <div className="text-sm text-gray-500">{(() => {
+                        const ms = Array.isArray(payment.memberships) ? payment.memberships[0] : payment.memberships;
+                        const plan = Array.isArray(ms?.membership_plans) ? ms.membership_plans[0] : ms?.membership_plans;
+                        return plan?.name;
+                      })()}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
                       ${payment.amount}
