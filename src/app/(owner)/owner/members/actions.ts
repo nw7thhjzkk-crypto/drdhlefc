@@ -55,7 +55,8 @@ export async function createMember(formData: FormData) {
     email,
     password: crypto.randomUUID() + 'A1!', // Generate random password
     email_confirm: true,
-    user_metadata: { role: 'member', full_name: name }
+    user_metadata: { full_name: name },
+    app_metadata: { role: 'member' }
   });
 
   if (authError) {

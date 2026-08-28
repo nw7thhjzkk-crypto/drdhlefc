@@ -46,7 +46,8 @@ export async function createTrainer(formData: FormData) {
     email,
     password: crypto.randomUUID() + 'A1!',
     email_confirm: true,
-    user_metadata: { role: 'trainer', full_name: name }
+    user_metadata: { full_name: name },
+    app_metadata: { role: 'trainer' }
   });
 
   if (authError) return { error: authError.message };

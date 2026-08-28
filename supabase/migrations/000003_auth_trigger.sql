@@ -8,7 +8,7 @@ BEGIN
   INSERT INTO public.profiles (id, role, full_name, email)
   VALUES (
     NEW.id,
-    COALESCE((NEW.raw_user_meta_data->>'role')::user_role, 'member'), -- allow role injection via metadata, fallback to member
+    COALESCE((NEW.raw_app_meta_data->>'role')::user_role, 'member'), -- securely read role from app_metadata, fallback to member
     NEW.raw_user_meta_data->>'full_name',
     NEW.email
   );
