@@ -97,17 +97,20 @@ export async function createMember(formData: FormData) {
   }
 
   // 3. Log to audit_logs
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (sessionData?.session?.user) {
-    await supabase.from('audit_logs').insert({
-      actor_profile_id: sessionData.session.user.id,
-      action: 'create_member',
-      entity_type: 'member',
-      entity_id: memberData.id,
-      member_id: memberData.id,
-      details: { name, email, member_code }
-    });
-  }
+  supabase.auth.getSession().then(({ data: sessionData }) => {
+    if (sessionData?.session?.user) {
+      Promise.resolve(
+        supabase.from('audit_logs').insert({
+          actor_profile_id: sessionData.session.user.id,
+          action: 'create_member',
+          entity_type: 'member',
+          entity_id: memberData.id,
+          member_id: memberData.id,
+          details: { name, email, member_code }
+        })
+      ).catch((err: any) => console.error("Error logging to audit_logs:", err));
+    }
+  }).catch((err: any) => console.error("Error fetching session for audit_logs:", err));
 
   revalidatePath("/owner/members");
   return { success: true, memberId: memberData.id };
