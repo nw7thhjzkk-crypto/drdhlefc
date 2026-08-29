@@ -52,7 +52,7 @@ export async function createMember(formData: FormData) {
     if (!photo.type.startsWith('image/')) {
       return { error: 'Invalid file type. Only images are allowed.' };
     }
-    const fileName = `${Math.random()}.${fileExt}`;
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
     const filePath = `members/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
@@ -92,7 +92,7 @@ export async function createMember(formData: FormData) {
   const profile_id = authData.user.id;
 
   // 2. Insert into members table
-  const member_code = `DHL-${Math.floor(1000 + Math.random() * 9000)}`;
+  const member_code = `DHL-${Math.floor(1000 + crypto.getRandomValues(new Uint32Array(1))[0] % 9000)}`;
 
   const { data: memberData, error: memberError } = await supabase
     .from('members')
@@ -167,7 +167,7 @@ export async function updateMember(id: string, formData: FormData) {
     if (!photo.type.startsWith('image/')) {
       return { error: 'Invalid file type. Only images are allowed.' };
     }
-    const fileName = `${Math.random()}.${fileExt}`;
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
     const filePath = `members/${fileName}`;
 
     const { error: uploadError } = await supabase.storage

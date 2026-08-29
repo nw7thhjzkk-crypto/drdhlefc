@@ -45,7 +45,7 @@ export async function createTrainer(formData: FormData) {
     if (!photo.type.startsWith('image/')) {
       return { error: 'Invalid file type. Only images are allowed.' };
     }
-    const fileName = `${Math.random()}.${fileExt}`;
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
     const filePath = `trainers/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
@@ -153,7 +153,7 @@ export async function updateTrainer(id: string, formData: FormData) {
     if (!photo.type.startsWith('image/')) {
       return { error: 'Invalid file type. Only images are allowed.' };
     }
-    const fileName = `${Math.random()}.${fileExt}`;
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
     const filePath = `trainers/${fileName}`;
 
     const { error: uploadError } = await supabase.storage

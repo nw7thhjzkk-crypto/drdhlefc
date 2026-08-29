@@ -17,12 +17,14 @@
     "recharts": "^3.10.1"
   },
   "devDependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.2",
+    "googleapis": "^176.0.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.12",
     "typescript": "^5"
