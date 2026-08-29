@@ -1,7 +1,0 @@
-import subprocess
-
-def run(cmd):
-    return subprocess.run(cmd, shell=True, capture_output=True, text=True).stdout
-
-print("--- ALL REMOTE BRANCHES ---")
-print(run("git ls-remote --heads origin"))
