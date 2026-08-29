@@ -24,3 +24,7 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Premium Black/Gold/Silver Theme */
+body { background-color: #000; color: #C0C0C0; }
+h1, h2, h3 { color: #FFD700; }
