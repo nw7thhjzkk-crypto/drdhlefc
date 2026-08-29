@@ -72,7 +72,7 @@ export default async function MemberHomePage() {
         <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-lg shadow-xl text-center">
           <p className="text-sm font-medium text-zinc-400">Membership</p>
           <p className="mt-2 text-xl font-bold text-zinc-100 mt-4">
-            {membership ? membership.membership_plans?.[0]?.name || (membership.membership_plans as unknown as any)?.name : "Inactive"}
+            {membership ? (Array.isArray(membership.membership_plans) ? membership.membership_plans[0]?.name : (membership.membership_plans as any)?.name) : "Inactive"}
           </p>
           <p className="text-xs text-zinc-500 mt-2">
             {membership ? `Valid until ${new Date(membership.end_date).toLocaleDateString()}` : 'Please contact front desk'}

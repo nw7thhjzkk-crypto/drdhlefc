@@ -20,7 +20,16 @@ export default async function TrainerAttendancePage() {
     .select("members(id, name, member_code)")
     .eq("trainer_id", trainer.id);
 
-  const members = assignments?.map((a: any) => a.members).filter(Boolean) || [];
+  interface AssignedMember {
+      id: string;
+      name: string;
+      member_code: string;
+  }
+
+  const members = assignments?.map((a: { members: AssignedMember | AssignedMember[] | null }) => {
+      if (Array.isArray(a.members)) return a.members[0];
+      return a.members;
+  }).filter(Boolean) as AssignedMember[] || [];
 
   const today = new Date();
   today.setHours(0,0,0,0);
@@ -49,7 +58,7 @@ export default async function TrainerAttendancePage() {
               <label className="block text-sm font-medium text-zinc-400">Member</label>
               <select name="member_id" required className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200">
                 <option value="">Select assigned member</option>
-                {members.map((m: any) => (
+                {members.map((m: AssignedMember) => (
                     <option key={m.id} value={m.id}>{m.name} ({m.member_code})</option>
                 ))}
               </select>

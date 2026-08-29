@@ -34,7 +34,19 @@ export default async function TrainerMembersPage() {
     `)
     .eq("trainer_id", trainer.id);
 
-  const members = assignments?.map((a: any) => a.members).filter(Boolean) || [];
+  interface AssignedMember {
+      id: string;
+      name: string;
+      email: string;
+      phone: string;
+      status: string;
+      primary_goal: string;
+  }
+
+  const members = assignments?.map((a: { members: AssignedMember | AssignedMember[] | null }) => {
+      if (Array.isArray(a.members)) return a.members[0];
+      return a.members;
+  }).filter(Boolean) as AssignedMember[] || [];
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -54,7 +66,7 @@ export default async function TrainerMembersPage() {
             </tr>
           </thead>
           <tbody className="bg-zinc-900 divide-y divide-zinc-800">
-            {members.map((member: any) => (
+            {members.map((member: AssignedMember) => (
               <tr key={member.id} className="hover:bg-zinc-800/50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-zinc-200">{member.name}</div>

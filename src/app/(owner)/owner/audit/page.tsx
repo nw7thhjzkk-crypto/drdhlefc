@@ -27,7 +27,7 @@ export default async function AuditLogPage() {
             </tr>
           </thead>
           <tbody className="bg-zinc-900 divide-y divide-zinc-800">
-            {logs?.map((log: any) => (
+            {logs?.map((log: { id: string; created_at: string; profiles: { full_name: string; role: string; } | null; action: string; entity_type: string; entity_id: string; details: unknown; members: { name: string; } | null; }) => (
               <tr key={log.id} className="hover:bg-zinc-800/50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
                   {new Date(log.created_at).toLocaleString()}
