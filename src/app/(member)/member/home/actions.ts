@@ -3,6 +3,24 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
+import { getGeminiInsights } from "@/utils/gemini";
+
+export async function generateInsights(prompt: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  // Audit log that an insight was generated
+  await supabase.from("audit_logs").insert({
+    actor_profile_id: user.id,
+    action: "GENERATE_INSIGHT",
+    entity_type: "ai_insight",
+    details: { prompt_length: prompt.length }
+  });
+
+  return await getGeminiInsights(prompt);
+}
+
 export async function bookActivity(activity_id: string, member_id: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

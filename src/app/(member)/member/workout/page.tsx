@@ -15,7 +15,7 @@ export default async function MemberWorkoutPage() {
 
   if (!member) return <div>Member profile not found</div>;
 
-  const { data: pendingPlans } = await supabase
+  const pendingPlansQuery = supabase
     .from("member_workout_plans")
     .select(`
         id,
@@ -25,7 +25,7 @@ export default async function MemberWorkoutPage() {
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
-  const { data: activePlans } = await supabase
+  const activePlansQuery = supabase
     .from("member_workout_plans")
     .select(`
         id,
@@ -34,6 +34,38 @@ export default async function MemberWorkoutPage() {
     .eq("member_id", member.id)
     .eq("status", "accepted")
     .order("added_to_routine_at", { ascending: false });
+
+  const [
+    { data: pendingPlansData },
+    { data: activePlansData }
+  ] = await Promise.all([
+    pendingPlansQuery,
+    activePlansQuery
+  ]);
+
+  interface PendingPlan {
+    id: string;
+    workout_plans: { name: string; duration_days: number; goal: string; } | null;
+  }
+
+  interface ActivePlan {
+    id: string;
+    workout_plans: { name: string; duration_days: number; instructions: string; goal: string; } | null;
+  }
+
+  const pendingPlans = pendingPlansData?.map((rec) => {
+    return {
+      id: rec.id,
+      workout_plans: Array.isArray(rec.workout_plans) ? rec.workout_plans[0] : rec.workout_plans
+    }
+  }) as PendingPlan[] || [];
+
+  const activePlans = activePlansData?.map((plan) => {
+    return {
+      id: plan.id,
+      workout_plans: Array.isArray(plan.workout_plans) ? plan.workout_plans[0] : plan.workout_plans
+    }
+  }) as ActivePlan[] || [];
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -45,7 +77,7 @@ export default async function MemberWorkoutPage() {
         <div className="bg-yellow-900/20 border border-yellow-700/50 p-6 rounded-lg shadow-xl mb-8">
             <h2 className="text-lg font-semibold text-yellow-500 mb-4">New Recommendations</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {pendingPlans.map((rec: any) => (
+                {pendingPlans.map((rec) => (
                     <div key={rec.id} className="bg-zinc-950 border border-zinc-800 p-4 rounded-lg flex justify-between items-center">
                         <div>
                             <p className="font-bold text-zinc-200">{rec.workout_plans?.name}</p>
@@ -69,7 +101,7 @@ export default async function MemberWorkoutPage() {
         <h2 className="text-lg font-semibold text-zinc-100 mb-4 border-b border-zinc-800 pb-2">Active Workout Routine</h2>
         {activePlans && activePlans.length > 0 ? (
             <div className="space-y-6">
-                {activePlans.map((plan: any) => (
+                {activePlans.map((plan) => (
                     <div key={plan.id} className="bg-zinc-950 border border-zinc-800 p-6 rounded-lg">
                         <div className="flex justify-between items-start mb-4">
                             <h3 className="text-xl font-bold text-yellow-500">{plan.workout_plans?.name}</h3>

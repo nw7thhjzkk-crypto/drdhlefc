@@ -15,7 +15,7 @@ export default async function MemberDietPage() {
 
   if (!member) return <div>Member profile not found</div>;
 
-  const { data: pendingPlans } = await supabase
+  const pendingPlansQuery = supabase
     .from("member_diet_plans")
     .select(`
         id,
@@ -25,7 +25,7 @@ export default async function MemberDietPage() {
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
-  const { data: activePlans } = await supabase
+  const activePlansQuery = supabase
     .from("member_diet_plans")
     .select(`
         id,
@@ -34,6 +34,38 @@ export default async function MemberDietPage() {
     .eq("member_id", member.id)
     .eq("status", "accepted")
     .order("added_to_routine_at", { ascending: false });
+
+  const [
+    { data: pendingPlansData },
+    { data: activePlansData }
+  ] = await Promise.all([
+    pendingPlansQuery,
+    activePlansQuery
+  ]);
+
+  interface PendingPlan {
+    id: string;
+    diet_plans: { name: string; target_calories: number; duration_days: number; goal: string; } | null;
+  }
+
+  interface ActivePlan {
+    id: string;
+    diet_plans: { name: string; target_calories: number; protein_g: number; carbs_g: number; fat_g: number; instructions: string; } | null;
+  }
+
+  const pendingPlans = pendingPlansData?.map((rec) => {
+    return {
+      id: rec.id,
+      diet_plans: Array.isArray(rec.diet_plans) ? rec.diet_plans[0] : rec.diet_plans
+    }
+  }) as PendingPlan[] || [];
+
+  const activePlans = activePlansData?.map((plan) => {
+    return {
+      id: plan.id,
+      diet_plans: Array.isArray(plan.diet_plans) ? plan.diet_plans[0] : plan.diet_plans
+    }
+  }) as ActivePlan[] || [];
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -45,7 +77,7 @@ export default async function MemberDietPage() {
         <div className="bg-yellow-900/20 border border-yellow-700/50 p-6 rounded-lg shadow-xl mb-8">
             <h2 className="text-lg font-semibold text-yellow-500 mb-4">New Recommendations</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {pendingPlans.map((rec: any) => (
+                {pendingPlans.map((rec) => (
                     <div key={rec.id} className="bg-zinc-950 border border-zinc-800 p-4 rounded-lg flex justify-between items-center">
                         <div>
                             <p className="font-bold text-zinc-200">{rec.diet_plans?.name}</p>
@@ -69,7 +101,7 @@ export default async function MemberDietPage() {
         <h2 className="text-lg font-semibold text-zinc-100 mb-4 border-b border-zinc-800 pb-2">Active Diet Routine</h2>
         {activePlans && activePlans.length > 0 ? (
             <div className="space-y-6">
-                {activePlans.map((plan: any) => (
+                {activePlans.map((plan) => (
                     <div key={plan.id} className="bg-zinc-950 border border-zinc-800 p-6 rounded-lg">
                         <h3 className="text-xl font-bold text-yellow-500 mb-2">{plan.diet_plans?.name}</h3>
                         <div className="grid grid-cols-4 gap-4 mb-4">
