@@ -1,31 +1,23 @@
 import { createClient } from "@/utils/supabase/server";
-import { logout } from "@/app/auth/logout/actions";
 import Link from "next/link";
-import DashboardCharts from "./DashboardCharts"; // Client component for charts
+import DashboardCharts from "./DashboardCharts";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Dashboard" };
 
 export default async function OwnerDashboard() {
   const supabase = await createClient();
 
-  // Date calculations (Moved up for query parameters)
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr          = today.toISOString().split("T")[0];
+  const tomorrowStr       = new Date(today.getTime() + 86400000).toISOString().split("T")[0];
+  const thirtyDaysStr     = new Date(today.getTime() + 30 * 86400000).toISOString().split("T")[0];
+  const sevenDaysStr      = new Date(today.getTime() + 7  * 86400000).toISOString().split("T")[0];
+  const firstDayOfMonth   = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
+  const firstDayOfYear    = new Date(today.getFullYear(), 0, 1).toISOString().split("T")[0];
+  const sixMonthsAgo      = new Date(today.getFullYear(), today.getMonth() - 5, 1).toISOString().split("T")[0];
+  const currentMonthNum   = today.getMonth() + 1;
 
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split('T')[0];
-
-  const thirtyDaysFromNow = new Date(today);
-  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-  const thirtyDaysStr = thirtyDaysFromNow.toISOString().split('T')[0];
-
-  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-  const firstDayOfYear = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
-  const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 5, 1);
-  const sixMonthsAgoStr = sixMonthsAgo.toISOString().split('T')[0];
-
-  const currentMonthNum = today.getMonth() + 1; // 1-12
-
-  // Execute all database queries in parallel
   const [
     { count: totalMembers },
     { count: activeMembers },
@@ -37,7 +29,11 @@ export default async function OwnerDashboard() {
     { data: genderData },
     { data: expiringMemberships },
     { count: expiredMemberships },
-    { data: membersWithDob }
+    { data: membersWithDob },
+    { count: todayAttendance },
+    { count: openLeads },
+    { data: lowStockProducts },
+    { count: newLeadsThisMonth },
   ] = await Promise.all([
     supabase.from("members").select("*", { count: "exact", head: true }),
     supabase.from("members").select("*", { count: "exact", head: true }).eq("status", "active"),
@@ -49,169 +45,318 @@ export default async function OwnerDashboard() {
     supabase.from("members").select("gender").eq("status", "active"),
     supabase
       .from("memberships")
-      .select(`
-        id, end_date, members(id, name, member_code), membership_plans(name)
-      `)
+      .select("id, end_date, members(id, name, member_code), membership_plans(name)")
       .eq("status", "active")
       .gte("end_date", todayStr)
       .lte("end_date", thirtyDaysStr)
       .order("end_date", { ascending: true })
-      .limit(10),
+      .limit(8),
     supabase
       .from("memberships")
       .select("*", { count: "exact", head: true })
       .eq("status", "expired")
       .lt("end_date", todayStr),
-    supabase.from("members").select("id, name, dob").eq("status", "active").not("dob", "is", null)
+    supabase.from("members").select("id, name, dob").eq("status", "active").not("dob", "is", null),
+    supabase
+      .from("attendance")
+      .select("*", { count: "exact", head: true })
+      .gte("occurred_at", todayStr)
+      .lt("occurred_at", tomorrowStr),
+    supabase
+      .from("leads")
+      .select("*", { count: "exact", head: true })
+      .in("stage", ["new", "contacted", "follow-up", "trial"]),
+    supabase
+      .from("products")
+      .select("id, name, stock_quantity, minimum_stock")
+      .eq("status", "active")
+      .filter("stock_quantity", "lte", "minimum_stock")
+      .limit(5),
+    supabase
+      .from("leads")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", firstDayOfMonth),
   ]);
 
-  // Data manipulations
-  const todaysCollection = todayPayments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
-  const monthlyCollection = monthPayments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
-  const yearlyCollection = yearPayments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+  // Aggregations
+  const todaysCollection  = todayPayments?.reduce((s, p) => s + Number(p.amount), 0) ?? 0;
+  const monthlyCollection = monthPayments?.reduce((s, p) => s + Number(p.amount), 0) ?? 0;
+  const yearlyCollection  = yearPayments?.reduce((s, p) => s + Number(p.amount), 0) ?? 0;
+  const totalPending      = pendingMemberships?.reduce((s, m) => s + Number(m.pending_amount), 0) ?? 0;
 
-  const totalPending = pendingMemberships?.reduce((sum, m) => sum + Number(m.pending_amount), 0) || 0;
-
+  // Gender breakdown for chart
   const genderCount: Record<string, number> = { Male: 0, Female: 0, Other: 0 };
-  genderData?.forEach(m => {
-    if (m.gender && genderCount[m.gender] !== undefined) genderCount[m.gender]++;
-    else if (m.gender) genderCount["Other"]++;
+  genderData?.forEach((m) => {
+    const g = m.gender as string | null;
+    if (g === "Male" || g === "Female") genderCount[g]++;
+    else if (g) genderCount["Other"]++;
   });
-  const chartGenderData = Object.keys(genderCount).map(k => ({ name: k, value: genderCount[k] }));
+  const chartGenderData = Object.entries(genderCount).map(([name, value]) => ({ name, value }));
 
-  // Monthly revenue trend for the last 6 months
+  // 6-month revenue trend
   const { data: recentPayments } = await supabase
     .from("payments")
     .select("amount, paid_at")
-    .gte("paid_at", sixMonthsAgoStr)
+    .gte("paid_at", sixMonthsAgo)
     .lt("paid_at", tomorrowStr);
 
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const monthlyRevenueMap: Record<string, number> = {};
-
-  // Initialize last 6 months with 0
+  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const revenueMap: Record<string, number> = {};
   for (let i = 5; i >= 0; i--) {
     const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-    const monthName = monthNames[d.getMonth()];
-    const yearStr = d.getFullYear().toString().slice(-2);
-    monthlyRevenueMap[`${monthName} '${yearStr}`] = 0;
+    revenueMap[`${monthNames[d.getMonth()]} '${String(d.getFullYear()).slice(-2)}`] = 0;
   }
-
-  recentPayments?.forEach(p => {
+  recentPayments?.forEach((p) => {
     if (p.paid_at) {
-      const d = new Date(p.paid_at);
-      const monthName = monthNames[d.getMonth()];
-      const yearStr = d.getFullYear().toString().slice(-2);
-      const key = `${monthName} '${yearStr}`;
-      if (monthlyRevenueMap[key] !== undefined) {
-        monthlyRevenueMap[key] += Number(p.amount);
-      }
+      const d   = new Date(p.paid_at);
+      const key = `${monthNames[d.getMonth()]} '${String(d.getFullYear()).slice(-2)}`;
+      if (key in revenueMap) revenueMap[key] += Number(p.amount);
     }
   });
-
-  const chartRevenueData = Object.keys(monthlyRevenueMap).map(k => ({
-    name: k,
-    revenue: monthlyRevenueMap[k]
-  }));
+  const chartRevenueData = Object.entries(revenueMap).map(([name, revenue]) => ({ name, revenue }));
 
   // Birthdays this month
-  // Supabase doesn't have a direct EXTRACT(MONTH) function easily available in JS client without RPC,
-  // so we'll fetch active members with DOB and filter in memory for scaffolding.
-  const birthdaysThisMonth = membersWithDob?.filter(m => {
+  const birthdaysThisMonth = (membersWithDob ?? []).filter((m) => {
     if (!m.dob) return false;
-    const dobMonth = new Date(m.dob).getMonth() + 1;
-    return dobMonth === currentMonthNum;
-  }) || [];
+    return new Date(m.dob).getMonth() + 1 === currentMonthNum;
+  });
+
+  const fmt = (n: number) =>
+    n.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-
-        <div className="flex justify-between items-center bg-white p-6 rounded-lg shadow-sm">
-          <h1 className="text-2xl font-bold text-gray-900">Owner Dashboard</h1>
-          <form action={logout}>
-            <button type="submit" className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 text-sm font-medium">
-              Logout
-            </button>
-          </form>
+    <div>
+      {/* Page header */}
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Dashboard</h1>
+          <p className="page-subtitle">
+            {today.toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+          </p>
         </div>
+        <Link href="/owner/members/new" className="btn btn-primary btn-sm">
+          + New Member
+        </Link>
+      </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">
-            <p className="text-sm font-medium text-gray-500 mb-1">Total Members</p>
-            <p className="text-3xl font-bold text-gray-900">{totalMembers}</p>
-            <p className="text-xs text-green-600 mt-2">{activeMembers} Active / <span className="text-red-500">{inactiveMembers} Inactive</span></p>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-green-500">
-            <p className="text-sm font-medium text-gray-500 mb-1">Today&apos;s Collection</p>
-            <p className="text-3xl font-bold text-gray-900">${todaysCollection.toFixed(2)}</p>
-            <p className="text-xs text-gray-500 mt-2">${monthlyCollection.toFixed(2)} this month / ${yearlyCollection.toFixed(2)} this year</p>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-yellow-500">
-            <p className="text-sm font-medium text-gray-500 mb-1">Upcoming Renewals (30d)</p>
-            <p className="text-3xl font-bold text-gray-900">{expiringMemberships?.length || 0}</p>
-            <p className="text-xs text-red-500 mt-2">{expiredMemberships} currently expired</p>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-purple-500">
-            <p className="text-sm font-medium text-gray-500 mb-1">Pending Receivables</p>
-            <p className="text-3xl font-bold text-gray-900">${totalPending.toFixed(2)}</p>
-          </div>
-        </div>
+      {/* KPI row */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+        <StatCard label="Active Members"     value={String(activeMembers ?? 0)}  sub={`${totalMembers ?? 0} total · ${inactiveMembers ?? 0} inactive`} accent="#3B82F6" />
+        <StatCard label="Today's Collection" value={`₹${fmt(todaysCollection)}`} sub={`₹${fmt(monthlyCollection)} this month`}                          accent="#22C55E" />
+        <StatCard label="Pending Dues"       value={`₹${fmt(totalPending)}`}     sub="across all memberships"                                           accent="#EAB308" />
+        <StatCard label="Today's Attendance" value={String(todayAttendance ?? 0)} sub="check-ins today"                                                  accent="#8B5CF6" />
+        <StatCard label="Expiring (30 days)" value={String(expiringMemberships?.length ?? 0)} sub={`${expiredMemberships ?? 0} already expired`}         accent="#EF4444" />
+        <StatCard label="Open Leads"         value={String(openLeads ?? 0)}      sub={`${newLeadsThisMonth ?? 0} new this month`}                        accent="#F97316" />
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Main grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "1.5rem", alignItems: "start" }}>
 
-          {/* Charts */}
-          <div className="lg:col-span-2 space-y-8">
-             <div className="bg-white p-6 rounded-lg shadow-sm">
-                <h2 className="text-lg font-semibold mb-4 text-gray-800">Analytics</h2>
-                <DashboardCharts genderData={chartGenderData} revenueData={chartRevenueData} />
-             </div>
-          </div>
-
-          {/* Lists */}
-          <div className="space-y-8">
-
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h2 className="text-lg font-semibold mb-4 text-gray-800">Expiring Memberships (30 days)</h2>
-              {expiringMemberships && expiringMemberships.length > 0 ? (
-                <ul className="divide-y divide-gray-100">
-                  {expiringMemberships.map((membership: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => (
-                    <li key={membership.id} className="py-3">
-                      <Link href={`/owner/members/${membership.members?.id}`} className="block hover:bg-gray-50 rounded px-2 -mx-2">
-                        <p className="text-sm font-medium text-gray-900">{membership.members?.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {membership.membership_plans?.name} • Exps: <span className="text-red-600 font-semibold">{membership.end_date}</span>
-                        </p>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-gray-500">No upcoming expirations (next 30 days).</p>
-              )}
+        {/* Left — charts */}
+        <div>
+          <div className="card" style={{ marginBottom: "1.5rem" }}>
+            <div className="card-header">
+              <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>Revenue & Members — 6 Months</h2>
             </div>
+            <div className="card-body">
+              <DashboardCharts genderData={chartGenderData} revenueData={chartRevenueData} />
+            </div>
+          </div>
 
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h2 className="text-lg font-semibold mb-4 text-gray-800">Birthdays This Month</h2>
+          {/* Low stock alert */}
+          {(lowStockProducts?.length ?? 0) > 0 && (
+            <div className="alert alert-warning" style={{ marginBottom: "1.5rem" }}>
+              <span>⚠️</span>
+              <span>
+                <strong>Low stock alert:</strong>{" "}
+                {lowStockProducts!.map((p) => `${p.name} (${p.stock_quantity})`).join(", ")}.{" "}
+                <Link href="/owner/store" style={{ fontWeight: 700, textDecoration: "underline" }}>View store →</Link>
+              </span>
+            </div>
+          )}
+
+          {/* Expiring memberships table */}
+          <div className="card">
+            <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>Memberships Expiring — Next 30 Days</h2>
+              <Link href="/owner/members" className="btn btn-ghost btn-sm">View all</Link>
+            </div>
+            {expiringMemberships && expiringMemberships.length > 0 ? (
+              <div className="table-wrapper" style={{ border: "none", borderRadius: 0 }}>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Member</th>
+                      <th>Plan</th>
+                      <th>Expires</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(expiringMemberships as ExpiringMembership[]).map((m) => {
+                      const daysLeft = Math.ceil(
+                        (new Date(m.end_date).getTime() - today.getTime()) / 86400000
+                      );
+                      return (
+                        <tr key={m.id}>
+                          <td>
+                            <div style={{ fontWeight: 600 }}>{m.members?.name ?? "—"}</div>
+                            <div style={{ fontSize: "0.75rem", color: "#9CA3AF" }}>{m.members?.member_code}</div>
+                          </td>
+                          <td style={{ fontSize: "0.875rem" }}>{m.membership_plans?.name ?? "—"}</td>
+                          <td>
+                            <span className={`badge ${daysLeft <= 7 ? "badge-danger" : "badge-warning"}`}>
+                              {m.end_date} ({daysLeft}d)
+                            </span>
+                          </td>
+                          <td>
+                            <Link href={`/owner/members/${m.members?.id}`} className="btn btn-ghost btn-sm">
+                              View
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="card-body">
+                <div className="empty-state" style={{ padding: "1.5rem" }}>
+                  <div className="empty-state-title">No expiring memberships in the next 30 days</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right column */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+
+          {/* Quick nav */}
+          <div className="card">
+            <div className="card-header">
+              <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>Quick Actions</h2>
+            </div>
+            <div className="card-body" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+              {[
+                { href: "/owner/members/new",    label: "New Member",   icon: "👤" },
+                { href: "/owner/payments",        label: "Payments",     icon: "💳" },
+                { href: "/owner/leads",           label: "Leads",        icon: "📞" },
+                { href: "/owner/activities",      label: "Activities",   icon: "🗓️" },
+                { href: "/owner/store",           label: "POS",          icon: "🛒" },
+                { href: "/owner/audit",           label: "Audit Logs",   icon: "🔍" },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    padding: "0.75rem 0.5rem",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--color-surface-border)",
+                    textAlign: "center",
+                    fontSize: "0.75rem",
+                    fontWeight: 600,
+                    color: "#374151",
+                    textDecoration: "none",
+                    gap: "0.25rem",
+                    transition: "all 150ms",
+                  }}
+                  className="btn-ghost"
+                >
+                  <span style={{ fontSize: "1.25rem" }}>{item.icon}</span>
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Birthdays */}
+          <div className="card">
+            <div className="card-header">
+              <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>🎂 Birthdays This Month</h2>
+            </div>
+            <div className="card-body" style={{ padding: "0.75rem 1.25rem" }}>
               {birthdaysThisMonth.length > 0 ? (
-                <ul className="divide-y divide-gray-100">
-                  {birthdaysThisMonth.map(member => (
-                    <li key={member.id} className="py-2 flex justify-between items-center text-sm">
-                      <span className="font-medium text-gray-900">{member.name}</span>
-                      <span className="text-gray-500">{new Date(member.dob).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
+                  {birthdaysThisMonth.map((m) => (
+                    <li key={m.id} style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0", borderBottom: "1px solid #F3F4F6", fontSize: "0.875rem" }}>
+                      <span style={{ fontWeight: 600 }}>{m.name}</span>
+                      <span style={{ color: "#9CA3AF" }}>
+                        {new Date(m.dob!).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
+                      </span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-gray-500">No birthdays this month.</p>
+                <p style={{ fontSize: "0.875rem", color: "#9CA3AF", textAlign: "center", padding: "0.5rem 0" }}>
+                  No birthdays this month.
+                </p>
               )}
             </div>
-
           </div>
-        </div>
 
+          {/* Revenue summary */}
+          <div className="card">
+            <div className="card-header">
+              <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>Revenue Summary</h2>
+            </div>
+            <div className="card-body" style={{ padding: "0.75rem 1.25rem" }}>
+              {[
+                { label: "Today",      value: `₹${fmt(todaysCollection)}`  },
+                { label: "This Month", value: `₹${fmt(monthlyCollection)}` },
+                { label: "This Year",  value: `₹${fmt(yearlyCollection)}`  },
+              ].map(({ label, value }) => (
+                <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0", borderBottom: "1px solid #F3F4F6", fontSize: "0.875rem" }}>
+                  <span style={{ color: "#6B7280" }}>{label}</span>
+                  <span style={{ fontWeight: 700, color: "#111827" }}>{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function StatCard({
+  label,
+  value,
+  sub,
+  accent,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  accent: string;
+}) {
+  return (
+    <div
+      className="stat-card"
+      style={{ borderLeft: `4px solid ${accent}` }}
+    >
+      <div className="stat-card-label">{label}</div>
+      <div className="stat-card-value" style={{ color: "#111827" }}>{value}</div>
+      {sub && <div className="stat-card-sub">{sub}</div>}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+interface ExpiringMembership {
+  id: string;
+  end_date: string;
+  members: { id: string; name: string; member_code: string } | null;
+  membership_plans: { name: string } | null;
 }

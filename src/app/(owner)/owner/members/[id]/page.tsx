@@ -237,12 +237,9 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
                   <input name="start_date" type="date" required className="mt-1 block w-full border border-gray-300 rounded p-2" />
                 </div>
                 <div>
-                  <label className="block text-gray-700">Total Amount</label>
-                  <input name="total_amount" type="number" step="0.01" required className="mt-1 block w-full border border-gray-300 rounded p-2" />
-                </div>
-                <div>
-                  <label className="block text-gray-700">Paid Amount (Initial)</label>
-                  <input name="paid_amount" type="number" step="0.01" defaultValue="0" className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                  <label className="block text-gray-700">Paid Amount (Initial deposit)</label>
+                  <p className="text-xs text-gray-400 mb-1">Total amount is derived from the plan price. Enter 0 if paying later.</p>
+                  <input name="paid_amount" type="number" step="0.01" min="0" defaultValue="0" className="mt-1 block w-full border border-gray-300 rounded p-2" />
                 </div>
                 <button type="submit" className="w-full bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">
                   Assign Plan

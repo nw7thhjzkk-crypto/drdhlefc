@@ -1,0 +1,50 @@
+{
+  "name": "DR DHL Elite Fitness Club",
+  "short_name": "DR DHL Fitness",
+  "description": "Premium gym management platform for members, trainers, and owners.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0A0A0A",
+  "theme_color": "#0A0A0A",
+  "categories": ["health", "fitness", "sports"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "url": "/owner/dashboard",
+      "description": "Owner ERP dashboard"
+    },
+    {
+      "name": "My Members",
+      "short_name": "Members",
+      "url": "/trainer/members",
+      "description": "Trainer member list"
+    },
+    {
+      "name": "My Home",
+      "short_name": "Home",
+      "url": "/member/home",
+      "description": "Member home screen"
+    }
+  ]
+}

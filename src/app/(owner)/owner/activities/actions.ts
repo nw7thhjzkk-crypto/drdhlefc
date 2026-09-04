@@ -19,7 +19,7 @@ export async function createActivity(formData: FormData) {
   const { error, data } = await supabase.from("group_activities").insert({
     name,
     description,
-    trainer_id: trainer_id ? trainer_id : null,
+    trainer_id: trainer_id || null,
     start_at: new Date(start_at).toISOString(),
     duration_minutes,
     location,
@@ -29,12 +29,12 @@ export async function createActivity(formData: FormData) {
 
   if (error) throw new Error(error.message);
 
-  await supabase.from("audit_logs").insert({
-    actor_profile_id: user.id,
-    action: "CREATE",
-    entity_type: "group_activity",
-    entity_id: data.id,
-    details: { name }
+  await supabase.rpc("insert_audit_log", {
+    p_action: "CREATE_ACTIVITY",
+    p_entity_type: "group_activity",
+    p_entity_id: data.id,
+    p_member_id: null,
+    p_details: { name },
   });
 
   revalidatePath("/owner/activities");
@@ -52,11 +52,12 @@ export async function cancelActivity(id: string) {
 
   if (error) throw new Error(error.message);
 
-  await supabase.from("audit_logs").insert({
-    actor_profile_id: user.id,
-    action: "CANCEL",
-    entity_type: "group_activity",
-    entity_id: id
+  await supabase.rpc("insert_audit_log", {
+    p_action: "CANCEL_ACTIVITY",
+    p_entity_type: "group_activity",
+    p_entity_id: id,
+    p_member_id: null,
+    p_details: null,
   });
 
   revalidatePath("/owner/activities");

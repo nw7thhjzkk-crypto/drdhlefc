@@ -11,21 +11,19 @@ export async function acceptWorkoutPlan(id: string) {
   const { error } = await supabase
     .from("member_workout_plans")
     .update({
-        status: "accepted",
-        added_to_routine_at: new Date().toISOString()
+      status: "accepted",
+      added_to_routine_at: new Date().toISOString(),
     })
     .eq("id", id);
 
-  if (error) {
-    console.error("Error accepting workout plan:", error);
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 
-  await supabase.from("audit_logs").insert({
-    actor_profile_id: user.id,
-    action: "ACCEPT_RECOMMENDATION",
-    entity_type: "member_workout_plan",
-    entity_id: id
+  await supabase.rpc("insert_audit_log", {
+    p_action: "ACCEPT_WORKOUT_RECOMMENDATION",
+    p_entity_type: "member_workout_plan",
+    p_entity_id: id,
+    p_member_id: null,
+    p_details: null,
   });
 
   revalidatePath("/member/workout");
@@ -43,11 +41,12 @@ export async function declineWorkoutPlan(id: string) {
 
   if (error) throw new Error(error.message);
 
-  await supabase.from("audit_logs").insert({
-    actor_profile_id: user.id,
-    action: "DECLINE_RECOMMENDATION",
-    entity_type: "member_workout_plan",
-    entity_id: id
+  await supabase.rpc("insert_audit_log", {
+    p_action: "DECLINE_WORKOUT_RECOMMENDATION",
+    p_entity_type: "member_workout_plan",
+    p_entity_id: id,
+    p_member_id: null,
+    p_details: null,
   });
 
   revalidatePath("/member/workout");

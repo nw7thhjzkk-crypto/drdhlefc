@@ -8,83 +8,81 @@ export async function createProduct(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const name = formData.get("name") as string;
-  const sku = formData.get("sku") as string;
-  const selling_price = parseFloat(formData.get("selling_price") as string);
-  const stock_quantity = parseInt(formData.get("stock_quantity") as string, 10);
-  const minimum_stock = parseInt(formData.get("minimum_stock") as string, 10);
+  const name          = formData.get("name")          as string;
+  const sku           = formData.get("sku")           as string;
+  const category      = formData.get("category")      as string;
+  const supplier      = formData.get("supplier")      as string;
+  const purchase_price  = parseFloat(formData.get("purchase_price")  as string) || 0;
+  const selling_price   = parseFloat(formData.get("selling_price")   as string);
+  const stock_quantity  = parseInt(formData.get("stock_quantity")    as string, 10);
+  const minimum_stock   = parseInt(formData.get("minimum_stock")     as string, 10);
 
-  const { error } = await supabase.from("products").insert({
-    name,
-    sku,
-    selling_price,
-    stock_quantity,
-    minimum_stock,
-    status: "active"
+  const { data, error } = await supabase
+    .from("products")
+    .insert({
+      name,
+      sku: sku || null,
+      category: category || null,
+      supplier: supplier || null,
+      purchase_price,
+      selling_price,
+      stock_quantity,
+      minimum_stock,
+      status: "active",
+    })
+    .select("id")
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  await supabase.rpc("insert_audit_log", {
+    p_action:      "CREATE_PRODUCT",
+    p_entity_type: "product",
+    p_entity_id:   data.id,
+    p_member_id:   null,
+    p_details:     { name, sku, selling_price, stock_quantity },
   });
-
-  if (error) {
-    console.error("Error creating product:", error);
-    throw new Error(error.message);
-  }
 
   revalidatePath("/owner/store");
 }
 
+/**
+ * Process a POS sale atomically.
+ *
+ * Security:
+ * - Delegates entirely to the SECURITY DEFINER RPC checkout_store_sale(),
+ *   which: fetches authoritative server-side prices, locks product rows
+ *   FOR UPDATE, checks stock, inserts the sale + items, decrements stock,
+ *   and writes the audit log — all in one transaction.
+ * - Client cannot override selling_price or inject arbitrary totals.
+ * - Concurrent checkouts cannot corrupt stock due to row-level locking.
+ */
 export async function processSale(formData: FormData) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const member_id = formData.get("member_id") as string;
-  const product_id = formData.get("product_id") as string;
-  const quantity = parseInt(formData.get("quantity") as string, 10);
+  const member_id    = (formData.get("member_id")    as string) || null;
+  const product_id   = formData.get("product_id")   as string;
+  const quantity_raw = formData.get("quantity")      as string;
+  const payment_method = (formData.get("payment_method") as string) || "cash";
 
-  // 1. Fetch product price and verify stock
-  const { data: product } = await supabase
-    .from("products")
-    .select("selling_price, stock_quantity")
-    .eq("id", product_id)
-    .single();
+  const quantity = parseInt(quantity_raw, 10);
+  if (!product_id || isNaN(quantity) || quantity < 1) {
+    throw new Error("product_id and a positive quantity are required");
+  }
 
-  if (!product) throw new Error("Product not found");
-  if (product.stock_quantity < quantity) throw new Error("Insufficient stock");
+  // Build line items array for the RPC (supports multi-item future extension)
+  const items = [{ product_id, quantity }];
 
-  const total_amount = product.selling_price * quantity;
-
-  // 2. Create Sale
-  const { data: sale, error: saleError } = await supabase.from("store_sales").insert({
-    member_id: member_id ? member_id : null,
-    total_amount,
-    paid_amount: total_amount,
-    payment_method: "Cash",
-    created_by: user.id
-  }).select().single();
-
-  if (saleError) throw new Error(saleError.message);
-
-  // 3. Create Sale Item
-  await supabase.from("store_sale_items").insert({
-    sale_id: sale.id,
-    product_id,
-    quantity,
-    unit_price: product.selling_price,
-    amount: total_amount
+  const { data: sale_id, error } = await supabase.rpc("checkout_store_sale", {
+    p_member_id:      member_id,
+    p_items:          items,
+    p_payment_method: payment_method,
   });
 
-  // 4. Decrement Stock
-  await supabase.from("products").update({
-    stock_quantity: product.stock_quantity - quantity
-  }).eq("id", product_id);
-
-  // 5. Audit Log
-  await supabase.from("audit_logs").insert({
-    actor_profile_id: user.id,
-    action: "STORE_SALE",
-    entity_type: "store_sale",
-    entity_id: sale.id,
-    details: { total: total_amount }
-  });
+  if (error) throw new Error(error.message);
 
   revalidatePath("/owner/store");
+  return { success: true, sale_id };
 }
