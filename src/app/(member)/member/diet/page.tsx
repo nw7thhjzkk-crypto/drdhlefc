@@ -1,6 +1,28 @@
 import { createClient } from "@/utils/supabase/server";
 import { acceptDietPlan, declineDietPlan } from "./actions";
 
+type DietPlanSummary = {
+  name: string | null;
+  target_calories?: number | null;
+  duration_days?: number | null;
+  goal?: string | null;
+  protein_g?: number | null;
+  carbs_g?: number | null;
+  fat_g?: number | null;
+  instructions?: string | null;
+};
+
+type MemberDietPlanRow = {
+  id: string;
+  diet_plans: DietPlanSummary | DietPlanSummary[] | null;
+};
+
+function asSingle<T>(value: T | T[] | null | undefined): T | null {
+  if (value == null) return null;
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+}
+
+
 export default async function MemberDietPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -45,11 +67,11 @@ export default async function MemberDietPage() {
         <div className="bg-yellow-900/20 border border-yellow-700/50 p-6 rounded-lg shadow-xl mb-8">
             <h2 className="text-lg font-semibold text-yellow-500 mb-4">New Recommendations</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {pendingPlans.map((rec: any) => (
+                {pendingPlans.map((rec: MemberDietPlanRow) => (
                     <div key={rec.id} className="bg-zinc-950 border border-zinc-800 p-4 rounded-lg flex justify-between items-center">
                         <div>
-                            <p className="font-bold text-zinc-200">{rec.diet_plans?.name}</p>
-                            <p className="text-xs text-zinc-500">{rec.diet_plans?.target_calories} kcal | Goal: {rec.diet_plans?.goal}</p>
+                            <p className="font-bold text-zinc-200">{asSingle(rec.diet_plans)?.name}</p>
+                            <p className="text-xs text-zinc-500">{asSingle(rec.diet_plans)?.target_calories} kcal | Goal: {asSingle(rec.diet_plans)?.goal}</p>
                         </div>
                         <div className="flex space-x-2">
                             <form action={async () => { "use server"; await acceptDietPlan(rec.id); }}>
@@ -69,30 +91,30 @@ export default async function MemberDietPage() {
         <h2 className="text-lg font-semibold text-zinc-100 mb-4 border-b border-zinc-800 pb-2">Active Diet Routine</h2>
         {activePlans && activePlans.length > 0 ? (
             <div className="space-y-6">
-                {activePlans.map((plan: any) => (
+                {activePlans.map((plan: MemberDietPlanRow) => (
                     <div key={plan.id} className="bg-zinc-950 border border-zinc-800 p-6 rounded-lg">
-                        <h3 className="text-xl font-bold text-yellow-500 mb-2">{plan.diet_plans?.name}</h3>
+                        <h3 className="text-xl font-bold text-yellow-500 mb-2">{asSingle(plan.diet_plans)?.name}</h3>
                         <div className="grid grid-cols-4 gap-4 mb-4">
                             <div className="text-center p-2 bg-zinc-900 rounded">
                                 <p className="text-xs text-zinc-500">Calories</p>
-                                <p className="font-bold text-zinc-200">{plan.diet_plans?.target_calories}</p>
+                                <p className="font-bold text-zinc-200">{asSingle(plan.diet_plans)?.target_calories}</p>
                             </div>
                             <div className="text-center p-2 bg-zinc-900 rounded">
                                 <p className="text-xs text-zinc-500">Protein</p>
-                                <p className="font-bold text-zinc-200">{plan.diet_plans?.protein_g}g</p>
+                                <p className="font-bold text-zinc-200">{asSingle(plan.diet_plans)?.protein_g}g</p>
                             </div>
                             <div className="text-center p-2 bg-zinc-900 rounded">
                                 <p className="text-xs text-zinc-500">Carbs</p>
-                                <p className="font-bold text-zinc-200">{plan.diet_plans?.carbs_g}g</p>
+                                <p className="font-bold text-zinc-200">{asSingle(plan.diet_plans)?.carbs_g}g</p>
                             </div>
                             <div className="text-center p-2 bg-zinc-900 rounded">
                                 <p className="text-xs text-zinc-500">Fat</p>
-                                <p className="font-bold text-zinc-200">{plan.diet_plans?.fat_g}g</p>
+                                <p className="font-bold text-zinc-200">{asSingle(plan.diet_plans)?.fat_g}g</p>
                             </div>
                         </div>
                         <div>
                             <p className="text-sm font-medium text-zinc-400 mb-1">Instructions:</p>
-                            <p className="text-sm text-zinc-300 bg-zinc-900 p-3 rounded">{plan.diet_plans?.instructions || 'None provided.'}</p>
+                            <p className="text-sm text-zinc-300 bg-zinc-900 p-3 rounded">{asSingle(plan.diet_plans)?.instructions || 'None provided.'}</p>
                         </div>
                     </div>
                 ))}

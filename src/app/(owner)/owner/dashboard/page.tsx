@@ -12,8 +12,7 @@ export default async function OwnerDashboard() {
   const todayStr          = today.toISOString().split("T")[0];
   const tomorrowStr       = new Date(today.getTime() + 86400000).toISOString().split("T")[0];
   const thirtyDaysStr     = new Date(today.getTime() + 30 * 86400000).toISOString().split("T")[0];
-  const sevenDaysStr      = new Date(today.getTime() + 7  * 86400000).toISOString().split("T")[0];
-  const firstDayOfMonth   = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
+    const firstDayOfMonth   = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
   const firstDayOfYear    = new Date(today.getFullYear(), 0, 1).toISOString().split("T")[0];
   const sixMonthsAgo      = new Date(today.getFullYear(), today.getMonth() - 5, 1).toISOString().split("T")[0];
   const currentMonthNum   = today.getMonth() + 1;
@@ -193,7 +192,7 @@ export default async function OwnerDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {(expiringMemberships as ExpiringMembership[]).map((m) => {
+                    {((expiringMemberships as unknown) as ExpiringMembership[]).map((m) => {
                       const daysLeft = Math.ceil(
                         (new Date(m.end_date).getTime() - today.getTime()) / 86400000
                       );
@@ -355,8 +354,8 @@ function StatCard({
 // Types
 // ---------------------------------------------------------------------------
 interface ExpiringMembership {
-  id: string;
+  id?: string;
   end_date: string;
-  members: { id: string; name: string; member_code: string } | null;
+  members: { id?: string; name: string; member_code: string } | null;
   membership_plans: { name: string } | null;
 }

@@ -1,6 +1,21 @@
 import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
 
+type AssignedMember = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  status: string | null;
+  primary_goal: string | null;
+};
+
+type AssignmentRow = {
+  member_id: string;
+  members: AssignedMember | AssignedMember[] | null;
+};
+
+
 export default async function TrainerMembersPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -34,7 +49,11 @@ export default async function TrainerMembersPage() {
     `)
     .eq("trainer_id", trainer.id);
 
-  const members = assignments?.map((a: any) => a.members).filter(Boolean) || [];
+  const members: AssignedMember[] = ((assignments as AssignmentRow[] | null) ?? []).flatMap((a) => {
+    const m = a.members;
+    if (!m) return [];
+    return Array.isArray(m) ? m : [m];
+  });
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -54,7 +73,7 @@ export default async function TrainerMembersPage() {
             </tr>
           </thead>
           <tbody className="bg-zinc-900 divide-y divide-zinc-800">
-            {members.map((member: any) => (
+            {members.map((member) => (
               <tr key={member.id} className="hover:bg-zinc-800/50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-zinc-200">{member.name}</div>

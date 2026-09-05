@@ -29,7 +29,7 @@ export default async function MemberHomePage() {
   }
 
   const nowISO   = new Date().toISOString();
-  const todayStr = nowISO.split("T")[0];
+
 
   const [
     { data: latestAssessment },
@@ -97,9 +97,15 @@ export default async function MemberHomePage() {
   const bookedActivityIds = new Set((myBookings ?? []).map((b: { activity_id: string }) => b.activity_id));
   const myBookingMap = Object.fromEntries((myBookings ?? []).map((b: { activity_id: string; id: string }) => [b.activity_id, b.id]));
 
-  const daysLeft = membership?.end_date
-    ? Math.ceil((new Date(membership.end_date).getTime() - Date.now()) / 86400000)
-    : null;
+  let daysLeft: number | null = null;
+  if (membership?.end_date) {
+    const endKey = String(membership.end_date).slice(0, 10);
+    const now = new Date();
+    const todayKey = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+    const [ey, em, ed] = endKey.split("-").map(Number);
+    const [ty, tm, td] = todayKey.split("-").map(Number);
+    daysLeft = Math.round((Date.UTC(ey, em - 1, ed) - Date.UTC(ty, tm - 1, td)) / 86400000);
+  }
 
   const card: React.CSSProperties = {
     background: "var(--color-bg-card)",

@@ -32,9 +32,17 @@ export default async function TrainerDashboardPage() {
   const tomorrow = new Date(today.getTime() + 86400000).toISOString().split("T")[0];
   const nowISO   = today.toISOString();
 
+
+  // Fetch assigned members first to use in subsequent queries
+  const { data: assignedMembersResult } = await supabase
+    .from("member_trainers")
+    .select("member_id, members(id, name, member_code, status, primary_goal)")
+    .eq("trainer_id", trainer.id)
+    .is("unassigned_at", null)
+    .limit(8);
+
   const [
     { count: assignedCount },
-    { data: assignedMembers },
     { data: recentAssessments },
     { count: todayAttendance },
     { data: pendingPlans },
@@ -46,14 +54,6 @@ export default async function TrainerDashboardPage() {
       .select("*", { count: "exact", head: true })
       .eq("trainer_id", trainer.id)
       .is("unassigned_at", null),
-
-    // Assigned member list (for quick access)
-    supabase
-      .from("member_trainers")
-      .select("member_id, members(id, name, member_code, status, primary_goal)")
-      .eq("trainer_id", trainer.id)
-      .is("unassigned_at", null)
-      .limit(8),
 
     // Recent assessments by this trainer
     supabase
@@ -78,7 +78,7 @@ export default async function TrainerDashboardPage() {
       .eq("status", "pending")
       .in(
         "member_id",
-        (assignedMembers ?? []).map((a: { member_id: string }) => a.member_id)
+        (assignedMembersResult || []).map((a: { member_id: string }) => a.member_id)
       )
       .limit(5),
 
@@ -152,9 +152,9 @@ export default async function TrainerDashboardPage() {
           <h2 style={{ fontSize: "0.875rem", fontWeight: 700, color: "#fff" }}>My Members</h2>
           <Link href="/trainer/members" style={{ fontSize: "0.75rem", color: "var(--color-gold)" }}>View all →</Link>
         </div>
-        {assignedMembers && assignedMembers.length > 0 ? (
+        {assignedMembersResult && assignedMembersResult.length > 0 ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            {(assignedMembers as AssignedMember[]).map((a) => (
+            {((assignedMembersResult as unknown) as AssignedMember[]).map((a) => (
               <Link
                 key={a.member_id}
                 href={`/trainer/members/${a.member_id}`}
@@ -195,7 +195,7 @@ export default async function TrainerDashboardPage() {
         </h2>
         {recentAssessments && recentAssessments.length > 0 ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            {(recentAssessments as Assessment[]).map((a) => (
+            {((recentAssessments as unknown as Assessment[]) || []).map((a) => (
               <div
                 key={a.id}
                 style={{

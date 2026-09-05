@@ -23,15 +23,15 @@ Comment on an issue:
 ```
 
 GitHub Actions workflow `.github/workflows/jules.yml` calls the official
-`google-labs-code/jules-invoke@v1` action with `JULES_API_KEY` and
+`google-labs-code/jules-action@v1.0.0` action with `JULES_API_KEY` and
 `automationMode: AUTO_CREATE_PR` (handled inside the official action).
 
 Jules works in Google’s cloud VM against the connected GitHub source
 `sources/github/nw7thhjzkk-crypto/drdhlefc` (must be connected in the Jules web UI).
 
-Jules **creates a PR**. Jules does **not** merge.
+Jules **creates a PR**. Merge is handled by the guarded auto-merge pipeline when eligible.
 
-### OpenCode — SECONDARY AGENT
+### OpenCode — SECONDARY AGENT / INDEPENDENT REVIEWER
 
 Use OpenCode (`/oc` or `/opencode`) for:
 
@@ -46,13 +46,14 @@ OpenCode remains configured in `.github/workflows/opencode.yml` and is **not** r
 ### GitHub Actions
 
 - Orchestrates agent invocation
-- Runs CI on pull requests
-- Must never auto-merge product code
+- Runs **CI** (lint, typecheck, build)
+- Guarded **auto-merge** for eligible Jules PRs only
 
 ### Human
 
-- Final review
-- Merge authority
+- Final authority for high-risk changes
+- Resolves blocked auto-merges
+- Repo settings (enable **Allow auto-merge**)
 
 ## Desired flow
 

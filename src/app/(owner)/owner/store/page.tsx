@@ -31,7 +31,7 @@ export default async function StorePage() {
         {/* POS Flow */}
         <div className="bg-zinc-900 rounded-lg shadow-xl border border-zinc-800 p-6">
           <h2 className="text-lg font-semibold text-zinc-100 mb-4 border-b border-zinc-800 pb-2">New Sale (POS)</h2>
-          <form action={processSale} className="space-y-4">
+          <form action={async (formData) => { "use server"; await processSale(formData); }} className="space-y-4">
              <div>
               <label className="block text-sm font-medium text-zinc-400">Member (Optional)</label>
               <select name="member_id" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200">
