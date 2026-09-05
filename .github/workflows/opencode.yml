@@ -31,8 +31,10 @@ jobs:
       - name: Run OpenCode
         uses: anomalyco/opencode/github@v1.18.29
         env:
-          # Model API key — must be configured as a repo Actions secret
+          # Existing repo secret (kept for compatibility)
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # OpenCode Google provider expects this name
+          GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           # Built-in token for commits/comments/PRs (no OpenCode GitHub App required)
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
