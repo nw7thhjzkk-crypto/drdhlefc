@@ -1,5 +1,17 @@
 import { createClient } from "@/utils/supabase/server";
 
+type AuditLogRow = {
+  id: string;
+  action: string;
+  entity_type?: string | null;
+  entity_id?: string | null;
+  created_at: string;
+  details?: unknown;
+  profiles?: { full_name?: string | null; role?: string | null } | null;
+  members?: { name?: string | null } | null;
+};
+
+
 export default async function AuditLogPage() {
   const supabase = await createClient();
 
@@ -27,7 +39,7 @@ export default async function AuditLogPage() {
             </tr>
           </thead>
           <tbody className="bg-zinc-900 divide-y divide-zinc-800">
-            {logs?.map((log: any) => (
+            {(logs as AuditLogRow[] | null)?.map((log) => (
               <tr key={log.id} className="hover:bg-zinc-800/50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
                   {new Date(log.created_at).toLocaleString()}

@@ -3,12 +3,12 @@
 import { useTransition } from "react";
 import { bookActivity } from "../actions";
 
-export default function ActivityBooking({ activities, member_id }: { activities: any[], member_id: string }) {
+export default function ActivityBooking({ activities }: { activities: { id: string; name: string; start_at: string; location: string | null; duration_minutes: number | null; }[] }) {
   const [isPending, startTransition] = useTransition();
 
   const handleBook = (activity_id: string) => {
     startTransition(async () => {
-      await bookActivity(activity_id, member_id);
+      await bookActivity(activity_id);
       alert("Activity booked successfully!");
     });
   };

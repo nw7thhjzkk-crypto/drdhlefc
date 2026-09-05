@@ -1,6 +1,6 @@
 
 // Gemini AI integration
 export async function getGeminiInsights(prompt: string) {
-  const key = process.env.GEMINI_API_KEY;
+  void prompt;
   return "AI Insight Stub";
 }

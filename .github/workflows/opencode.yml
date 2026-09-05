@@ -1,58 +1,29 @@
-# OpenCode automation for DR DHL Elite Fitness Club
-# Trigger: comment /oc or /opencode on issues or PR review threads
-# Restricted to repository owner only. Secrets are never echoed.
-#
-# Free-provider env lanes (optional secrets):
-# - OPENCODE_API_KEY  -> OpenCode Zen free models
-# - OPENROUTER_API_KEY -> OpenRouter :free models
-# - GROQ_API_KEY      -> Groq free tier
-# - GEMINI_API_KEY    -> Google free tier (last resort)
-#
-# Fail-fast: job timeout-minutes prevents indefinite hangs when a provider
-# stalls (missing auth, network wait, or model non-response).
-name: opencode
+name: OpenCode
 
 on:
   issue_comment:
-    types: [created]
-  pull_request_review_comment:
     types: [created]
 
 jobs:
   opencode:
     if: |
-      github.event.comment.user.login == 'nw7thhjzkk-crypto' &&
-      (contains(github.event.comment.body, '/oc') || contains(github.event.comment.body, '/opencode'))
+      github.event.issue.pull_request != null && startsWith(github.event.comment.body, '@opencode')
     runs-on: ubuntu-latest
-    # Hard ceiling so a dead provider/plugin cannot hang the runner for hours.
-    timeout-minutes: 15
     permissions:
       contents: write
       pull-requests: write
-      issues: write
     steps:
-      - name: Checkout repository
+      - name: Verify triggering user is repo owner
+        run: |
+          if [ "${{ github.triggering_actor }}" != "${{ github.repository_owner }}" ]; then
+            echo "Error: Only the repository owner can trigger OpenCode."
+            bash -c 'exit 1'
+          fi
+
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-          persist-credentials: true
 
       - name: Run OpenCode
-        uses: anomalyco/opencode/github@v1.18.29
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-          # Optional free lanes (presence only; values never logged by this workflow)
-          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-
-          # Optional last-resort Google free tier
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        uses: google/opencode-github-action@v1
         with:
-          # Zen free primary. Requires usable OPENCODE_API_KEY (or Zen anonymous access).
-          # If this model cannot authenticate, the job must fail within timeout-minutes.
-          model: opencode/big-pickle
-          use_github_token: true
-          share: "false"
+          github_token: ${{ secrets.GITHUB_TOKEN }}

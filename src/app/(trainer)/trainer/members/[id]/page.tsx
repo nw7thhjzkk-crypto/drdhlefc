@@ -54,7 +54,7 @@ export default async function TrainerMemberProfilePage({ params }: { params: Pro
                 <h2 className="text-lg font-semibold mb-4 border-b border-zinc-800 pb-2 text-zinc-100">
                     Record New Assessment
                 </h2>
-                <form action={addAssessment} className="space-y-4">
+                <form action={addAssessment.bind(null, member.id)} className="space-y-4">
                     <input type="hidden" name="member_id" value={member.id} />
                     <div className="grid grid-cols-2 gap-4">
                         <div>

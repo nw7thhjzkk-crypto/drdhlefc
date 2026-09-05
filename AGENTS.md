@@ -41,7 +41,7 @@ This file is the permanent engineering constitution for every automated coding a
 - Private member/progress photos must never become publicly readable as the primary access model.
 - No fabricated integrations.
 - No fake hardware/device APIs.
-- **No automatic production merges.** Humans merge after review.
+- **No agent may bypass security/financial gates.**
 
 ## Database
 
