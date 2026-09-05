@@ -68,6 +68,7 @@ jobs:
         if: steps.pr.outputs.number
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
           EXPECTED_SHA: ${{ steps.pr.outputs.sha }}
           BASE_BRANCH: scaffold-gymsmart-erp-9743545895368865022
