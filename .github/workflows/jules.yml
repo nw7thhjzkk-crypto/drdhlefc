@@ -1,0 +1,60 @@
+# Jules — primary implementation agent for DR DHL Elite Fitness Club
+#
+# Trigger: repository owner comments `/jules <task>` on an issue or PR thread.
+# Official integration: google-labs-code/jules-invoke@v1
+# API: https://jules.googleapis.com/v1alpha/sessions
+# Automation: AUTO_CREATE_PR (Jules opens a PR; humans merge).
+#
+# Safety:
+# - Owner-only (nw7thhjzkk-crypto)
+# - No pull_request synchronize trigger (avoids recursion when Jules pushes)
+# - JULES_API_KEY only via secrets; never echoed
+# - Minimum job permissions (contents: read)
+# - Does not merge PRs
+name: jules
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  invoke-jules:
+    if: |
+      github.event.comment.user.login == 'nw7thhjzkk-crypto' &&
+      !endsWith(github.event.comment.user.login, '[bot]') &&
+      contains(github.event.comment.body, '/jules')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Extract Jules task
+        id: task
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          set -euo pipefail
+          # Strip a leading /jules token; pass the remainder as the task prompt.
+          TASK="$(printf '%s\n' "$COMMENT_BODY" | sed -E '1s/^[[:space:]]*\/jules[[:space:]]*//')"
+          if [ -z "$(printf '%s' "$TASK" | tr -d '[:space:]')" ]; then
+            echo "Empty /jules task; refusing to invoke Jules."
+            exit 1
+          fi
+          {
+            echo "prompt<<OPENCODE_JULES_PROMPT_EOF"
+            printf '%s\n' "$TASK"
+            echo "OPENCODE_JULES_PROMPT_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Invoke Jules (official action)
+        uses: google-labs-code/jules-invoke@v1
+        with:
+          # Complete owner task text (after /jules)
+          prompt: |
+            ${{ steps.task.outputs.prompt }}
+
+            ---
+            Repository constitution: follow AGENTS.md and docs/AI_ENGINEERING_WORKFLOW.md.
+            Do not weaken RLS or rewrite migrations 000008 / 000009 unless the task explicitly requires it.
+            Create a focused PR. Do not merge. Never print secrets.
+          starting_branch: scaffold-gymsmart-erp-9743545895368865022
+          jules_api_key: ${{ secrets.JULES_API_KEY }}

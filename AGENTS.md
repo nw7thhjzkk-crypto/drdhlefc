@@ -1,111 +1,110 @@
 # Agent instructions — DR DHL Elite Fitness Club
 
-These instructions apply to OpenCode and any other automated coding agent working on this repository via GitHub Actions or CLI.
+This file is the permanent engineering constitution for every automated coding agent
+(Jules primary, OpenCode secondary, and any other agent) working on this repository.
 
 ## Repository
 
 - **GitHub:** `nw7thhjzkk-crypto/drdhlefc`
 - **Product:** DR DHL Elite Fitness Club — gym ERP, portals, and public website
+- **Security baseline commit:** `e03470b` (do not regress)
 
-## Security baseline (do not regress)
+## Stack
 
-- **Baseline commit:** `e03470b` (`feat: complete ERP foundation and security hardening milestone`)
-- Treat this commit as the security floor for RLS, payments, POS, booking, and audit logging.
-- **Preserve these migrations byte-for-byte** (never rewrite, delete, or “replace” them):
-  - `supabase/migrations/000008_security_hardening.sql`
-  - `supabase/migrations/000009_store_atomicity_and_membership_financial.sql`
-- New migrations must use the **next free number** (e.g. `000010_...sql`) and must be forward-only.
-
-## Stack (do not replace)
-
-- Next.js 16 App Router
-- React 19
+- Next.js App Router
+- React
 - TypeScript
 - Tailwind CSS v4
-- Supabase SSR / Auth / PostgreSQL / Storage
-- Recharts
-- Server Components and Server Actions
+- Supabase Auth / PostgreSQL / Storage
+- Server Components
+- Server Actions
+- Recharts where appropriate
 
-**Do not introduce:** Express, Vite, Firebase, Drizzle, or a parallel backend framework.
+**Do not introduce:** Firebase, Express, Vite, Drizzle, or a parallel auth/backend architecture without explicit instruction.
 
-## Roles
+## Architecture
 
-Exactly three application roles:
+- Exactly three roles: **Owner**, **Trainer**, **Member**.
+- **Owner** is the full administrator (superset of Trainer).
+- **Trainer** may operate only on members assigned via `member_trainers`.
+- **Member** may operate only on their own permitted data.
+- Authorization must be enforced **server-side** (Server Actions + RPCs).
+- **Supabase RLS is mandatory.** UI hiding is not authorization.
 
-1. **Owner** — full administrator; superset of Trainer; complete administrative authority
-2. **Trainer** — only assigned members via `member_trainers`
-3. **Member** — only their own data
+## Security
 
-## Authorization rules
+- Never expose service-role keys.
+- Never expose `GEMINI_API_KEY` or other provider API keys.
+- Never expose Google Drive OAuth credentials.
+- Never trust client-supplied authorization or member ownership IDs.
+- Never weaken RLS to make a feature work.
+- Private member/progress photos must never become publicly readable as the primary access model.
+- No fabricated integrations.
+- No fake hardware/device APIs.
+- **No automatic production merges.** Humans merge after review.
 
-- Enforce **UI checks, Server Action checks, and Supabase RLS**. Hiding a button is not authorization.
-- Trainer access must be limited to members linked through active `member_trainers` rows.
-- Member access must be limited to rows owned by their `profile_id` / member record.
-- Never trust client-supplied `member_id`, `trainer_id`, or `profile_id` for authorization. Derive identity from `auth.uid()` / `getUser()` and server-side lookups.
-- Prefer SECURITY DEFINER RPCs already in the database for:
-  - activity booking / cancel (`book_activity_for_member`, `cancel_activity_booking`)
-  - payments (`record_payment_atomic`)
-  - membership assignment (`assign_membership`)
-  - POS checkout (`checkout_store_sale`)
-  - audit writes (`insert_audit_log`)
+## Database
 
-## Hard prohibitions (never reintroduce)
+- Preserve migrations `000008_security_hardening.sql` and `000009_store_atomicity_and_membership_financial.sql` unless a future task **explicitly** requires changing them.
+- Preserve financial transaction atomicity.
+- Preserve audit-log immutability (append-only; use `insert_audit_log` RPC).
+- Preserve historical assessment data.
+- Prefer database constraints, RPCs, and transactions for invariants that cannot safely rely on the client.
+- New migrations must be forward-only with the next free number.
 
-- Public member/progress photo buckets or public object URLs as the primary access model
-- Client-controlled membership prices, payment amounts, or POS line prices
-- Client-controlled booking identity (e.g. `bookActivity(activity_id, member_id)` from the client)
-- Direct `audit_logs` INSERT/UPDATE/DELETE from application code (always use `insert_audit_log` RPC)
-- Unsafe trainer-wide access to unassigned members
-- Negative inventory or non-atomic stock/payment updates
-- Fake/stub integrations presented as working (Gemini, Google Drive, payments, biometrics, etc.)
-- Hardcoded gym identity where DB-backed settings are expected
-- Exposed API credentials, service-role keys, or secrets in client bundles, comments, or logs
+## Financial
 
-## Integrations
+- Never trust client-side prices.
+- No negative stock.
+- Checkout and payment operations must remain atomic.
+- Avoid race conditions in inventory and payment operations.
+- Prefer existing SECURITY DEFINER RPCs (`record_payment_atomic`, `checkout_store_sale`, `assign_membership`, etc.).
 
-- Integrations must be **real** or **explicitly reported as not configured**.
-- Covered integrations: Gemini, Google Drive, future payment provider, future biometric/device attendance.
-- Server secrets stay server-only (`GEMINI_API_KEY`, `GOOGLE_DRIVE_*`, `SUPABASE_SERVICE_ROLE_KEY`, etc.).
-- Never print, echo, or embed secrets in issues, PR comments, logs, or commits.
+## AI
 
-## Financial / POS / inventory
+- Gemini (and any AI) calls must be **server-side**.
+- AI output must be validated/structured before becoming application data.
+- AI-created diet/workout plans are **drafts** until appropriate acceptance/assignment.
+- Never expose provider API keys in code, logs, issues, PRs, or client bundles.
 
-- All important financial values are authoritative server-side or database-side.
-- Payments and POS must remain transactional; use existing atomic RPCs.
-- Do not bypass overpayment checks, stock locks, or server-side price derivation.
+## Google Drive
 
-## Audit logs
+- Drive credentials remain server-side.
+- Private files must use authorization-controlled access.
+- Do not expose raw OAuth credentials.
+- Do not fabricate Drive URLs or IDs.
+- If not configured, report that state explicitly.
 
-- Append-only for normal users.
-- Actor identity must come from authenticated server context (`insert_audit_log` sets `actor_profile_id` from `auth.uid()`).
-- Do not spoof actor identity from the client.
+## Testing
+
+For substantial changes, run and fix:
+
+- lint
+- typecheck
+- build
+- relevant unit/integration tests
+- authorization / RLS tests
+- financial / transaction tests where applicable
+- regression testing
+
+Do not fabricate passing tests.
+
+## Agent roles in this repository
+
+- **Jules** — primary implementation agent (features, architecture, DB, security, integrations, tests).
+- **OpenCode** — secondary agent (independent review, security review, small fixes, refactoring, backup implementation).
+- **GitHub Actions** — orchestration and CI.
+- **Human** — final review and merge authority.
 
 ## PR #64 policy
 
-- **Do not blindly merge or copy PR #64.**
-- Selectively port useful functionality (real Gemini, real Drive, DB settings, UUID filenames, related UI) **only after** checking each change against baseline `e03470b` and migrations `000008` / `000009`.
-- Never port the insecure booking or direct `audit_logs` write patterns from that PR.
+- Do **not** blindly merge or copy PR #64.
+- Selectively port useful work only after checking each change against the security baseline and migrations `000008` / `000009`.
 
-## Product scope (context — implement only the requested task)
+## General
 
-Owner dashboard/admin, Trainer portal, Member portal/PWA, public premium gym website, memberships, payments, receipts, assessments/progress, diet plans, workout plans, activities/bookings, attendance, CRM/leads, POS/store/inventory, notifications, audit logs, Google Drive file storage, Gemini AI, PWA/installability, responsive mobile-first Trainer/Member UX, desktop-first responsive Owner UX, strong RLS/server authorization, and tests.
-
-Do **not** invent hardware APIs, payment APIs, biometric APIs, awards, statistics, testimonials, facilities, trainers, or business facts that are not in the repo or task.
-
-## Quality bar for every task
-
-1. Read existing code and migrations before editing.
-2. Prefer minimal, focused diffs; do not modify unrelated functionality.
-3. After meaningful changes, run appropriate lint / typecheck / build / tests.
-4. Fix failures; do not hide them.
-5. When finished:
-   - inspect the diff
-   - report what was validated and what failed
-   - commit with a meaningful message
-   - create or update a PR when working via GitHub automation
-   - clearly state anything blocked by missing credentials or external configuration
-
-## GitHub automation triggers
-
-- Agents invoked via GitHub Actions should respond to owner comments containing `/oc` or `/opencode`.
-- Follow the task in the comment; do not expand into a full ERP rewrite unless explicitly asked.
+- Inspect existing code before creating new abstractions.
+- Prefer minimal, maintainable changes.
+- Do not silently change unrelated functionality.
+- Do not rewrite the existing architecture without explicit instruction.
+- When finished: inspect the diff, report validation results, open/update a PR when appropriate, and state any blockers (credentials, external config).
