@@ -41,7 +41,7 @@ This file is the permanent engineering constitution for every automated coding a
 - Private member/progress photos must never become publicly readable as the primary access model.
 - No fabricated integrations.
 - No fake hardware/device APIs.
-- **No automatic production merges.** Humans merge after review.
+- **No agent may bypass security/financial gates.**
 
 ## Database
 
@@ -89,12 +89,15 @@ For substantial changes, run and fix:
 
 Do not fabricate passing tests.
 
-## Agent roles in this repository
+## Agent roles and autonomous merge
 
 - **Jules** — primary implementation agent (features, architecture, DB, security, integrations, tests).
 - **OpenCode** — secondary agent (independent review, security review, small fixes, refactoring, backup implementation).
-- **GitHub Actions** — orchestration and CI.
-- **Human** — final review and merge authority.
+- **GitHub Actions CI** — mandatory lint/typecheck/build for merge eligibility.
+- **Guarded auto-merge** — only PRs authored by `google-labs-jules[bot]` from this repository, with green CI, no conflicts, and **no high-risk path changes**, may be automatically squash-merged.
+- **Never** auto-merge arbitrary, manual, fork, or experimental PRs.
+- **High-risk changes fail closed** (migrations `000008`/`000009`, workflows, `AGENTS.md`, `opencode.json`) and require human merge.
+- No agent may bypass security/financial gates.
 
 ## PR #64 policy
 

@@ -1,6 +1,15 @@
 import { createClient } from "@/utils/supabase/server";
 import { logAttendance } from "./actions";
 
+type AttendanceMember = { id: string; name: string; member_code?: string | null };
+type AttendanceAssignment = { members: AttendanceMember | AttendanceMember[] | null };
+type AttendanceRecord = {
+  id: string;
+  occurred_at: string;
+  method: string;
+  members: { name: string } | null;
+};
+
 export default async function TrainerAttendancePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -20,7 +29,11 @@ export default async function TrainerAttendancePage() {
     .select("members(id, name, member_code)")
     .eq("trainer_id", trainer.id);
 
-  const members = assignments?.map((a: any) => a.members).filter(Boolean) || [];
+  const members: AttendanceMember[] = ((assignments as AttendanceAssignment[] | null) ?? []).flatMap((a) => {
+    const m = a.members;
+    if (!m) return [];
+    return Array.isArray(m) ? m : [m];
+  });
 
   const today = new Date();
   today.setHours(0,0,0,0);
@@ -49,7 +62,7 @@ export default async function TrainerAttendancePage() {
               <label className="block text-sm font-medium text-zinc-400">Member</label>
               <select name="member_id" required className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200">
                 <option value="">Select assigned member</option>
-                {members.map((m: any) => (
+                {members.map((m) => (
                     <option key={m.id} value={m.id}>{m.name} ({m.member_code})</option>
                 ))}
               </select>
@@ -74,7 +87,7 @@ export default async function TrainerAttendancePage() {
         <div className="lg:col-span-2">
           <div className="bg-zinc-900 rounded-lg shadow-xl border border-zinc-800 overflow-hidden">
              <div className="px-6 py-4 border-b border-zinc-800">
-                <h2 className="text-lg font-semibold text-zinc-100">Today&apos;s Check-Ins</h2>
+                <h2 className="text-lg font-semibold text-zinc-100">Today's Check-Ins</h2>
             </div>
             <table className="min-w-full divide-y divide-zinc-800">
               <thead className="bg-zinc-950">
@@ -85,7 +98,7 @@ export default async function TrainerAttendancePage() {
                 </tr>
               </thead>
               <tbody className="bg-zinc-900 divide-y divide-zinc-800">
-                {recentAttendance?.map((record) => (
+                {(recentAttendance as AttendanceRecord[] | null)?.map((record) => (
                   <tr key={record.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
                       {new Date(record.occurred_at).toLocaleTimeString()}

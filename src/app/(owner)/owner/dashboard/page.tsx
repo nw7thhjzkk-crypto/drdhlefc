@@ -12,7 +12,6 @@ export default async function OwnerDashboard() {
   const todayStr          = today.toISOString().split("T")[0];
   const tomorrowStr       = new Date(today.getTime() + 86400000).toISOString().split("T")[0];
   const thirtyDaysStr     = new Date(today.getTime() + 30 * 86400000).toISOString().split("T")[0];
-  const sevenDaysStr      = new Date(today.getTime() + 7  * 86400000).toISOString().split("T")[0];
   const firstDayOfMonth   = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
   const firstDayOfYear    = new Date(today.getFullYear(), 0, 1).toISOString().split("T")[0];
   const sixMonthsAgo      = new Date(today.getFullYear(), today.getMonth() - 5, 1).toISOString().split("T")[0];
@@ -78,13 +77,11 @@ export default async function OwnerDashboard() {
       .gte("created_at", firstDayOfMonth),
   ]);
 
-  // Aggregations
   const todaysCollection  = todayPayments?.reduce((s, p) => s + Number(p.amount), 0) ?? 0;
   const monthlyCollection = monthPayments?.reduce((s, p) => s + Number(p.amount), 0) ?? 0;
   const yearlyCollection  = yearPayments?.reduce((s, p) => s + Number(p.amount), 0) ?? 0;
   const totalPending      = pendingMemberships?.reduce((s, m) => s + Number(m.pending_amount), 0) ?? 0;
 
-  // Gender breakdown for chart
   const genderCount: Record<string, number> = { Male: 0, Female: 0, Other: 0 };
   genderData?.forEach((m) => {
     const g = m.gender as string | null;
@@ -93,7 +90,6 @@ export default async function OwnerDashboard() {
   });
   const chartGenderData = Object.entries(genderCount).map(([name, value]) => ({ name, value }));
 
-  // 6-month revenue trend
   const { data: recentPayments } = await supabase
     .from("payments")
     .select("amount, paid_at")
@@ -115,7 +111,6 @@ export default async function OwnerDashboard() {
   });
   const chartRevenueData = Object.entries(revenueMap).map(([name, revenue]) => ({ name, revenue }));
 
-  // Birthdays this month
   const birthdaysThisMonth = (membersWithDob ?? []).filter((m) => {
     if (!m.dob) return false;
     return new Date(m.dob).getMonth() + 1 === currentMonthNum;
@@ -126,7 +121,6 @@ export default async function OwnerDashboard() {
 
   return (
     <div>
-      {/* Page header */}
       <div className="page-header">
         <div>
           <h1 className="page-title">Dashboard</h1>
@@ -139,7 +133,6 @@ export default async function OwnerDashboard() {
         </Link>
       </div>
 
-      {/* KPI row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
         <StatCard label="Active Members"     value={String(activeMembers ?? 0)}  sub={`${totalMembers ?? 0} total · ${inactiveMembers ?? 0} inactive`} accent="#3B82F6" />
         <StatCard label="Today's Collection" value={`₹${fmt(todaysCollection)}`} sub={`₹${fmt(monthlyCollection)} this month`}                          accent="#22C55E" />
@@ -149,10 +142,7 @@ export default async function OwnerDashboard() {
         <StatCard label="Open Leads"         value={String(openLeads ?? 0)}      sub={`${newLeadsThisMonth ?? 0} new this month`}                        accent="#F97316" />
       </div>
 
-      {/* Main grid */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "1.5rem", alignItems: "start" }}>
-
-        {/* Left — charts */}
         <div>
           <div className="card" style={{ marginBottom: "1.5rem" }}>
             <div className="card-header">
@@ -163,7 +153,6 @@ export default async function OwnerDashboard() {
             </div>
           </div>
 
-          {/* Low stock alert */}
           {(lowStockProducts?.length ?? 0) > 0 && (
             <div className="alert alert-warning" style={{ marginBottom: "1.5rem" }}>
               <span>⚠️</span>
@@ -175,7 +164,6 @@ export default async function OwnerDashboard() {
             </div>
           )}
 
-          {/* Expiring memberships table */}
           <div className="card">
             <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>Memberships Expiring — Next 30 Days</h2>
@@ -230,10 +218,7 @@ export default async function OwnerDashboard() {
           </div>
         </div>
 
-        {/* Right column */}
         <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-
-          {/* Quick nav */}
           <div className="card">
             <div className="card-header">
               <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>Quick Actions</h2>
@@ -274,7 +259,6 @@ export default async function OwnerDashboard() {
             </div>
           </div>
 
-          {/* Birthdays */}
           <div className="card">
             <div className="card-header">
               <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>🎂 Birthdays This Month</h2>
@@ -299,7 +283,6 @@ export default async function OwnerDashboard() {
             </div>
           </div>
 
-          {/* Revenue summary */}
           <div className="card">
             <div className="card-header">
               <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>Revenue Summary</h2>
@@ -324,10 +307,6 @@ export default async function OwnerDashboard() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
 function StatCard({
   label,
   value,
@@ -351,9 +330,6 @@ function StatCard({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 interface ExpiringMembership {
   id: string;
   end_date: string;

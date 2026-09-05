@@ -3,7 +3,15 @@
 import { useTransition } from "react";
 import { bookActivity } from "../actions";
 
-export default function ActivityBooking({ activities, member_id }: { activities: any[], member_id: string }) {
+type ActivityItem = {
+  id: string;
+  name: string;
+  start_at: string;
+  location: string | null;
+  duration_minutes: number | null;
+};
+
+export default function ActivityBooking({ activities, member_id }: { activities: ActivityItem[]; member_id: string }) {
   const [isPending, startTransition] = useTransition();
 
   const handleBook = (activity_id: string) => {

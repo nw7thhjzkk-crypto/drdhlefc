@@ -1,6 +1,5 @@
-
-// Google Drive integration for photos
+// Google Drive integration for photos (stub — real integration is not fabricated here)
 export async function uploadToDrive(file: File) {
-  // OAuth2 and upload stub
-  return { url: 'stub', id: 'stub' };
+  void file;
+  return { url: "stub", id: "stub" };
 }

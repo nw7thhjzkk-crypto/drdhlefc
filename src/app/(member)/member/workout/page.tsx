@@ -1,6 +1,26 @@
 import { createClient } from "@/utils/supabase/server";
 import { acceptWorkoutPlan, declineWorkoutPlan } from "./actions";
 
+type WorkoutPlanSummary = {
+  name: string | null;
+  difficulty?: string | null;
+  duration_days?: number | null;
+  goal?: string | null;
+  description?: string | null;
+  days_per_week?: number | null;
+  instructions?: string | null;
+};
+
+type MemberWorkoutPlanRow = {
+  id: string;
+  workout_plans: WorkoutPlanSummary | WorkoutPlanSummary[] | null;
+};
+
+function asSingle<T>(value: T | T[] | null | undefined): T | null {
+  if (value == null) return null;
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+}
+
 export default async function MemberWorkoutPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -45,11 +65,11 @@ export default async function MemberWorkoutPage() {
         <div className="bg-yellow-900/20 border border-yellow-700/50 p-6 rounded-lg shadow-xl mb-8">
             <h2 className="text-lg font-semibold text-yellow-500 mb-4">New Recommendations</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {pendingPlans.map((rec: any) => (
+                {pendingPlans.map((rec: MemberWorkoutPlanRow) => (
                     <div key={rec.id} className="bg-zinc-950 border border-zinc-800 p-4 rounded-lg flex justify-between items-center">
                         <div>
-                            <p className="font-bold text-zinc-200">{rec.workout_plans?.name}</p>
-                            <p className="text-xs text-zinc-500">{rec.workout_plans?.duration_days} Days | Goal: {rec.workout_plans?.goal}</p>
+                            <p className="font-bold text-zinc-200">{asSingle(rec.workout_plans)?.name}</p>
+                            <p className="text-xs text-zinc-500">{asSingle(rec.workout_plans)?.duration_days} Days | Goal: {asSingle(rec.workout_plans)?.goal}</p>
                         </div>
                         <div className="flex space-x-2">
                             <form action={async () => { "use server"; await acceptWorkoutPlan(rec.id); }}>
@@ -69,15 +89,15 @@ export default async function MemberWorkoutPage() {
         <h2 className="text-lg font-semibold text-zinc-100 mb-4 border-b border-zinc-800 pb-2">Active Workout Routine</h2>
         {activePlans && activePlans.length > 0 ? (
             <div className="space-y-6">
-                {activePlans.map((plan: any) => (
+                {activePlans.map((plan: MemberWorkoutPlanRow) => (
                     <div key={plan.id} className="bg-zinc-950 border border-zinc-800 p-6 rounded-lg">
                         <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-xl font-bold text-yellow-500">{plan.workout_plans?.name}</h3>
-                            <span className="bg-zinc-800 text-zinc-400 text-xs px-2 py-1 rounded border border-zinc-700">{plan.workout_plans?.duration_days} Days</span>
+                            <h3 className="text-xl font-bold text-yellow-500">{asSingle(plan.workout_plans)?.name}</h3>
+                            <span className="bg-zinc-800 text-zinc-400 text-xs px-2 py-1 rounded border border-zinc-700">{asSingle(plan.workout_plans)?.duration_days} Days</span>
                         </div>
                         <div>
                             <p className="text-sm font-medium text-zinc-400 mb-1">Instructions:</p>
-                            <p className="text-sm text-zinc-300 bg-zinc-900 p-3 rounded whitespace-pre-wrap">{plan.workout_plans?.instructions || 'None provided.'}</p>
+                            <p className="text-sm text-zinc-300 bg-zinc-900 p-3 rounded whitespace-pre-wrap">{asSingle(plan.workout_plans)?.instructions || 'None provided.'}</p>
                         </div>
                     </div>
                 ))}
