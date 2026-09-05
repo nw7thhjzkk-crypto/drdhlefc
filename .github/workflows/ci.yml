@@ -5,10 +5,10 @@ name: CI
 on:
   pull_request:
     branches:
-      - main
+      - scaffold-gymsmart-erp-9743545895368865022
   push:
     branches:
-      - main
+      - scaffold-gymsmart-erp-9743545895368865022
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}

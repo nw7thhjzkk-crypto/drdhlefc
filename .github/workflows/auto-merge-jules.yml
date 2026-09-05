@@ -66,7 +66,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
           EXPECTED_SHA: ${{ steps.pr.outputs.sha }}
-          BASE_BRANCH: main
+          BASE_BRANCH: scaffold-gymsmart-erp-9743545895368865022
         run: |
           set -euo pipefail
 
