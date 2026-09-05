@@ -1,9 +1,9 @@
 # Jules — primary implementation agent for DR DHL Elite Fitness Club
 #
 # Trigger: repository owner comments `/jules <task>` on an issue or PR thread.
-# Official integration: google-labs-code/jules-invoke@v1
+# Official integration: google-labs-code/jules-action@v1.0.0
 # API: https://jules.googleapis.com/v1alpha/sessions
-# Automation: AUTO_CREATE_PR (Jules opens a PR; humans merge).
+# Automation: AUTO_CREATE_PR (handled by the official action; humans merge).
 #
 # Safety:
 # - Owner-only (nw7thhjzkk-crypto)
@@ -46,7 +46,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Invoke Jules (official action)
-        uses: google-labs-code/jules-invoke@v1
+        uses: google-labs-code/jules-action@v1.0.0
         with:
           # Complete owner task text (after /jules)
           prompt: |
