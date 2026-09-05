@@ -28,8 +28,7 @@ export default async function MemberHomePage() {
     );
   }
 
-  const nowISO   = new Date().toISOString();
-  const todayStr = nowISO.split("T")[0];
+  const nowISO = new Date().toISOString();
 
   const [
     { data: latestAssessment },
@@ -97,9 +96,15 @@ export default async function MemberHomePage() {
   const bookedActivityIds = new Set((myBookings ?? []).map((b: { activity_id: string }) => b.activity_id));
   const myBookingMap = Object.fromEntries((myBookings ?? []).map((b: { activity_id: string; id: string }) => [b.activity_id, b.id]));
 
-  const daysLeft = membership?.end_date
-    ? Math.ceil((new Date(membership.end_date).getTime() - Date.now()) / 86400000)
-    : null;
+  let daysLeft: number | null = null;
+  if (membership?.end_date) {
+    const endKey = String(membership.end_date).slice(0, 10);
+    const now = new Date();
+    const todayKey = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+    const [ey, em, ed] = endKey.split("-").map(Number);
+    const [ty, tm, td] = todayKey.split("-").map(Number);
+    daysLeft = Math.round((Date.UTC(ey, em - 1, ed) - Date.UTC(ty, tm - 1, td)) / 86400000);
+  }
 
   const card: React.CSSProperties = {
     background: "var(--color-bg-card)",
@@ -112,7 +117,6 @@ export default async function MemberHomePage() {
   return (
     <div style={{ maxWidth: "480px", margin: "0 auto" }}>
 
-      {/* Greeting */}
       <div style={{ marginBottom: "1.25rem" }}>
         <h1 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#fff" }}>
           Hey, {member.name?.split(" ")[0]} 👋
@@ -124,7 +128,6 @@ export default async function MemberHomePage() {
         )}
       </div>
 
-      {/* Membership status */}
       <div style={{ ...card, borderLeft: membership ? "3px solid var(--color-gold)" : "3px solid #EF4444" }}>
         <div style={{ fontSize: "0.6875rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-silver-dark)", marginBottom: "0.5rem" }}>
           Membership
@@ -155,7 +158,6 @@ export default async function MemberHomePage() {
         )}
       </div>
 
-      {/* Latest stats */}
       {latestAssessment && (
         <div style={{ ...card, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
           <Stat label="Weight"   value={`${latestAssessment.weight_kg} kg`} />
@@ -164,7 +166,6 @@ export default async function MemberHomePage() {
         </div>
       )}
 
-      {/* Pending recommendations */}
       {((pendingDiet?.length ?? 0) + (pendingWorkout?.length ?? 0)) > 0 && (
         <div style={{ ...card, borderLeft: "3px solid #8B5CF6" }}>
           <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#8B5CF6", marginBottom: "0.5rem" }}>
@@ -185,7 +186,6 @@ export default async function MemberHomePage() {
         </div>
       )}
 
-      {/* Upcoming activities */}
       <div style={card}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
           <h2 style={{ fontSize: "0.875rem", fontWeight: 700, color: "#fff" }}>Upcoming Activities</h2>
@@ -266,7 +266,6 @@ export default async function MemberHomePage() {
         )}
       </div>
 
-      {/* Recent attendance */}
       {myAttendance && myAttendance.length > 0 && (
         <div style={card}>
           <h2 style={{ fontSize: "0.875rem", fontWeight: 700, color: "#fff", marginBottom: "0.625rem" }}>
@@ -289,7 +288,6 @@ export default async function MemberHomePage() {
   );
 }
 
-// Sub-components
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ textAlign: "center" }}>
@@ -303,7 +301,6 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-// Types
 interface GroupActivity {
   id: string;
   name: string;
