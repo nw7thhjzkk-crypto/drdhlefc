@@ -1,31 +1,5 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "model": "opencode/big-pickle",
-  "small_model": "opencode/gpt-5-nano",
-  "plugin": [
-    [
-      "@shutovks/opencode-model-fallback",
-      {
-        "enabled": true,
-        "fallback_models": [
-          "opencode/big-pickle",
-          "opencode/nemotron-3-ultra-free",
-          "opencode/mimo-v2.5-free",
-          "openrouter/cohere/north-mini-code:free",
-          "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
-          "openrouter/openrouter/free",
-          "groq/openai/gpt-oss-120b",
-          "groq/llama-3.3-70b-versatile",
-          "google/gemini-3.6-flash"
-        ],
-        "max_attempts": 8,
-        "attempts_window_ms": 900000,
-        "cooldown_ms": 15000,
-        "backoff_ms": 2000,
-        "recover_original_model": false,
-        "notify": true,
-        "debug": false
-      }
-    ]
-  ]
+  "small_model": "opencode/gpt-5-nano"
 }

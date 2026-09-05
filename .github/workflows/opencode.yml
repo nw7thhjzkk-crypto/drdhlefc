@@ -2,14 +2,14 @@
 # Trigger: comment /oc or /opencode on issues or PR review threads
 # Restricted to repository owner only. Secrets are never echoed.
 #
-# Model routing (cost target: $0):
-# 1) OpenCode Zen free models (primary)
-# 2) OpenRouter :free models (optional secret)
-# 3) Groq free tier (optional secret)
-# 4) Google Gemini free tier (optional / last resort)
-# Failover between models is handled by project opencode.json
-# (@shutovks/opencode-model-fallback). Missing provider secrets simply
-# skip that lane when OpenCode cannot authenticate the provider.
+# Free-provider env lanes (optional secrets):
+# - OPENCODE_API_KEY  -> OpenCode Zen free models
+# - OPENROUTER_API_KEY -> OpenRouter :free models
+# - GROQ_API_KEY      -> Groq free tier
+# - GEMINI_API_KEY    -> Google free tier (last resort)
+#
+# Fail-fast: job timeout-minutes prevents indefinite hangs when a provider
+# stalls (missing auth, network wait, or model non-response).
 name: opencode
 
 on:
@@ -20,11 +20,12 @@ on:
 
 jobs:
   opencode:
-    # Only run for owner comments that mention /oc or /opencode
     if: |
       github.event.comment.user.login == 'nw7thhjzkk-crypto' &&
       (contains(github.event.comment.body, '/oc') || contains(github.event.comment.body, '/opencode'))
     runs-on: ubuntu-latest
+    # Hard ceiling so a dead provider/plugin cannot hang the runner for hours.
+    timeout-minutes: 15
     permissions:
       contents: write
       pull-requests: write
@@ -39,27 +40,19 @@ jobs:
       - name: Run OpenCode
         uses: anomalyco/opencode/github@v1.18.29
         env:
-          # Built-in token for commits/comments/PRs (no OpenCode GitHub App required)
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          # Optional: OpenCode Zen account key (free models work with $0 balance)
-          # Create at https://opencode.ai (Zen). Leave unset to rely on anonymous free catalog when available.
+          # Optional free lanes (presence only; values never logged by this workflow)
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-
-          # Optional: OpenRouter free-lane key (no card required for :free models)
-          # https://openrouter.ai/keys
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-
-          # Optional: Groq free-tier key (no card required)
-          # https://console.groq.com/keys
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
 
-          # Optional last-resort Google free tier (strict per-model daily limits)
-          # Reuses existing GEMINI_API_KEY secret when present
+          # Optional last-resort Google free tier
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         with:
-          # Primary: OpenCode Zen free coding model (no paid Gemini dependency)
+          # Zen free primary. Requires usable OPENCODE_API_KEY (or Zen anonymous access).
+          # If this model cannot authenticate, the job must fail within timeout-minutes.
           model: opencode/big-pickle
           use_github_token: true
           share: "false"
