@@ -80,7 +80,17 @@ jobs:
           HEAD_OWNER="$(printf '%s' "$PR_JSON" | jq -r '.headRepositoryOwner.login')"
           HEAD_REPO="$(printf '%s' "$PR_JSON" | jq -r '.headRepository.name')"
 
-          if [ "$AUTHOR" != "google-labs-jules[bot]" ]; then
+          COMMITS_JSON="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/commits")"
+          HAS_JULES_COMMIT="$(printf "%s" "$COMMITS_JSON" | jq '[.[] | select(.author.login == "google-labs-jules[bot]" or .committer.login == "google-labs-jules[bot]")] | length')"
+
+          IS_JULES_PR="false"
+          if [ "$AUTHOR" == "google-labs-jules[bot]" ]; then
+            IS_JULES_PR="true"
+          elif [ "$HAS_JULES_COMMIT" -gt 0 ]; then
+            IS_JULES_PR="true"
+          fi
+
+          if [ "$IS_JULES_PR" != "true" ]; then
             echo "Not a Jules bot PR (author=$AUTHOR). Skipping auto-merge."
             bash -c 'exit 0'
           elif [ "$HEAD_OWNER/$HEAD_REPO" != "${GITHUB_REPOSITORY}" ]; then
