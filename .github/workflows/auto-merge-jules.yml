@@ -159,7 +159,7 @@ jobs:
                 issue_number: prNumber,
                 body:
                   '**Auto-merge blocked (high-risk paths)**\n\n' +
-                  risky.map((p) => `- `' + p + '`').join('\n') +
+                  risky.map((p) => "- `" + p + "`").join("\n") +
                   '\n\nHuman review required. Safeguards were not weakened.',
               });
               return;
