@@ -1,0 +1,7 @@
+# Supabase local/project config (bridge-relevant section only).
+# Full project may extend this file over time.
+
+[functions.jules-orchestrator]
+# Service-to-service auth uses ORCHESTRATOR_SHARED_SECRET (Bearer).
+# Disable JWT gate so external orchestrators are not forced through end-user JWT.
+verify_jwt = false
