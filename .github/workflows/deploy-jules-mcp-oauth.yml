@@ -1,0 +1,123 @@
+name: Deploy jules-mcp-oauth (manual)
+
+# High-risk production deploy. workflow_dispatch only — never on push/PR merge.
+# Deploys hardened jules-mcp-oauth from fixed PR #86 source SHA only.
+# Does not deploy jules-mcp, jules-orchestrator, or application code.
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: >
+          Exact git SHA of jules-mcp-oauth sources (must be PR #86 hardened head
+          66e009b1e84c38a582e9e7330d3185ca944cb4e5 unless intentionally updated).
+        required: true
+        type: string
+      confirm_production:
+        description: Type exactly deploy-jules-mcp-oauth-production to proceed
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  EXPECTED_SOURCE_SHA: "66e009b1e84c38a582e9e7330d3185ca944cb4e5"
+  SUPABASE_PROJECT_REF: "ahkwooaqayqikvotwuac"
+  FUNCTION_NAME: "jules-mcp-oauth"
+
+jobs:
+  deploy:
+    name: Preflight + migrate + deploy jules-mcp-oauth
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Fail closed — confirmation phrase
+        if: ${{ inputs.confirm_production != 'deploy-jules-mcp-oauth-production' }}
+        run: |
+          echo "Refusing deploy: confirm_production must be exactly deploy-jules-mcp-oauth-production"
+          exit 1
+
+      - name: Fail closed — source SHA pin (PR #86 hardened)
+        env:
+          INPUT_SHA: ${{ inputs.source_sha }}
+        run: |
+          set -euo pipefail
+          # Normalize full or short SHA to compare prefix of expected full SHA
+          INPUT_SHA="$(echo "$INPUT_SHA" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
+          EXPECTED="${EXPECTED_SOURCE_SHA}"
+          if [ "$INPUT_SHA" != "$EXPECTED" ]; then
+            echo "Refusing deploy: source_sha must equal $EXPECTED (got: $INPUT_SHA)"
+            exit 1
+          fi
+          echo "Source SHA pin OK: $EXPECTED"
+
+      - name: Checkout pinned source SHA only
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXPECTED_SOURCE_SHA }}
+          fetch-depth: 1
+
+      - name: Preflight — required paths exist at pinned SHA
+        run: |
+          set -euo pipefail
+          test -f supabase/functions/jules-mcp-oauth/index.ts
+          test -f supabase/migrations/000011_jules_mcp_oauth.sql
+          # Fail if this checkout accidentally includes a rewrite of jules-mcp deploy target
+          # (we only deploy jules-mcp-oauth below; presence of other functions is OK)
+          HEAD_SHA="$(git rev-parse HEAD)"
+          case "$HEAD_SHA" in
+            ${EXPECTED_SOURCE_SHA}*) echo "Checked-out HEAD matches pin: $HEAD_SHA" ;;
+            *) echo "Checked-out HEAD $HEAD_SHA does not match pin ${EXPECTED_SOURCE_SHA}"; exit 1 ;;
+          esac
+          # Sanity: migration name
+          grep -q jules_mcp_oauth_clients supabase/migrations/000011_jules_mcp_oauth.sql
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Apply migration 000011 (db push)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+            echo "Missing GitHub secret SUPABASE_ACCESS_TOKEN"
+            exit 1
+          fi
+          PROJECT_REF="${SUPABASE_PROJECT_ID:-$SUPABASE_PROJECT_REF}"
+                   if [ "$PROJECT_REF" != "ahkwooaqayqikvotwuac" ]; then
+            echo "Refusing deploy: project ref must be ahkwooaqayqikvotwuac"
+            exit 1
+          fi
+          # Link non-interactively; do not echo secrets
+          supabase link --project-ref "$PROJECT_REF" -p "$SUPABASE_DB_PASSWORD"
+          # Applies pending migrations including 000011_jules_mcp_oauth.sql
+          supabase db push --include-all
+          echo "Migration step finished (no secret output)."
+
+      - name: Deploy Edge Function jules-mcp-oauth only
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          PROJECT_REF="${SUPABASE_PROJECT_ID:-$SUPABASE_PROJECT_REF}"
+          if [ "$PROJECT_REF" != "ahkwooaqayqikvotwuac" ]; then
+            echo "Refusing deploy: project ref must be ahkwooaqayqikvotwuac"
+            exit 1
+          fi
+          # Deploy single function; JWT verification disabled (OAuth gateway uses its own auth)
+          supabase functions deploy "$FUNCTION_NAME" \
+            --project-ref "$PROJECT_REF" \
+            --no-verify-jwt
+          echo "DEPLOY_STATUS=success"
+          echo "FUNCTION_NAME=$FUNCTION_NAME"
+          echo "PROJECT_REF=$PROJECT_REF"
+          echo "SOURCE_SHA=$EXPECTED_SOURCE_SHA"
+          echo "Safe status only — secrets not printed."
