@@ -2,7 +2,11 @@ name: Deploy jules-mcp-oauth (manual)
 
 # High-risk production deploy. workflow_dispatch only — never on push/PR merge.
 # Deploys hardened jules-mcp-oauth from fixed PR #86 source SHA only.
-# Does not deploy jules-mcp, jules-orchestrator, or application code.
+# Does NOT run supabase db push (remote migration history uses timestamp
+# versions not present in the sequential Git migration tree — see Actions
+# run 34057223122). Schema for 000011 must already exist or be applied
+# out-of-band; this workflow only verifies tables read-only then deploys
+# the Edge Function.
 
 on:
   workflow_dispatch:
@@ -28,7 +32,7 @@ env:
 
 jobs:
   deploy:
-    name: Preflight + migrate + deploy jules-mcp-oauth
+    name: Preflight + deploy jules-mcp-oauth (no db push)
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -44,7 +48,6 @@ jobs:
           INPUT_SHA: ${{ inputs.source_sha }}
         run: |
           set -euo pipefail
-          # Normalize full or short SHA to compare prefix of expected full SHA
           INPUT_SHA="$(echo "$INPUT_SHA" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
           EXPECTED="${EXPECTED_SOURCE_SHA}"
           if [ "$INPUT_SHA" != "$EXPECTED" ]; then
@@ -64,22 +67,21 @@ jobs:
           set -euo pipefail
           test -f supabase/functions/jules-mcp-oauth/index.ts
           test -f supabase/migrations/000011_jules_mcp_oauth.sql
-          # Fail if this checkout accidentally includes a rewrite of jules-mcp deploy target
-          # (we only deploy jules-mcp-oauth below; presence of other functions is OK)
           HEAD_SHA="$(git rev-parse HEAD)"
           case "$HEAD_SHA" in
             ${EXPECTED_SOURCE_SHA}*) echo "Checked-out HEAD matches pin: $HEAD_SHA" ;;
             *) echo "Checked-out HEAD $HEAD_SHA does not match pin ${EXPECTED_SOURCE_SHA}"; exit 1 ;;
           esac
-          # Sanity: migration name
           grep -q jules_mcp_oauth_clients supabase/migrations/000011_jules_mcp_oauth.sql
+          grep -q jules_mcp_oauth_codes supabase/migrations/000011_jules_mcp_oauth.sql
+          grep -q jules_mcp_oauth_refresh_tokens supabase/migrations/000011_jules_mcp_oauth.sql
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: latest
 
-      - name: Apply migration 000011 (db push)
+      - name: Link project (no schema changes)
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -90,16 +92,76 @@ jobs:
             echo "Missing GitHub secret SUPABASE_ACCESS_TOKEN"
             exit 1
           fi
+          if [ -z "${SUPABASE_DB_PASSWORD:-}" ]; then
+            echo "Missing GitHub secret SUPABASE_DB_PASSWORD (required for read-only table preflight)"
+            exit 1
+          fi
           PROJECT_REF="${SUPABASE_PROJECT_ID:-$SUPABASE_PROJECT_REF}"
-                   if [ "$PROJECT_REF" != "ahkwooaqayqikvotwuac" ]; then
+          if [ "$PROJECT_REF" != "ahkwooaqayqikvotwuac" ]; then
             echo "Refusing deploy: project ref must be ahkwooaqayqikvotwuac"
             exit 1
           fi
-          # Link non-interactively; do not echo secrets
+          # Link only — do not db push / repair / pull
           supabase link --project-ref "$PROJECT_REF" -p "$SUPABASE_DB_PASSWORD"
-          # Applies pending migrations including 000011_jules_mcp_oauth.sql
-          supabase db push --include-all
-          echo "Migration step finished (no secret output)."
+          echo "Project linked (no migration commands run)."
+
+      - name: Preflight — OAuth tables exist (read-only)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          PROJECT_REF="${SUPABASE_PROJECT_ID:-$SUPABASE_PROJECT_REF}"
+          if [ "$PROJECT_REF" != "ahkwooaqayqikvotwuac" ]; then
+            echo "Refusing deploy: project ref must be ahkwooaqayqikvotwuac"
+            exit 1
+          fi
+
+          # Read-only SQL: list which required tables exist. No DDL/DML.
+          # 000011 also creates indexes and RLS/GRANT settings; tables are the
+          # hard dependency for the Edge Function. Indexes/RLS are not probed
+          # here to avoid privileged catalog complexity.
+          READ_SQL="SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename IN ('jules_mcp_oauth_clients','jules_mcp_oauth_codes','jules_mcp_oauth_refresh_tokens') ORDER BY tablename;"
+
+          FOUND=""
+          # Prefer psql via Supabase pooler session mode (standard pattern).
+          # Host shape: db.<project-ref>.supabase.co
+          DB_HOST="db.${PROJECT_REF}.supabase.co"
+          if command -v psql >/dev/null 2>&1; then
+            FOUND="$(psql "host=${DB_HOST} port=5432 dbname=postgres user=postgres" \
+              -v ON_ERROR_STOP=1 -tAc "$READ_SQL" 2>/tmp/oauth_preflight_err || true)"
+          fi
+
+          # Fallback: supabase db execute if available (CLI version-dependent)
+          if [ -z "${FOUND//[[:space:]]/}" ]; then
+            if supabase db execute --help >/dev/null 2>&1; then
+              FOUND="$(supabase db execute --linked -o json "$READ_SQL" 2>/tmp/oauth_preflight_err || true)"
+            fi
+          fi
+
+          if [ -z "${FOUND//[[:space:]]/}" ]; then
+            echo "FAIL CLOSED: cannot verify OAuth tables with available CI credentials/CLI."
+            echo "Do not deploy until public.jules_mcp_oauth_clients,"
+            echo "public.jules_mcp_oauth_codes, and public.jules_mcp_oauth_refresh_tokens exist."
+            echo "Apply 000011_jules_mcp_oauth.sql out-of-band (Dashboard SQL / controlled apply),"
+            echo "then re-run this workflow. This job does not run migration repair, db push, or db pull."
+            if [ -f /tmp/oauth_preflight_err ]; then
+              # Print only non-secret diagnostic lines if any
+              grep -viE 'password|token|secret|bearer|api.key' /tmp/oauth_preflight_err | tail -n 20 || true
+            fi
+            exit 1
+          fi
+
+          echo "Tables reported by read-only probe:"
+          echo "$FOUND"
+
+          echo "$FOUND" | grep -q 'jules_mcp_oauth_clients' || { echo "Missing jules_mcp_oauth_clients"; exit 1; }
+          echo "$FOUND" | grep -q 'jules_mcp_oauth_codes' || { echo "Missing jules_mcp_oauth_codes"; exit 1; }
+          echo "$FOUND" | grep -q 'jules_mcp_oauth_refresh_tokens' || { echo "Missing jules_mcp_oauth_refresh_tokens"; exit 1; }
+
+          echo "OAuth table preflight OK (read-only)."
 
       - name: Deploy Edge Function jules-mcp-oauth only
         env:
@@ -112,7 +174,7 @@ jobs:
             echo "Refusing deploy: project ref must be ahkwooaqayqikvotwuac"
             exit 1
           fi
-          # Deploy single function; JWT verification disabled (OAuth gateway uses its own auth)
+          # Single function only — does not deploy jules-mcp or jules-orchestrator
           supabase functions deploy "$FUNCTION_NAME" \
             --project-ref "$PROJECT_REF" \
             --no-verify-jwt
@@ -120,4 +182,5 @@ jobs:
           echo "FUNCTION_NAME=$FUNCTION_NAME"
           echo "PROJECT_REF=$PROJECT_REF"
           echo "SOURCE_SHA=$EXPECTED_SOURCE_SHA"
+          echo "DB_PUSH=skipped (by design; migration history mismatch)"
           echo "Safe status only — secrets not printed."
