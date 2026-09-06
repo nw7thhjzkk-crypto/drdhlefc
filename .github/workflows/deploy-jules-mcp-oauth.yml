@@ -7,6 +7,9 @@ name: Deploy jules-mcp-oauth (manual)
 # run 34057223122). Schema for 000011 must already exist or be applied
 # out-of-band; this workflow only verifies tables read-only then deploys
 # the Edge Function.
+#
+# Table probe fix (run 34057783217): install postgresql-client + sslmode=require;
+# fallback is `supabase db query --linked` (not `db execute`).
 
 on:
   workflow_dispatch:
@@ -81,6 +84,13 @@ jobs:
         with:
           version: latest
 
+      - name: Install postgresql-client (read-only probe)
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          psql --version
+
       - name: Link project (no schema changes)
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -111,6 +121,7 @@ jobs:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PGSSLMODE: require
         run: |
           set -euo pipefail
           PROJECT_REF="${SUPABASE_PROJECT_ID:-$SUPABASE_PROJECT_REF}"
@@ -119,26 +130,23 @@ jobs:
             exit 1
           fi
 
-          # Read-only SQL: list which required tables exist. No DDL/DML.
-          # 000011 also creates indexes and RLS/GRANT settings; tables are the
-          # hard dependency for the Edge Function. Indexes/RLS are not probed
-          # here to avoid privileged catalog complexity.
+          # Read-only SQL only — no DDL/DML.
           READ_SQL="SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename IN ('jules_mcp_oauth_clients','jules_mcp_oauth_codes','jules_mcp_oauth_refresh_tokens') ORDER BY tablename;"
 
           FOUND=""
-          # Prefer psql via Supabase pooler session mode (standard pattern).
-          # Host shape: db.<project-ref>.supabase.co
           DB_HOST="db.${PROJECT_REF}.supabase.co"
+
+          # Primary: psql with explicit SSL (postgresql-client installed above).
+          # Password via PGPASSWORD env — not printed; not in process argv string beyond env.
           if command -v psql >/dev/null 2>&1; then
-            FOUND="$(psql "host=${DB_HOST} port=5432 dbname=postgres user=postgres" \
+            FOUND="$(psql "host=${DB_HOST} port=5432 dbname=postgres user=postgres sslmode=require" \
               -v ON_ERROR_STOP=1 -tAc "$READ_SQL" 2>/tmp/oauth_preflight_err || true)"
           fi
 
-          # Fallback: supabase db execute if available (CLI version-dependent)
+          # Fallback: supabase db query --linked (verified CLI subcommand; not db execute).
+          # Syntax: supabase db query "SELECT ..." --linked
           if [ -z "${FOUND//[[:space:]]/}" ]; then
-            if supabase db execute --help >/dev/null 2>&1; then
-              FOUND="$(supabase db execute --linked -o json "$READ_SQL" 2>/tmp/oauth_preflight_err || true)"
-            fi
+            FOUND="$(supabase db query "$READ_SQL" --linked 2>/tmp/oauth_preflight_err || true)"
           fi
 
           if [ -z "${FOUND//[[:space:]]/}" ]; then
@@ -148,8 +156,7 @@ jobs:
             echo "Apply 000011_jules_mcp_oauth.sql out-of-band (Dashboard SQL / controlled apply),"
             echo "then re-run this workflow. This job does not run migration repair, db push, or db pull."
             if [ -f /tmp/oauth_preflight_err ]; then
-              # Print only non-secret diagnostic lines if any
-              grep -viE 'password|token|secret|bearer|api.key' /tmp/oauth_preflight_err | tail -n 20 || true
+              grep -viE 'password|token|secret|bearer|api.key' /tmp/oauth_preflight_err | tail -n 30 || true
             fi
             exit 1
           fi
