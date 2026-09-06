@@ -1,12 +1,19 @@
 # Guarded automatic merge for Jules-produced PRs only.
 #
+# Architecture: pure Octokit via actions/github-script.
+# NO actions/checkout, NO gh CLI, NO local .git dependency.
+#
+# Trigger: only after CI workflow completes successfully on a pull_request.
+# Merge: REST pulls.merge with exact HEAD SHA (fails if tip moved).
+#
 # Eligibility (ALL required):
-# - Author is google-labs-jules[bot]
-# - Head repo is this repository (not a fork)
-# - Base is the production branch
-# - CI workflow "CI" completed successfully for this head SHA
-# - PR is mergeable (no conflicts)
-# - High-risk paths are NOT modified (fail closed)
+# - Base = production branch
+# - Not a fork
+# - Not draft / closed / already merged
+# - mergeable_state allows merge
+# - Jules provenance (author OR any commit author/committer is google-labs-jules[bot])
+# - CI check "lint-typecheck-build" success on the EXACT head SHA
+# - No high-risk paths in the PR file list
 #
 # Never merges arbitrary/manual/external PRs.
 name: auto-merge-jules
@@ -15,8 +22,6 @@ on:
   workflow_run:
     workflows: ["CI"]
     types: [completed]
-  pull_request_target:
-    types: [opened, reopened, synchronize, ready_for_review]
 
 permissions:
   contents: write
@@ -27,106 +32,192 @@ permissions:
 jobs:
   maybe-automerge:
     if: |
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request') ||
-      (github.event_name == 'pull_request_target')
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - name: Resolve PR for successful CI run
-        id: pr
+      - name: Evaluate eligibility and merge via Octokit
         uses: actions/github-script@v7
         with:
           script: |
-            if (context.eventName === 'pull_request_target') {
-              core.setOutput('number', String(context.payload.pull_request.number));
-              core.setOutput('sha', context.payload.pull_request.head.sha);
-              return;
-            }
+            const BASE_BRANCH = 'scaffold-gymsmart-erp-9743545895368865022';
+            const CI_CHECK_NAME = 'lint-typecheck-build';
+            const JULES_LOGIN = 'google-labs-jules[bot]';
+            const HIGH_RISK = new Set([
+              'supabase/migrations/000008_security_hardening.sql',
+              'supabase/migrations/000009_store_atomicity_and_membership_financial.sql',
+              'AGENTS.md',
+              'opencode.json',
+            ]);
+            const isHighRiskPath = (p) =>
+              HIGH_RISK.has(p) || p.startsWith('.github/workflows/');
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
             const run = context.payload.workflow_run;
-            const pulls = run.pull_requests || [];
-            if (!pulls.length) {
+            const headSha = run.head_sha;
+            const headBranch = run.head_branch;
+
+            // --- Resolve the open PR for this CI run (exact head SHA) ---
+            let prNumber = null;
+            const linked = run.pull_requests || [];
+            for (const p of linked) {
+              if (p.head && p.head.sha === headSha) {
+                prNumber = p.number;
+                break;
+              }
+            }
+            if (!prNumber) {
               const { data: items } = await github.rest.pulls.list({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
+                owner,
+                repo,
                 state: 'open',
-                head: `${context.repo.owner}:${run.head_branch}`,
-                per_page: 10,
+                head: `${owner}:${headBranch}`,
+                per_page: 20,
               });
-              const match = items.find(p => p.head.sha === run.head_sha);
+              const match = items.find((p) => p.head.sha === headSha);
               if (!match) {
-                core.setFailed('No open PR found for successful CI run');
+                core.info(`No open PR for CI head ${headSha} on ${headBranch}; exit.`);
                 return;
               }
-              core.setOutput('number', String(match.number));
-              core.setOutput('sha', match.head.sha);
+              prNumber = match.number;
+            }
+
+            core.info(`Evaluating PR #${prNumber} at ${headSha}`);
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: prNumber,
+            });
+
+            // --- Structural gates ---
+            if (pr.state !== 'open' || pr.merged) {
+              core.info(`PR #${prNumber} not open (state=${pr.state}, merged=${pr.merged}).`);
               return;
             }
-            const pr = pulls[0];
-            core.setOutput('number', String(pr.number));
-            core.setOutput('sha', pr.head.sha);
+            if (pr.draft) {
+              core.info(`PR #${prNumber} is draft.`);
+              return;
+            }
+            if (pr.base.ref !== BASE_BRANCH) {
+              core.info(`Base is ${pr.base.ref}, expected ${BASE_BRANCH}.`);
+              return;
+            }
+            if (pr.head.repo.full_name !== `${owner}/${repo}`) {
+              core.info(`Fork PR (${pr.head.repo.full_name}); refuse.`);
+              return;
+            }
+            // Tip must still be the SHA CI validated
+            if (pr.head.sha !== headSha) {
+              core.info(
+                `PR tip moved (${pr.head.sha} != CI ${headSha}); refuse (fail closed).`
+              );
+              return;
+            }
+            // mergeable can be null while GitHub computes; treat non-true carefully
+            if (pr.mergeable === false) {
+              core.info(`PR #${prNumber} not mergeable (conflicts).`);
+              return;
+            }
 
-      - name: Evaluate eligibility and enable auto-merge
-        if: steps.pr.outputs.number
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ steps.pr.outputs.number }}
-          EXPECTED_SHA: ${{ steps.pr.outputs.sha }}
-          BASE_BRANCH: scaffold-gymsmart-erp-9743545895368865022
-        run: |
-          set -euo pipefail
+            // --- Jules provenance ---
+            let isJules = pr.user && pr.user.login === JULES_LOGIN;
+            if (!isJules) {
+              const commits = await github.paginate(github.rest.pulls.listCommits, {
+                owner,
+                repo,
+                pull_number: prNumber,
+                per_page: 100,
+              });
+              isJules = commits.some(
+                (c) =>
+                  (c.author && c.author.login === JULES_LOGIN) ||
+                  (c.committer && c.committer.login === JULES_LOGIN)
+              );
+            }
+            if (!isJules) {
+              core.info(
+                `Not a Jules PR (author=${pr.user && pr.user.login}); skip.`
+              );
+              return;
+            }
 
-          PR_JSON="$(gh pr view "$PR_NUMBER" --json number,title,author,isDraft,mergeable,baseRefName,headRefName,headRepository,headRepositoryOwner,url,files)"
-          echo "Evaluating PR #$PR_NUMBER"
+            // --- High-risk files (paginate file list) ---
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner,
+              repo,
+              pull_number: prNumber,
+              per_page: 100,
+            });
+            const risky = files.map((f) => f.filename).filter(isHighRiskPath);
+            if (risky.length) {
+              core.warning(`High-risk paths; fail closed: ${risky.join(', ')}`);
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body:
+                  '**Auto-merge blocked (high-risk paths)**\n\n' +
+                  risky.map((p) => `- `' + p + '`').join('\n') +
+                  '\n\nHuman review required. Safeguards were not weakened.',
+              });
+              return;
+            }
 
-          AUTHOR="$(printf '%s' "$PR_JSON" | jq -r '.author.login')"
-          IS_DRAFT="$(printf '%s' "$PR_JSON" | jq -r '.isDraft')"
-          MERGEABLE="$(printf '%s' "$PR_JSON" | jq -r '.mergeable')"
-          BASE_REF="$(printf '%s' "$PR_JSON" | jq -r '.baseRefName')"
-          HEAD_OWNER="$(printf '%s' "$PR_JSON" | jq -r '.headRepositoryOwner.login')"
-          HEAD_REPO="$(printf '%s' "$PR_JSON" | jq -r '.headRepository.name')"
+            // --- CI check on exact SHA ---
+            const { data: checkRuns } = await github.rest.checks.listForRef({
+              owner,
+              repo,
+              ref: headSha,
+              check_name: CI_CHECK_NAME,
+              status: 'completed',
+              per_page: 20,
+            });
+            const ok = (checkRuns.check_runs || []).some(
+              (cr) => cr.name === CI_CHECK_NAME && cr.conclusion === 'success'
+            );
+            if (!ok) {
+              core.info(
+                `No successful "${CI_CHECK_NAME}" on ${headSha}; skip.`
+              );
+              return;
+            }
 
-          COMMITS_JSON="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/commits")"
-          HAS_JULES_COMMIT="$(printf "%s" "$COMMITS_JSON" | jq '[.[] | select(.author.login == "google-labs-jules[bot]" or .committer.login == "google-labs-jules[bot]")] | length')"
-
-          IS_JULES_PR="false"
-          if [ "$AUTHOR" == "google-labs-jules[bot]" ]; then
-            IS_JULES_PR="true"
-          elif [ "$HAS_JULES_COMMIT" -gt 0 ]; then
-            IS_JULES_PR="true"
-          fi
-
-          if [ "$IS_JULES_PR" != "true" ]; then
-            echo "Not a Jules bot PR (author=$AUTHOR). Skipping auto-merge."
-            bash -c 'exit 0'
-          elif [ "$HEAD_OWNER/$HEAD_REPO" != "${GITHUB_REPOSITORY}" ]; then
-            echo "Fork PR detected ($HEAD_OWNER/$HEAD_REPO). Refusing auto-merge."
-            bash -c 'exit 0'
-          elif [ "$BASE_REF" != "$BASE_BRANCH" ]; then
-            echo "PR is not targeting production branch $BASE_BRANCH. Skipping auto-merge."
-            bash -c 'exit 0'
-          elif [ "$IS_DRAFT" == "true" ]; then
-            echo "PR is a draft. Skipping auto-merge."
-            bash -c 'exit 0'
-          elif [ "$MERGEABLE" == "CONFLICTING" ]; then
-            echo "PR has conflicts. Skipping auto-merge."
-            bash -c 'exit 0'
-          else
-            HAS_HIGH_RISK=false
-            while read -r FILE_PATH; do
-              if [[ "$FILE_PATH" == .github/workflows/* ]] || \
-                 [[ "$FILE_PATH" == "AGENTS.md" ]] || \
-                 [[ "$FILE_PATH" == "opencode.json" ]] || \
-                 [[ "$FILE_PATH" == supabase/migrations/000008_security_hardening.sql ]] || \
-                 [[ "$FILE_PATH" == supabase/migrations/000009_store_atomicity_and_membership_financial.sql ]]; then
-                echo "High-risk file modified: $FILE_PATH"
-                HAS_HIGH_RISK=true
-              fi
-            done < <(printf '%s' "$PR_JSON" | jq -r '.files[].path')
-
-            if [ "$HAS_HIGH_RISK" == "true" ]; then
-              echo "High-risk changes detected. Failing closed. Human review and merge required."
-              bash -c 'exit 1'
-            else
-              echo "PR $PR_NUMBER meets all criteria. Enabling auto-merge."
-              gh pr merge "$PR_NUMBER" --auto --squash
-            fi
-          fi
+            // --- Merge with exact SHA (atomic tip check) ---
+            try {
+              const { data: result } = await github.rest.pulls.merge({
+                owner,
+                repo,
+                pull_number: prNumber,
+                merge_method: 'squash',
+                sha: headSha,
+                commit_title: `${pr.title} (#${prNumber})`,
+              });
+              if (result.merged) {
+                core.info(`Merged PR #${prNumber} at ${headSha}.`);
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: prNumber,
+                  body:
+                    'Auto-merged (squash) after green CI on exact HEAD SHA. ' +
+                    'Jules-provenance verified; high-risk paths absent.',
+                });
+              } else {
+                core.warning(`Merge not completed: ${result.message}`);
+              }
+            } catch (err) {
+              // 405/409 when not mergeable or SHA mismatch — fail closed, do not throw job red for race
+              const status = err.status || (err.response && err.response.status);
+              core.warning(`Merge refused by API (${status}): ${err.message}`);
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body:
+                  'Auto-merge attempted but GitHub refused the merge ' +
+                  `(${status || 'unknown'}). Fail closed. ` +
+                  'Re-run CI after resolving conflicts or tip movement if needed.',
+              });
+            }
