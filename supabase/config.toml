@@ -1,7 +1,13 @@
-# Supabase local/project config (bridge-relevant section only).
-# Full project may extend this file over time.
+# Supabase local/project config (bridge + MCP + OAuth gateway).
 
 [functions.jules-orchestrator]
 # Service-to-service auth uses ORCHESTRATOR_SHARED_SECRET (Bearer).
-# Disable JWT gate so external orchestrators are not forced through end-user JWT.
+verify_jwt = false
+
+[functions.jules-mcp]
+# Remote MCP for static Bearer MCP_SHARED_SECRET.
+verify_jwt = false
+
+[functions.jules-mcp-oauth]
+# OAuth 2.1/PKCE gateway for Claude/Grok connectors; proxies to jules-mcp.
 verify_jwt = false
