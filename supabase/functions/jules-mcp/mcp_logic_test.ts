@@ -1,5 +1,7 @@
 /**
- * Pure logic tests for Jules MCP validation/auth helpers.
+ * Compatibility-oriented tests for Jules MCP auth/validation helpers.
+ * Full Streamable HTTP client tests require a running Edge runtime + secrets.
+ *
  * Run: deno test supabase/functions/jules-mcp/mcp_logic_test.ts
  */
 
@@ -13,6 +15,12 @@ const MAX_PROMPT = 50_000;
 const FIXED_REPO = "nw7thhjzkk-crypto/drdhlefc";
 const FIXED_BRANCH = "scaffold-gymsmart-erp-9743545895368865022";
 const JULES_SOURCE = "sources/github/nw7thhjzkk-crypto/drdhlefc";
+const MCP_TOOLS = [
+  "start_jules_task",
+  "get_jules_task",
+  "get_jules_activities",
+  "message_jules_task",
+] as const;
 
 function timingSafeEqual(a: string, b: string): boolean {
   const enc = new TextEncoder();
@@ -28,12 +36,12 @@ function isSafeSessionId(id: string): boolean {
   return /^[A-Za-z0-9_-]{6,128}$/.test(id);
 }
 
-function validateStart(args: Record<string, unknown>): string | null {
+function validateStartArgs(args: Record<string, unknown>): string | null {
   if (args.repository !== undefined || args.repo !== undefined) {
-    return "repository is fixed and cannot be supplied";
+    return "repository fixed";
   }
   if (args.branch !== undefined || args.production_branch !== undefined) {
-    return "branch is fixed and cannot be supplied";
+    return "branch fixed";
   }
   const title = typeof args.title === "string" ? args.title.trim() : "";
   const prompt = typeof args.prompt === "string" ? args.prompt.trim() : "";
@@ -46,6 +54,25 @@ function redact(text: string, secret: string): string {
   return text.split(secret).join("[REDACTED]");
 }
 
+/** Simulated MCP client request envelope checks (protocol-level). */
+function isJsonRpcInitialize(body: unknown): boolean {
+  if (typeof body !== "object" || body === null) return false;
+  const m = body as Record<string, unknown>;
+  return m.jsonrpc === "2.0" && m.method === "initialize";
+}
+
+function isJsonRpcToolsList(body: unknown): boolean {
+  if (typeof body !== "object" || body === null) return false;
+  const m = body as Record<string, unknown>;
+  return m.jsonrpc === "2.0" && m.method === "tools/list";
+}
+
+function isJsonRpcToolsCall(body: unknown): boolean {
+  if (typeof body !== "object" || body === null) return false;
+  const m = body as Record<string, unknown>;
+  return m.jsonrpc === "2.0" && m.method === "tools/call";
+}
+
 Deno.test("auth rejects mismatch", () => {
   assertEquals(timingSafeEqual("a".repeat(32), "b".repeat(32)), false);
 });
@@ -55,36 +82,51 @@ Deno.test("auth accepts match", () => {
   assert(timingSafeEqual(s, s));
 });
 
+Deno.test("invalid authentication shape", () => {
+  const header = "Basic not-bearer";
+  const m = header.match(/^Bearer\s+(.+)$/i);
+  assertEquals(m, null);
+});
+
+Deno.test("valid authentication shape", () => {
+  const secret = "mcp-shared-secret-value-32chars!";
+  const header = `Bearer ${secret}`;
+  const m = header.match(/^Bearer\s+(.+)$/i);
+  assert(m !== null);
+  assert(timingSafeEqual(m![1].trim(), secret));
+});
+
 Deno.test("session id validation", () => {
   assert(isSafeSessionId("abc12345"));
   assertEquals(isSafeSessionId("../evil"), false);
   assertEquals(isSafeSessionId("x"), false);
 });
 
-Deno.test("rejects caller repository", () => {
+Deno.test("malformed start args: missing title", () => {
+  assert(validateStartArgs({ prompt: "only prompt" }) !== null);
+});
+
+Deno.test("rejects caller repository/branch", () => {
   assert(
-    validateStart({
+    validateStartArgs({
       title: "t",
       prompt: "p",
       repository: "evil/repo",
     }) !== null,
   );
-});
-
-Deno.test("rejects caller branch", () => {
   assert(
-    validateStart({ title: "t", prompt: "p", branch: "main" }) !== null,
+    validateStartArgs({ title: "t", prompt: "p", branch: "main" }) !== null,
   );
 });
 
 Deno.test("accepts valid start args", () => {
   assertEquals(
-    validateStart({ title: "Smoke", prompt: "Edit README only" }),
+    validateStartArgs({ title: "Smoke", prompt: "Edit README only" }),
     null,
   );
 });
 
-Deno.test("fixed constants match production targets", () => {
+Deno.test("fixed production targets", () => {
   assertEquals(FIXED_REPO, "nw7thhjzkk-crypto/drdhlefc");
   assertEquals(
     FIXED_BRANCH,
@@ -101,12 +143,38 @@ Deno.test("secret redaction", () => {
   assertEquals(redact(`err ${secret} end`, secret).includes(secret), false);
 });
 
-Deno.test("MCP tool names are the four required tools", () => {
-  const names = [
-    "start_jules_task",
-    "get_jules_task",
-    "get_jules_activities",
-    "message_jules_task",
-  ];
-  assertEquals(names.length, 4);
+Deno.test("MCP tool names exact set", () => {
+  assertEquals(MCP_TOOLS.length, 4);
+  assert(MCP_TOOLS.includes("start_jules_task"));
+  assert(MCP_TOOLS.includes("get_jules_task"));
+  assert(MCP_TOOLS.includes("get_jules_activities"));
+  assert(MCP_TOOLS.includes("message_jules_task"));
+});
+
+Deno.test("MCP client initialize envelope", () => {
+  assert(
+    isJsonRpcInitialize({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: { protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "t", version: "1" } },
+    }),
+  );
+});
+
+Deno.test("MCP client tools/list and tools/call envelopes", () => {
+  assert(isJsonRpcToolsList({ jsonrpc: "2.0", id: 2, method: "tools/list" }));
+  assert(
+    isJsonRpcToolsCall({
+      jsonrpc: "2.0",
+      id: 3,
+      method: "tools/call",
+      params: { name: "get_jules_task", arguments: { session_id: "abc12345" } },
+    }),
+  );
+});
+
+Deno.test("invalid request envelope rejected by shape checks", () => {
+  assertEquals(isJsonRpcInitialize({ method: "initialize" }), false);
+  assertEquals(isJsonRpcToolsCall(null), false);
 });

@@ -3,106 +3,99 @@
 Remote **Model Context Protocol** server for Grok / xAI custom MCP connectors.
 Orchestrates Jules on `nw7thhjzkk-crypto/drdhlefc` without exposing `JULES_API_KEY`.
 
+## Selected MCP implementation
+
+| Choice | Detail |
+|--------|--------|
+| Library | **`@modelcontextprotocol/sdk@1.25.3`** (official TypeScript SDK) |
+| Transport | **`WebStandardStreamableHTTPServerTransport`** |
+| Router | **Hono** (`npm:hono@^4.9.7`) |
+| Schemas | **Zod** |
+| Why | Documented by **Supabase BYO MCP** for Edge Functions + Deno; web-standard `Request`/`Response` (no Node `http`); Streamable HTTP compatible with Grok/xAI Remote MCP |
+
+Alternative considered: `mcp-lite` (also Edge-compatible). Official SDK chosen to match Supabase’s primary documented path.
+
 ## Architecture
 
 ```
-Grok (Custom MCP connector)
-  → HTTPS Streamable HTTP (JSON-RPC 2.0 POST)
+Grok (Custom MCP / xAI Remote MCP)
+  → HTTPS Streamable HTTP
   → Authorization: Bearer MCP_SHARED_SECRET
   → Supabase Edge Function jules-mcp
-  → Jules REST API (x-goog-api-key from server secret)
-  → Jules PR → existing CI → guarded auto-merge
+       Hono → auth gate → McpServer + WebStandardStreamableHTTPServerTransport
+  → Jules REST API (server-side JULES_API_KEY)
+  → Jules PR → CI → guarded auto-merge
 ```
 
-Reuses table `jules_orchestration_requests` (migration `000010`) for idempotency
-and audit-style status records. Does **not** replace `jules-orchestrator` or
-GitHub `/jules` automation.
+Reuses `jules_orchestration_requests` (migration `000010`) for idempotency and status audit rows.
+Does **not** replace `jules-orchestrator` or GitHub `/jules` automation.
 
 ## Endpoint
 
 `https://ahkwooaqayqikvotwuac.supabase.co/functions/v1/jules-mcp`
 
-Transport: **Streamable HTTP** (POST JSON-RPC). GET/SSE is not offered.
+Health (authenticated): `GET .../jules-mcp/health`
 
 ## Authentication
-
-Compatible with xAI Remote MCP `authorization` and Grok custom connectors that
-send a static Bearer credential:
 
 ```http
 Authorization: Bearer <MCP_SHARED_SECRET>
 ```
 
-- Secret only in Supabase Edge Function secrets (min 32 characters).
-- Constant-time comparison.
-- Fail closed if `MCP_SHARED_SECRET` or `JULES_API_KEY` is missing.
-- No secrets in URL/query string.
+Compatible with xAI Remote MCP `authorization` and Grok connectors that attach a static Bearer credential. Timing-safe compare; fail closed if secrets missing.
 
 ## Required secrets (names only)
 
 | Name | Purpose |
 |------|---------|
-| `MCP_SHARED_SECRET` | Bearer token for MCP clients (Grok) |
-| `JULES_API_KEY` | Jules API (`x-goog-api-key`) |
-| `SUPABASE_URL` | Platform-injected |
-| `SUPABASE_SERVICE_ROLE_KEY` | Platform-injected; orchestration table access |
+| `MCP_SHARED_SECRET` | Bearer for MCP clients |
+| `JULES_API_KEY` | Jules API |
+| `SUPABASE_URL` | Platform |
+| `SUPABASE_SERVICE_ROLE_KEY` | Orchestration table |
 
-## Exposed tools
+## Tools
 
 | Tool | Purpose |
 |------|---------|
-| `start_jules_task` | Create Jules session (`AUTO_CREATE_PR`) |
-| `get_jules_task` | Session status/metadata |
-| `get_jules_activities` | Activity/progress list |
+| `start_jules_task` | Create session (`AUTO_CREATE_PR`) |
+| `get_jules_task` | Session status |
+| `get_jules_activities` | Activity list |
 | `message_jules_task` | Follow-up message |
 
-Fixed Jules source: `sources/github/nw7thhjzkk-crypto/drdhlefc`  
+Fixed source: `sources/github/nw7thhjzkk-crypto/drdhlefc`  
 Fixed branch: `scaffold-gymsmart-erp-9743545895368865022`
 
-## Grok connector setup
+## Grok setup
 
-1. Deploy function: `supabase functions deploy jules-mcp`
-2. Set `MCP_SHARED_SECRET` and ensure `JULES_API_KEY` exists.
-3. Apply migration `000010` if not already applied.
-4. In Grok: **Connectors → New → Custom**
-5. Server URL: the function URL above
-6. Provide Bearer / authorization using `MCP_SHARED_SECRET` (never commit it)
+1. Deploy: `supabase functions deploy jules-mcp` (with `verify_jwt = false` in config)
+2. Set `MCP_SHARED_SECRET`; ensure `JULES_API_KEY` and migration `000010`
+3. Grok → Connectors → Custom → server URL above + Bearer secret
 
-For xAI API Remote MCP tools, use `server_url` + `authorization` (Bearer token).
+## Security
 
-## Security model
-
-- No arbitrary repo/branch/source
-- No arbitrary HTTP proxy or shell
-- Session ID path validation
-- Input length limits
-- Create rate limit: 20/hour; message rate limit: 60/hour
-- Idempotency via `mcp:<idempotency_key>` on orchestration table
-- Secret redaction in logs/errors
+- No arbitrary repo/branch/URL/proxy
+- Session ID validation
+- Rate limits (20 creates/hour, 60 messages/hour)
+- Idempotency keys `mcp:<key>`
+- Secret redaction
 - No wildcard CORS
-- `verify_jwt = false` only for this function; auth is MCP shared secret
 
-## What this server does NOT permit
-
-- Choosing another GitHub repository or branch
-- Calling arbitrary Jules or third-party URLs
-- Executing shell/commands
-- Returning `JULES_API_KEY` or other secrets
-- Unauthenticated access
-- Merging PRs (Jules + existing CI/auto-merge only)
-
-## Local tests
+## Tests
 
 ```bash
 deno test supabase/functions/jules-mcp/mcp_logic_test.ts
 ```
 
-Manual MCP smoke (after deploy):
+Live MCP smoke after deploy (client-style):
 
 ```bash
 curl -sS -X POST "$URL" \
   -H "Authorization: Bearer $MCP_SHARED_SECRET" \
   -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1.0"}}}'
 ```
+
+## Not permitted
+
+Other repos/branches, arbitrary Jules/HTTP proxy, shell, secret leakage, unauthenticated access, PR merge via MCP.
