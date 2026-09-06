@@ -1,19 +1,20 @@
 /**
- * Jules MCP OAuth 2.1 + PKCE gateway
+ * Jules MCP OAuth 2.1 + PKCE gateway (security-hardened)
  *
- * Claude/Grok Custom Connectors complete authorization-code + PKCE here,
- * then call Streamable HTTP MCP on this function. The gateway validates the
- * OAuth access token and server-side forwards to jules-mcp using
- * MCP_SHARED_SECRET (never returned to clients).
+ * Connector → authorization-code + PKCE S256 → access_token (aud=resource)
+ *   → Streamable HTTP MCP on this function
+ *   → server-side proxy to jules-mcp with MCP_SHARED_SECRET
  *
- * Does NOT implement Jules tools itself. Does NOT weaken jules-mcp auth.
+ * jules-mcp auth is NOT modified. Secrets never returned to clients.
  *
- * Secrets (env):
+ * Env:
  *   OAUTH_TOKEN_HMAC_SECRET (>=32)
- *   OAUTH_OPERATOR_APPROVAL_SECRET (>=16) — human consent on /authorize
- *   OAUTH_REDIRECT_URI_ALLOWLIST — comma-separated exact redirect URIs
- *   MCP_SHARED_SECRET — for upstream jules-mcp only
- *   JULES_MCP_UPSTREAM_URL — default project functions URL for jules-mcp
+ *   OAUTH_OPERATOR_APPROVAL_SECRET (>=16)
+ *   OAUTH_REDIRECT_URI_ALLOWLIST (exact URIs, comma-separated)
+ *   OAUTH_DCR_TOKEN (>=32) — required Bearer for POST /register
+ *   MCP_SHARED_SECRET (>=32) — upstream only
+ *   JULES_MCP_UPSTREAM_URL — optional absolute URL ending in /jules-mcp
+ *   OAUTH_ISSUER_URL — optional explicit issuer/resource base
  *   SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY
  */
 
@@ -26,6 +27,8 @@ const FIXED_BRANCH = "scaffold-gymsmart-erp-9743545895368865022";
 const ACCESS_TTL_SEC = 3600;
 const CODE_TTL_SEC = 600;
 const REFRESH_TTL_SEC = 60 * 60 * 24 * 30;
+const MAX_DCR_PER_HOUR = 10;
+const MAX_TOKEN_PER_HOUR = 120;
 
 function b64url(data: ArrayBuffer | Uint8Array | string): string {
   const bytes =
@@ -106,21 +109,21 @@ function publicBase(req: Request): string {
   const explicit = Deno.env.get("OAUTH_ISSUER_URL");
   if (explicit) return explicit.replace(/\/$/, "");
   const u = new URL(req.url);
-  // Supabase functions path prefix
   const path = u.pathname.replace(/\/+$/, "");
   const idx = path.lastIndexOf("/jules-mcp-oauth");
-  const basePath = idx >= 0 ? path.slice(0, idx + "/jules-mcp-oauth".length) : path;
+  const basePath =
+    idx >= 0 ? path.slice(0, idx + "/jules-mcp-oauth".length) : path;
   return `${u.origin}${basePath}`;
 }
 
 function allowlist(): string[] {
-  const raw = Deno.env.get("OAUTH_REDIRECT_URI_ALLOWLIST") ?? "";
-  return raw
+  return (Deno.env.get("OAUTH_REDIRECT_URI_ALLOWLIST") ?? "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
 }
 
+/** Exact match only (RFC 6749 redirect_uri). */
 function redirectAllowed(uri: string): boolean {
   const list = allowlist();
   if (list.length === 0) return false;
@@ -135,15 +138,29 @@ function supabaseAdmin() {
   );
 }
 
-async function issueAccessToken(clientId: string, scope: string): Promise<string> {
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+async function issueAccessToken(
+  clientId: string,
+  scope: string,
+  resource: string,
+): Promise<string> {
   const secret = requireEnv("OAUTH_TOKEN_HMAC_SECRET");
   if (secret.length < 32) throw new Error("weak_token_secret");
   const header = b64url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
   const now = Math.floor(Date.now() / 1000);
   const payload = b64url(
     JSON.stringify({
-      iss: "jules-mcp-oauth",
+      iss: resource,
       sub: clientId,
+      aud: resource,
+      resource,
       scope,
       iat: now,
       exp: now + ACCESS_TTL_SEC,
@@ -156,6 +173,7 @@ async function issueAccessToken(clientId: string, scope: string): Promise<string
 
 async function verifyAccessToken(
   token: string,
+  expectedResource: string,
 ): Promise<{ clientId: string; scope: string } | null> {
   const secret = Deno.env.get("OAUTH_TOKEN_HMAC_SECRET");
   if (!secret || secret.length < 32) return null;
@@ -169,10 +187,16 @@ async function verifyAccessToken(
       sub?: string;
       scope?: string;
       iss?: string;
+      aud?: string;
+      resource?: string;
     };
-    if (body.iss !== "jules-mcp-oauth") return null;
     if (!body.exp || body.exp < Math.floor(Date.now() / 1000)) return null;
     if (!body.sub) return null;
+    // RFC 8707: token must be bound to this resource
+    if (body.aud !== expectedResource && body.resource !== expectedResource) {
+      return null;
+    }
+    if (body.iss !== expectedResource) return null;
     return { clientId: body.sub, scope: body.scope ?? "mcp" };
   } catch {
     return null;
@@ -191,12 +215,78 @@ function oauthError(
       headers: {
         "Content-Type": "application/json",
         "Cache-Control": "no-store",
+        "Pragma": "no-cache",
       },
     },
   );
 }
 
+function unauthorizedMcp(resource: string): Response {
+  const meta = `${resource}/.well-known/oauth-protected-resource`;
+  return new Response(JSON.stringify({ error: "unauthorized" }), {
+    status: 401,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+      "WWW-Authenticate":
+        `Bearer realm="jules-mcp-oauth", resource="${resource}", ` +
+        `resource_metadata="${meta}", error="invalid_token"`,
+    },
+  });
+}
+
+async function rateLimitClients(
+  sb: ReturnType<typeof supabaseAdmin>,
+  max: number,
+): Promise<boolean> {
+  const since = new Date(Date.now() - 3600_000).toISOString();
+  const { count, error } = await sb
+    .from("jules_mcp_oauth_clients")
+    .select("client_id", { count: "exact", head: true })
+    .gte("created_at", since);
+  if (error) return true; // fail closed
+  return (count ?? 0) >= max;
+}
+
+async function rateLimitCodes(
+  sb: ReturnType<typeof supabaseAdmin>,
+  max: number,
+): Promise<boolean> {
+  const since = new Date(Date.now() - 3600_000).toISOString();
+  const { count, error } = await sb
+    .from("jules_mcp_oauth_codes")
+    .select("code_hash", { count: "exact", head: true })
+    .gte("created_at", since);
+  if (error) return true;
+  return (count ?? 0) >= max;
+}
+
+function resolveUpstream(req: Request): URL | null {
+  const explicit = Deno.env.get("JULES_MCP_UPSTREAM_URL");
+  const fallback =
+    `${new URL(req.url).origin}/functions/v1/jules-mcp`;
+  const raw = explicit || fallback;
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== "https:" && u.hostname !== "localhost") return null;
+    if (!u.pathname.replace(/\/$/, "").endsWith("/jules-mcp")) return null;
+    // Same host as this function unless explicitly overridden via env
+    if (!explicit && u.origin !== new URL(req.url).origin) return null;
+    return u;
+  } catch {
+    return null;
+  }
+}
+
 const app = new Hono();
+
+// No wildcard CORS — browser connectors use redirects, not credentialed XHR to AS.
+app.use("*", async (c, next) => {
+  await next();
+  c.res.headers.set("X-Content-Type-Options", "nosniff");
+  c.res.headers.set("Cache-Control", c.res.headers.get("Cache-Control") ?? "no-store");
+  c.res.headers.delete("Access-Control-Allow-Origin");
+});
 
 app.get("/health", (c) =>
   c.json({
@@ -204,7 +294,7 @@ app.get("/health", (c) =>
     service: "jules-mcp-oauth",
     repository: FIXED_REPO,
     production_branch: FIXED_BRANCH,
-    upstream: "jules-mcp (Bearer MCP_SHARED_SECRET, server-side only)",
+    upstream: "jules-mcp (server-side Bearer only)",
   }),
 );
 
@@ -219,24 +309,35 @@ app.get("/.well-known/oauth-authorization-server", (c) => {
     response_types_supported: ["code"],
     grant_types_supported: ["authorization_code", "refresh_token"],
     code_challenge_methods_supported: ["S256"],
-    token_endpoint_auth_methods_supported: ["none", "client_secret_post"],
+    token_endpoint_auth_methods_supported: ["none"],
     scopes_supported: ["mcp"],
+    resource_indicators_supported: true,
   });
 });
 
-/** OAuth Protected Resource metadata (MCP clients) */
+/** RFC 8707 / MCP Protected Resource Metadata */
 app.get("/.well-known/oauth-protected-resource", (c) => {
-  const issuer = publicBase(c.req.raw);
+  const resource = publicBase(c.req.raw);
   return c.json({
-    resource: issuer,
-    authorization_servers: [issuer],
+    resource,
+    authorization_servers: [resource],
     scopes_supported: ["mcp"],
     bearer_methods_supported: ["header"],
   });
 });
 
-/** Dynamic client registration (public PKCE clients, allowlisted redirects only) */
+/** RFC 7591 DCR — requires OAUTH_DCR_TOKEN; allowlisted redirects only */
 app.post("/register", async (c) => {
+  const dcr = Deno.env.get("OAUTH_DCR_TOKEN") ?? "";
+  if (dcr.length < 32) {
+    return oauthError("temporarily_unavailable", "DCR not configured", 503);
+  }
+  const auth = c.req.header("authorization") ?? "";
+  const m = auth.match(/^Bearer\s+(.+)$/i);
+  if (!m || !timingSafeEqual(m[1].trim(), dcr)) {
+    return oauthError("invalid_client", "DCR token required", 401);
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await c.req.json();
@@ -246,20 +347,25 @@ app.post("/register", async (c) => {
   const redirectUris = Array.isArray(body.redirect_uris)
     ? body.redirect_uris.map(String)
     : [];
-  if (redirectUris.length === 0) {
-    return oauthError("invalid_redirect_uri", "redirect_uris required");
+  if (redirectUris.length === 0 || redirectUris.length > 5) {
+    return oauthError("invalid_redirect_uri", "redirect_uris required (max 5)");
   }
   for (const u of redirectUris) {
     if (!redirectAllowed(u)) {
       return oauthError("invalid_redirect_uri", "redirect_uri not allowlisted");
     }
   }
+
+  const sb = supabaseAdmin();
+  if (await rateLimitClients(sb, MAX_DCR_PER_HOUR)) {
+    return oauthError("temporarily_unavailable", "registration rate limit", 429);
+  }
+
   const clientId = crypto.randomUUID();
   const name =
     typeof body.client_name === "string" && body.client_name.trim()
       ? body.client_name.trim().slice(0, 128)
       : "mcp-connector";
-  const sb = supabaseAdmin();
   const { error } = await sb.from("jules_mcp_oauth_clients").insert({
     client_id: clientId,
     client_secret_hash: null,
@@ -289,16 +395,26 @@ app.get("/authorize", async (c) => {
   const state = q.state ?? "";
   const challenge = q.code_challenge ?? "";
   const method = q.code_challenge_method ?? "";
-  const scope = q.scope ?? "mcp";
+  const scope = (q.scope ?? "mcp").split(" ")[0];
+  const resource = q.resource ?? publicBase(c.req.raw);
 
   if (responseType !== "code") {
     return oauthError("unsupported_response_type", "only code");
   }
+  if (!state || state.length > 512) {
+    return oauthError("invalid_request", "state required");
+  }
   if (method !== "S256" || !challenge || challenge.length < 43) {
     return oauthError("invalid_request", "PKCE S256 required");
   }
+  if (scope !== "mcp") {
+    return oauthError("invalid_scope", "only mcp scope supported");
+  }
   if (!redirectAllowed(redirectUri)) {
     return oauthError("invalid_request", "redirect_uri not allowlisted");
+  }
+  if (resource !== publicBase(c.req.raw)) {
+    return oauthError("invalid_target", "resource must be this gateway");
   }
 
   const sb = supabaseAdmin();
@@ -308,8 +424,7 @@ app.get("/authorize", async (c) => {
     .eq("client_id", clientId)
     .maybeSingle();
   if (!client) return oauthError("invalid_client", "unknown client", 401);
-  const uris = client.redirect_uris as string[];
-  if (!uris.includes(redirectUri)) {
+  if (!(client.redirect_uris as string[]).includes(redirectUri)) {
     return oauthError("invalid_request", "redirect_uri not registered");
   }
 
@@ -318,16 +433,17 @@ app.get("/authorize", async (c) => {
 button{padding:.6rem 1rem;margin-right:.5rem}input{width:100%;padding:.5rem;margin:.5rem 0}</style></head>
 <body>
 <h1>Authorize DR DHL Jules MCP</h1>
-<p>Client: <code>${clientId}</code></p>
+<p>Client: <code>${escapeHtml(clientId)}</code></p>
 <p>Repository: <code>${FIXED_REPO}</code><br/>Branch: <code>${FIXED_BRANCH}</code></p>
-<p>This grants MCP tool access only (no merge, no arbitrary repos).</p>
+<p>Grants MCP tools only (no merge, no arbitrary repos).</p>
 <form method="POST" action="">
-<input type="hidden" name="client_id" value="${clientId}"/>
-<input type="hidden" name="redirect_uri" value="${redirectUri.replace(/"/g, "&quot;")}"/>
-<input type="hidden" name="state" value="${state.replace(/"/g, "&quot;")}"/>
-<input type="hidden" name="code_challenge" value="${challenge.replace(/"/g, "&quot;")}"/>
+<input type="hidden" name="client_id" value="${escapeHtml(clientId)}"/>
+<input type="hidden" name="redirect_uri" value="${escapeHtml(redirectUri)}"/>
+<input type="hidden" name="state" value="${escapeHtml(state)}"/>
+<input type="hidden" name="code_challenge" value="${escapeHtml(challenge)}"/>
 <input type="hidden" name="code_challenge_method" value="S256"/>
-<input type="hidden" name="scope" value="${scope.replace(/"/g, "&quot;")}"/>
+<input type="hidden" name="scope" value="mcp"/>
+<input type="hidden" name="resource" value="${escapeHtml(resource)}"/>
 <label>Operator approval secret</label>
 <input type="password" name="approval_secret" required autocomplete="current-password"/>
 <div><button type="submit" name="decision" value="approve">Approve</button>
@@ -345,16 +461,18 @@ app.post("/authorize", async (c) => {
   const challenge = String(form.code_challenge ?? "");
   const method = String(form.code_challenge_method ?? "");
   const scope = String(form.scope ?? "mcp");
+  const resource = String(form.resource ?? publicBase(c.req.raw));
   const approval = String(form.approval_secret ?? "");
 
   if (!redirectAllowed(redirectUri)) {
     return oauthError("invalid_request", "redirect_uri not allowlisted");
   }
+  if (!state) return oauthError("invalid_request", "state required");
 
-  const deny = new URL(redirectUri);
   if (decision !== "approve") {
+    const deny = new URL(redirectUri);
     deny.searchParams.set("error", "access_denied");
-    if (state) deny.searchParams.set("state", state);
+    deny.searchParams.set("state", state);
     return c.redirect(deny.toString(), 302);
   }
 
@@ -362,11 +480,19 @@ app.post("/authorize", async (c) => {
   if (expected.length < 16 || !timingSafeEqual(approval, expected)) {
     return oauthError("access_denied", "invalid operator approval", 403);
   }
-  if (method !== "S256") {
+  if (method !== "S256" || challenge.length < 43) {
     return oauthError("invalid_request", "PKCE S256 required");
+  }
+  if (scope !== "mcp") return oauthError("invalid_scope", "only mcp");
+  if (resource !== publicBase(c.req.raw)) {
+    return oauthError("invalid_target", "resource mismatch");
   }
 
   const sb = supabaseAdmin();
+  if (await rateLimitCodes(sb, MAX_TOKEN_PER_HOUR)) {
+    return oauthError("temporarily_unavailable", "authorize rate limit", 429);
+  }
+
   const { data: client } = await sb
     .from("jules_mcp_oauth_clients")
     .select("client_id, redirect_uris")
@@ -379,20 +505,21 @@ app.post("/authorize", async (c) => {
   const code = b64url(crypto.getRandomValues(new Uint8Array(32)));
   const codeHash = await sha256(code);
   const expires = new Date(Date.now() + CODE_TTL_SEC * 1000).toISOString();
+  // Bind client_id + redirect_uri + code_challenge in stored row
   const { error } = await sb.from("jules_mcp_oauth_codes").insert({
     code_hash: codeHash,
     client_id: clientId,
     redirect_uri: redirectUri,
     code_challenge: challenge,
     code_challenge_method: "S256",
-    scope,
+    scope: `mcp|${resource}`,
     expires_at: expires,
   });
   if (error) return oauthError("server_error", "code issue failed", 500);
 
   const ok = new URL(redirectUri);
   ok.searchParams.set("code", code);
-  if (state) ok.searchParams.set("state", state);
+  ok.searchParams.set("state", state);
   return c.redirect(ok.toString(), 302);
 });
 
@@ -406,12 +533,12 @@ app.post("/token", async (c) => {
       params.set(k, String(v));
     }
   } else {
-    const text = await c.req.text();
-    params = new URLSearchParams(text);
+    params = new URLSearchParams(await c.req.text());
   }
 
   const grant = params.get("grant_type") ?? "";
   const sb = supabaseAdmin();
+  const resourceBase = publicBase(c.req.raw);
 
   if (grant === "authorization_code") {
     const code = params.get("code") ?? "";
@@ -445,18 +572,31 @@ app.post("/token", async (c) => {
       return oauthError("invalid_grant", "PKCE verification failed");
     }
 
-    await sb
+    // Single-use: mark used before issuing tokens
+    const { data: updated, error: useErr } = await sb
       .from("jules_mcp_oauth_codes")
       .update({ used_at: new Date().toISOString() })
-      .eq("code_hash", codeHash);
+      .eq("code_hash", codeHash)
+      .is("used_at", null)
+      .select("code_hash")
+      .maybeSingle();
+    if (useErr || !updated) {
+      return oauthError("invalid_grant", "code already used");
+    }
 
-    const access = await issueAccessToken(clientId, row.scope);
+    const scopePart = String(row.scope).split("|")[0] || "mcp";
+    const resPart = String(row.scope).split("|")[1] || resourceBase;
+    if (resPart !== resourceBase) {
+      return oauthError("invalid_grant", "resource mismatch");
+    }
+
+    const access = await issueAccessToken(clientId, scopePart, resourceBase);
     const refresh = b64url(crypto.getRandomValues(new Uint8Array(32)));
     const refreshHash = await sha256(refresh);
     await sb.from("jules_mcp_oauth_refresh_tokens").insert({
       token_hash: refreshHash,
       client_id: clientId,
-      scope: row.scope,
+      scope: `${scopePart}|${resourceBase}`,
       expires_at: new Date(Date.now() + REFRESH_TTL_SEC * 1000).toISOString(),
     });
 
@@ -465,7 +605,7 @@ app.post("/token", async (c) => {
       token_type: "Bearer",
       expires_in: ACCESS_TTL_SEC,
       refresh_token: refresh,
-      scope: row.scope,
+      scope: scopePart,
     });
   }
 
@@ -490,73 +630,54 @@ app.post("/token", async (c) => {
     if (new Date(row.expires_at).getTime() < Date.now()) {
       return oauthError("invalid_grant", "refresh expired");
     }
-    const access = await issueAccessToken(clientId, row.scope);
+
+    // Rotation: revoke presented refresh before issuing new pair
+    const { data: revoked } = await sb
+      .from("jules_mcp_oauth_refresh_tokens")
+      .update({ revoked_at: new Date().toISOString() })
+      .eq("token_hash", refreshHash)
+      .is("revoked_at", null)
+      .select("token_hash")
+      .maybeSingle();
+    if (!revoked) return oauthError("invalid_grant", "refresh replay");
+
+    const scopePart = String(row.scope).split("|")[0] || "mcp";
+    const access = await issueAccessToken(clientId, scopePart, resourceBase);
+    const newRefresh = b64url(crypto.getRandomValues(new Uint8Array(32)));
+    const newHash = await sha256(newRefresh);
+    await sb.from("jules_mcp_oauth_refresh_tokens").insert({
+      token_hash: newHash,
+      client_id: clientId,
+      scope: `${scopePart}|${resourceBase}`,
+      expires_at: new Date(Date.now() + REFRESH_TTL_SEC * 1000).toISOString(),
+    });
+
     return c.json({
       access_token: access,
       token_type: "Bearer",
       expires_in: ACCESS_TTL_SEC,
-      scope: row.scope,
+      refresh_token: newRefresh,
+      scope: scopePart,
     });
   }
 
   return oauthError("unsupported_grant_type", "unsupported grant");
 });
 
-/** Proxy authenticated MCP traffic to jules-mcp */
-app.all("/", proxyMcp);
-app.all("/mcp", proxyMcp);
-app.all("/*", async (c) => {
-  // Allow OAuth paths only; anything else under function tries MCP proxy if authorized
-  const path = new URL(c.req.url).pathname;
-  if (
-    path.includes("/authorize") ||
-    path.includes("/token") ||
-    path.includes("/register") ||
-    path.includes("/.well-known/") ||
-    path.endsWith("/health")
-  ) {
-    return c.json({ error: "not found" }, 404);
-  }
-  return proxyMcp(c);
-});
-
 async function proxyMcp(c: {
   req: { raw: Request; header: (n: string) => string | undefined };
 }): Promise<Response> {
+  const resource = publicBase(c.req.raw);
   const auth = c.req.header("authorization") ?? "";
   const m = auth.match(/^Bearer\s+(.+)$/i);
-  if (!m) {
-    return new Response(JSON.stringify({ error: "unauthorized" }), {
-      status: 401,
-      headers: {
-        "Content-Type": "application/json",
-        "WWW-Authenticate": `Bearer realm="jules-mcp-oauth", resource="${publicBase(c.req.raw)}"`,
-      },
-    });
-  }
-  const verified = await verifyAccessToken(m[1].trim());
-  if (!verified) {
-    return new Response(JSON.stringify({ error: "invalid_token" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
-    });
-  }
+  if (!m) return unauthorizedMcp(resource);
 
-  const upstream =
-    Deno.env.get("JULES_MCP_UPSTREAM_URL") ??
-    `${new URL(c.req.raw.url).origin}/functions/v1/jules-mcp`;
-  // Prevent open proxy: only same-project jules-mcp path
-  let upstreamUrl: URL;
-  try {
-    upstreamUrl = new URL(upstream);
-  } catch {
+  const verified = await verifyAccessToken(m[1].trim(), resource);
+  if (!verified) return unauthorizedMcp(resource);
+
+  const upstreamUrl = resolveUpstream(c.req.raw);
+  if (!upstreamUrl) {
     return new Response(JSON.stringify({ error: "misconfigured_upstream" }), {
-      status: 503,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-  if (!upstreamUrl.pathname.endsWith("/jules-mcp")) {
-    return new Response(JSON.stringify({ error: "invalid_upstream" }), {
       status: 503,
       headers: { "Content-Type": "application/json" },
     });
@@ -575,6 +696,7 @@ async function proxyMcp(c: {
   const accept = c.req.header("accept");
   if (ct) headers.set("Content-Type", ct);
   if (accept) headers.set("Accept", accept);
+  // Server-side only — never echo shared secret back to client
   headers.set("Authorization", `Bearer ${shared}`);
 
   const init: RequestInit = {
@@ -587,14 +709,27 @@ async function proxyMcp(c: {
   }
 
   const res = await fetch(upstreamUrl.toString(), init);
-  // Pass through body/status; strip any accidental secret leakage headers
   const outHeaders = new Headers();
-  const pass = ["content-type", "cache-control", "mcp-session-id"];
-  for (const h of pass) {
+  for (const h of ["content-type", "cache-control", "mcp-session-id"]) {
     const v = res.headers.get(h);
     if (v) outHeaders.set(h, v);
   }
+  // Ensure secrets never appear in downstream body echo (pass-through binary)
   return new Response(res.body, { status: res.status, headers: outHeaders });
 }
+
+app.all("/mcp", (c) => proxyMcp(c));
+app.all("/", async (c) => {
+  if (c.req.method === "GET" && !c.req.header("authorization")) {
+    return c.json({
+      service: "jules-mcp-oauth",
+      mcp: "/mcp",
+      authorization_server_metadata:
+        "/.well-known/oauth-authorization-server",
+      protected_resource_metadata: "/.well-known/oauth-protected-resource",
+    });
+  }
+  return proxyMcp(c);
+});
 
 Deno.serve(app.fetch);

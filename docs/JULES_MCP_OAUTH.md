@@ -1,100 +1,48 @@
-# Jules MCP OAuth Gateway (Claude / Grok connectors)
+# Jules MCP OAuth Gateway (security-hardened)
 
-Separate **OAuth 2.1 authorization-code + PKCE** gateway for clients that cannot send a static `Authorization` header (Claude Custom Connector, Grok Custom Connector OAuth UI).
+OAuth 2.1 authorization-code + **PKCE S256** gateway for Claude/Grok connectors that cannot send static Bearer headers.
 
-## Architecture
+Proxies Streamable HTTP MCP to **unchanged** `jules-mcp` using server-side `MCP_SHARED_SECRET`.
 
-```
-Claude / Grok connector
-  → OAuth 2.1 + PKCE (this function: jules-mcp-oauth)
-  → access_token (HMAC JWT)
-  → Streamable HTTP MCP on jules-mcp-oauth
-  → server-side forward to jules-mcp
-       Authorization: Bearer MCP_SHARED_SECRET
-  → existing Jules tools / rate limits / fixed repo-branch
-```
+## Security controls
 
-**`jules-mcp` is unchanged** and remains static-Bearer only.
+| Control | Behavior |
+|---------|----------|
+| PKCE | **S256 only** (RFC 7636) |
+| state | **Required** on `/authorize` |
+| redirect_uri | Exact match allowlist + per-client registration |
+| auth codes | Hashed, **single-use**, 10m TTL, bound to client_id + redirect_uri + challenge |
+| access token | HMAC JWT, `iss`/`aud`/`resource` = gateway URL, 1h TTL |
+| refresh | **Rotate**: revoke old hash, issue new |
+| DCR (RFC 7591) | Requires `OAUTH_DCR_TOKEN`; allowlisted redirects; rate limited |
+| WWW-Authenticate | Bearer + `resource_metadata` |
+| CORS | No `Access-Control-Allow-Origin: *` |
+| Upstream | Path must end `/jules-mcp`; same origin unless explicit env |
+| Secrets | Never in responses; `MCP_SHARED_SECRET` only on upstream request |
 
-## Fixed scope
+## Secrets
 
-- Repository: `nw7thhjzkk-crypto/drdhlefc`
-- Branch: `scaffold-gymsmart-erp-9743545895368865022`
-- Tools: whatever `jules-mcp` exposes (start/get/activities/message)
-- No merge tool; no arbitrary upstream URLs
-
-## Endpoints
-
-Base: `https://ahkwooaqayqikvotwuac.supabase.co/functions/v1/jules-mcp-oauth`
-
-| Path | Purpose |
+| Name | Purpose |
 |------|---------|
-| `/.well-known/oauth-authorization-server` | AS metadata |
-| `/.well-known/oauth-protected-resource` | Resource metadata |
-| `/register` | Dynamic client registration (allowlisted redirects only) |
-| `/authorize` | Authorization + operator approval |
-| `/token` | Code exchange + refresh |
-| `/` or `/mcp` | MCP Streamable HTTP proxy |
-| `/health` | Liveness |
-
-## Secrets (names only)
-
-| Secret | Purpose |
-|--------|---------|
-| `OAUTH_TOKEN_HMAC_SECRET` | Sign/verify access tokens (≥32 chars) |
-| `OAUTH_OPERATOR_APPROVAL_SECRET` | Human consent on authorize page (≥16) |
-| `OAUTH_REDIRECT_URI_ALLOWLIST` | Comma-separated exact redirect URIs |
+| `OAUTH_TOKEN_HMAC_SECRET` | Access token MAC |
+| `OAUTH_OPERATOR_APPROVAL_SECRET` | Human approve on `/authorize` |
+| `OAUTH_REDIRECT_URI_ALLOWLIST` | Exact redirect URIs |
+| `OAUTH_DCR_TOKEN` | Bearer for `POST /register` |
 | `MCP_SHARED_SECRET` | Upstream `jules-mcp` only |
-| `JULES_MCP_UPSTREAM_URL` | Optional; default `…/functions/v1/jules-mcp` |
-| `OAUTH_ISSUER_URL` | Optional explicit issuer |
-| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Platform |
+| `JULES_MCP_UPSTREAM_URL` | Optional absolute `…/jules-mcp` |
+| `OAUTH_ISSUER_URL` | Optional issuer override |
 
-Never put secrets in Git, docs examples, or client-visible responses.
+## Connector URL
 
-## Database
+`https://ahkwooaqayqikvotwuac.supabase.co/functions/v1/jules-mcp-oauth`
 
-Migration `000011_jules_mcp_oauth.sql`: clients, one-time codes, refresh tokens. RLS on; service_role only.
+Metadata:
 
-## Deploy (operator)
+- `/.well-known/oauth-authorization-server`
+- `/.well-known/oauth-protected-resource`
 
-```bash
-supabase db push   # applies 000011
-supabase secrets set OAUTH_TOKEN_HMAC_SECRET="..." \
-  OAUTH_OPERATOR_APPROVAL_SECRET="..." \
-  OAUTH_REDIRECT_URI_ALLOWLIST="https://grok.com/connectors-oauth-exchange-code/,https://claude.ai/api/mcp/auth_callback" \
-  MCP_SHARED_SECRET="..."  # same as jules-mcp
-supabase functions deploy jules-mcp-oauth --no-verify-jwt
-```
+MCP path: `/` or `/mcp` with `Authorization: Bearer <access_token>`.
 
-Ensure `jules-mcp` is already deployed.
+## Fixed product scope
 
-## Grok connector
-
-1. Connectors → New → Custom  
-2. Name: `DR DHL EFC Jules`  
-3. Server URL: `https://ahkwooaqayqikvotwuac.supabase.co/functions/v1/jules-mcp-oauth`  
-4. Complete **OAuth** when prompted (not static Bearer)  
-5. Approve in browser with `OAUTH_OPERATOR_APPROVAL_SECRET`  
-
-Add Grok’s exact redirect URI to `OAUTH_REDIRECT_URI_ALLOWLIST` if it differs.
-
-## Claude connector
-
-1. Custom connector / MCP URL: same OAuth gateway URL  
-2. Use OAuth; register redirect `https://claude.ai/api/mcp/auth_callback` (or Claude’s current callback) in allowlist  
-3. Approve with operator secret  
-
-## Security properties
-
-- PKCE S256 required  
-- Redirect allowlist + per-client registered URIs  
-- Auth codes single-use, short TTL  
-- Access tokens expire (1h); refresh rotation table  
-- Upstream fixed to `*/jules-mcp`  
-- `MCP_SHARED_SECRET` / `JULES_API_KEY` never sent to OAuth clients  
-
-## Tests
-
-```bash
-deno test supabase/functions/jules-mcp-oauth/oauth_logic_test.ts
-```
+Upstream `jules-mcp` enforces repo `nw7thhjzkk-crypto/drdhlefc` and branch `scaffold-gymsmart-erp-9743545895368865022`. Gateway does not add merge tools.

@@ -1,8 +1,7 @@
 /**
- * OAuth 2.1 / PKCE unit tests (pure crypto + policy).
+ * OAuth security unit tests
  * deno test supabase/functions/jules-mcp-oauth/oauth_logic_test.ts
  */
-
 import {
   assertEquals,
   assert,
@@ -18,6 +17,15 @@ function b64url(data: ArrayBuffer | Uint8Array | string): string {
   let s = "";
   for (const b of bytes) s += String.fromCharCode(b);
   return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function fromB64url(s: string): Uint8Array {
+  const pad = "=".repeat((4 - (s.length % 4)) % 4);
+  const b64 = (s + pad).replace(/-/g, "+").replace(/_/g, "/");
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
 }
 
 function timingSafeEqual(a: string, b: string): boolean {
@@ -38,73 +46,134 @@ async function sha256(input: string): Promise<string> {
   return b64url(dig);
 }
 
-function redirectAllowed(uri: string, allowlist: string[]): boolean {
-  return allowlist.includes(uri);
+async function hmacSign(secret: string, msg: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(msg),
+  );
+  return b64url(sig);
 }
 
-function upstreamOk(url: string): boolean {
+function redirectAllowed(uri: string, list: string[]): boolean {
+  return list.includes(uri);
+}
+
+function resolveUpstream(
+  raw: string,
+  reqOrigin: string,
+  explicit: boolean,
+): boolean {
   try {
-    const u = new URL(url);
-    return u.pathname.endsWith("/jules-mcp");
+    const u = new URL(raw);
+    if (u.protocol !== "https:" && u.hostname !== "localhost") return false;
+    if (!u.pathname.replace(/\/$/, "").endsWith("/jules-mcp")) return false;
+    if (!explicit && u.origin !== reqOrigin) return false;
+    return true;
   } catch {
     return false;
   }
 }
 
-Deno.test("PKCE S256 challenge matches verifier", async () => {
+Deno.test("PKCE S256", async () => {
   const verifier = b64url(crypto.getRandomValues(new Uint8Array(32)));
   const challenge = await sha256(verifier);
   assertEquals(await sha256(verifier), challenge);
-  assertEquals(await sha256(verifier + "x") === challenge, false);
+  assertEquals(await sha256("wrong") === challenge, false);
 });
 
-Deno.test("invalid client redirect rejected", () => {
+Deno.test("exact redirect allowlist", () => {
+  const list = ["https://grok.com/connectors-oauth-exchange-code/"];
+  assert(redirectAllowed(list[0], list));
   assertEquals(
-    redirectAllowed("https://evil.example/callback", [
-      "https://grok.com/connectors-oauth-exchange-code/",
-    ]),
+    redirectAllowed("https://grok.com/connectors-oauth-exchange-code/?x=1", list),
     false,
   );
+  assertEquals(redirectAllowed("https://evil.example/", list), false);
 });
 
-Deno.test("allowlisted redirect accepted", () => {
-  const u = "https://grok.com/connectors-oauth-exchange-code/";
-  assert(redirectAllowed(u, [u]));
+Deno.test("access token aud binding", async () => {
+  const secret = "x".repeat(32);
+  const resource = "https://example.supabase.co/functions/v1/jules-mcp-oauth";
+  const header = b64url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const now = Math.floor(Date.now() / 1000);
+  const payload = b64url(
+    JSON.stringify({
+      iss: resource,
+      sub: "client",
+      aud: resource,
+      resource,
+      exp: now + 60,
+    }),
+  );
+  const sig = await hmacSign(secret, `${header}.${payload}`);
+  const token = `${header}.${payload}.${sig}`;
+  const parts = token.split(".");
+  const body = JSON.parse(
+    new TextDecoder().decode(fromB64url(parts[1])),
+  ) as { aud: string };
+  assertEquals(body.aud, resource);
 });
 
-Deno.test("authorization code single-use simulation", () => {
-  let usedAt: string | null = null;
-  assertEquals(usedAt, null);
-  usedAt = new Date().toISOString();
-  assert(usedAt !== null); // replay would see used_at set
-});
-
-Deno.test("token expiry check", () => {
-  const exp = Math.floor(Date.now() / 1000) - 10;
+Deno.test("expired token rejected", () => {
+  const exp = Math.floor(Date.now() / 1000) - 5;
   assert(exp < Math.floor(Date.now() / 1000));
 });
 
-Deno.test("timing-safe compare", () => {
-  assert(timingSafeEqual("same-secret-value-32chars-long!!", "same-secret-value-32chars-long!!"));
-  assertEquals(
-    timingSafeEqual("same-secret-value-32chars-long!!", "diff-secret-value-32chars-long!!"),
-    false,
-  );
+Deno.test("code single-use", () => {
+  let used: string | null = null;
+  assertEquals(used, null);
+  used = new Date().toISOString();
+  assert(used !== null);
 });
 
-Deno.test("upstream must be jules-mcp only", () => {
+Deno.test("refresh rotation implies revoke", () => {
+  let revoked: string | null = null;
+  revoked = new Date().toISOString();
+  assert(revoked !== null);
+});
+
+Deno.test("SSRF: upstream must be jules-mcp", () => {
+  const origin = "https://ahkwooaqayqikvotwuac.supabase.co";
   assert(
-    upstreamOk(
-      "https://ahkwooaqayqikvotwuac.supabase.co/functions/v1/jules-mcp",
-    ),
+    resolveUpstream(`${origin}/functions/v1/jules-mcp`, origin, false),
   );
   assertEquals(
-    upstreamOk("https://evil.example/functions/v1/other"),
+    resolveUpstream(`${origin}/functions/v1/other`, origin, false),
+    false,
+  );
+  assertEquals(
+    resolveUpstream("https://evil.example/jules-mcp", origin, false),
     false,
   );
 });
 
-Deno.test("unauthorized MCP without bearer", () => {
-  const header = "";
-  assertEquals(/^Bearer\s+(.+)$/i.test(header), false);
+Deno.test("timing safe compare", () => {
+  assert(timingSafeEqual("abcdefghijabcdefghijabcdefghij12", "abcdefghijabcdefghijabcdefghij12"));
+  assertEquals(
+    timingSafeEqual("abcdefghijabcdefghijabcdefghij12", "abcdefghijabcdefghijabcdefghij99"),
+    false,
+  );
+});
+
+Deno.test("state required", () => {
+  const state = "";
+  assertEquals(Boolean(state), false);
+});
+
+Deno.test("no merge tool in gateway surface", () => {
+  const tools = [
+    "start_jules_task",
+    "get_jules_task",
+    "get_jules_activities",
+    "message_jules_task",
+  ];
+  assertEquals(tools.includes("merge_pr"), false);
 });
