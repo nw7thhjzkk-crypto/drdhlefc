@@ -32,8 +32,13 @@ CREATE INDEX IF NOT EXISTS idx_jules_orch_created
 
 ALTER TABLE public.jules_orchestration_requests ENABLE ROW LEVEL SECURITY;
 
--- No client policies: only service role / Edge Function (bypass RLS).
--- Explicit deny-all for authenticated/anon keeps fail-closed posture.
+-- Defense in depth: no table privileges for client roles.
+REVOKE ALL ON TABLE public.jules_orchestration_requests FROM PUBLIC;
+REVOKE ALL ON TABLE public.jules_orchestration_requests FROM anon;
+REVOKE ALL ON TABLE public.jules_orchestration_requests FROM authenticated;
+GRANT ALL ON TABLE public.jules_orchestration_requests TO service_role;
+
+-- No client RLS policies: only service_role / Edge Function (bypass RLS).
 
 COMMENT ON TABLE public.jules_orchestration_requests IS
   'Idempotent Jules orchestration requests from the external bridge. No secrets.';

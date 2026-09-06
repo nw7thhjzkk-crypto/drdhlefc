@@ -31,7 +31,7 @@ Authorization: Bearer <ORCHESTRATOR_SHARED_SECRET>
 ```
 
 - Secret lives only in **Supabase Edge Function secrets**.
-- Minimum recommended length: 32+ random bytes (base64/hex).
+- Minimum length enforced by the function: 32 characters.
 - Never commit the secret. Never log it.
 
 Also required in Edge secrets:
@@ -68,9 +68,14 @@ Response:
 
 Duplicate `idempotency_key` returns the same `request_id` / session (`deduplicated: true`) and does **not** create a second Jules session.
 
+Failed rows are **not** automatically retried under the same key (use a new `idempotency_key`).
+
+Rate limit: **20 creates per rolling hour** (HTTP 429 when exceeded).
+
 ### GET `/status/:request_id`
 
 Returns stored row + optional live Jules session state/outputs.
+Requires the shared secret (same as create). Knowledge of a UUID alone is insufficient without the secret.
 
 ### POST `/message/:request_id`
 
@@ -91,18 +96,20 @@ supabase db push
 supabase secrets set JULES_API_KEY="..."
 supabase secrets set ORCHESTRATOR_SHARED_SECRET="$(openssl rand -hex 32)"
 
-# Deploy function (verify_jwt=false; auth is shared secret)
+# Deploy function (verify_jwt=false for this function only; auth is shared secret)
 supabase functions deploy jules-orchestrator
 ```
 
 ## Security properties
 
-- No public unauthenticated create
+- No public unauthenticated create/status/message
 - No arbitrary repo/branch
 - No generic Jules API proxy
 - No secret leakage in JSON errors
-- RLS enabled on `jules_orchestration_requests` with no client policies
+- RLS enabled + client grants revoked on `jules_orchestration_requests`
+- Create rate limit (20/hour)
 - Existing GitHub Jules `/jules` workflow and auto-merge high-risk gates unchanged
+- Next.js `tsconfig` excludes `supabase/functions` (Deno) so CI typecheck is unaffected
 
 ## Tests
 

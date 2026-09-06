@@ -27,21 +27,18 @@ const MAX_TITLE_LEN = 200;
 const MAX_PROMPT_LEN = 50_000;
 const MAX_IDEM_LEN = 128;
 const MAX_MESSAGE_LEN = 20_000;
+/** Max successful/attempted creates per rolling hour (shared secret holders). */
+const MAX_CREATES_PER_HOUR = 20;
 
-const corsHeaders: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+const jsonHeaders: Record<string, string> = {
+  "Content-Type": "application/json",
+  "Cache-Control": "no-store",
 };
 
-function json(
-  body: unknown,
-  status = 200,
-): Response {
+function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: jsonHeaders,
   });
 }
 
@@ -55,7 +52,6 @@ function timingSafeEqual(a: string, b: string): boolean {
   const aa = enc.encode(a);
   const bb = enc.encode(b);
   if (aa.length !== bb.length) {
-    // Still run a dummy compare to avoid trivial length oracle on secret size
     let d = 0;
     const n = Math.max(aa.length, bb.length);
     for (let i = 0; i < n; i++) {
@@ -98,6 +94,11 @@ function redactSecrets(text: string): string {
   return out;
 }
 
+/** Reject path/query injection into Jules URL segments. */
+function isSafeJulesSessionId(id: string): boolean {
+  return /^[A-Za-z0-9_-]{6,128}$/.test(id);
+}
+
 function supabaseAdmin() {
   const url = requireEnv("SUPABASE_URL");
   const key = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
@@ -110,11 +111,8 @@ function parsePath(pathname: string): {
   action: "create" | "status" | "message" | "health" | null;
   id?: string;
 } {
-  // Function is mounted at /functions/v1/jules-orchestrator
-  // Accept trailing paths: /create, /status/:id, /message/:id, /
   const base = pathname.replace(/\/+$/, "") || "/";
   const parts = base.split("/").filter(Boolean);
-  // parts may be ["jules-orchestrator", ...] or ["create"] depending on gateway
   const idx = parts.lastIndexOf("jules-orchestrator");
   const rest = idx >= 0 ? parts.slice(idx + 1) : parts;
 
@@ -162,6 +160,25 @@ function validateCreateBody(body: Record<string, unknown>): {
   return { title, prompt, idempotency_key: idem };
 }
 
+async function assertCreateRateLimit(
+  sb: ReturnType<typeof supabaseAdmin>,
+): Promise<Response | null> {
+  const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { count, error } = await sb
+    .from("jules_orchestration_requests")
+    .select("request_id", { count: "exact", head: true })
+    .gte("created_at", since);
+
+  if (error) {
+    console.error("rate limit query", redactSecrets(error.message));
+    return safeError("rate limit check failed", 500);
+  }
+  if ((count ?? 0) >= MAX_CREATES_PER_HOUR) {
+    return safeError("rate limit exceeded", 429);
+  }
+  return null;
+}
+
 async function julesCreateSession(
   title: string,
   prompt: string,
@@ -197,11 +214,18 @@ async function julesCreateSession(
     url?: string;
   };
   const id = data.id ?? data.name?.replace(/^sessions\//, "");
-  if (!id) throw new Error("Jules response missing session id");
+  if (!id || !isSafeJulesSessionId(id)) {
+    throw new Error("Jules response missing or invalid session id");
+  }
   return { id, url: data.url, name: data.name };
 }
 
-async function julesGetSession(sessionId: string): Promise<Record<string, unknown>> {
+async function julesGetSession(
+  sessionId: string,
+): Promise<Record<string, unknown>> {
+  if (!isSafeJulesSessionId(sessionId)) {
+    throw new Error("invalid session id");
+  }
   const apiKey = requireEnv("JULES_API_KEY");
   const res = await fetch(`${JULES_API_BASE}/sessions/${sessionId}`, {
     headers: { "x-goog-api-key": apiKey },
@@ -215,7 +239,13 @@ async function julesGetSession(sessionId: string): Promise<Record<string, unknow
   return JSON.parse(text) as Record<string, unknown>;
 }
 
-async function julesSendMessage(sessionId: string, prompt: string): Promise<void> {
+async function julesSendMessage(
+  sessionId: string,
+  prompt: string,
+): Promise<void> {
+  if (!isSafeJulesSessionId(sessionId)) {
+    throw new Error("invalid session id");
+  }
   const apiKey = requireEnv("JULES_API_KEY");
   const res = await fetch(
     `${JULES_API_BASE}/sessions/${sessionId}:sendMessage`,
@@ -249,6 +279,9 @@ async function handleCreate(req: Request): Promise<Response> {
 
   const sb = supabaseAdmin();
 
+  const limited = await assertCreateRateLimit(sb);
+  if (limited) return limited;
+
   // Idempotent insert first — UNIQUE(idempotency_key)
   const { data: inserted, error: insertErr } = await sb
     .from("jules_orchestration_requests")
@@ -264,7 +297,6 @@ async function handleCreate(req: Request): Promise<Response> {
     .maybeSingle();
 
   if (insertErr) {
-    // Unique violation → return existing
     if (insertErr.code === "23505") {
       const { data: existing } = await sb
         .from("jules_orchestration_requests")
@@ -274,6 +306,7 @@ async function handleCreate(req: Request): Promise<Response> {
         .eq("idempotency_key", parsed.idempotency_key)
         .maybeSingle();
       if (!existing) return safeError("idempotent lookup failed", 500);
+      // Do not auto-retry failed rows with the same key (avoids double Jules sessions).
       return json({
         ok: true,
         request_id: existing.request_id,
@@ -425,8 +458,9 @@ async function handleMessage(
 }
 
 Deno.serve(async (req: Request) => {
+  // Service-to-service API: no browser CORS surface.
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { status: 204 });
   }
 
   try {
