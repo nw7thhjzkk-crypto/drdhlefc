@@ -101,7 +101,7 @@ export default async function TrainerAttendancePage() {
             </div>
             {rows.length === 0 ? (
               <div className="m-6 flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
-                <h3 className="text-lg font-semibold text-zinc-100">No check-ins today</h3>
+                <h3 className="text-lg font-semibold text-yellow-500">No check-ins today</h3>
                 <p className="max-w-md text-sm text-zinc-500">
                   Today&apos;s attendance list is empty. Log a manual check-in for an assigned member to get started.
                 </p>
