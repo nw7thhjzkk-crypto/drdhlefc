@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { logAttendance } from "./actions";
+import Link from "next/link";
 
 type MemberOption = { id: string; name: string; member_code?: string | null };
 
@@ -75,6 +76,11 @@ export default async function OwnerAttendancePage() {
                   </option>
                 ))}
               </select>
+              {memberList.length === 0 && (
+                <p className="text-xs text-yellow-500 mt-2">
+                  No members available. Add one first.
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-400">Notes (Optional)</label>
@@ -125,8 +131,16 @@ export default async function OwnerAttendancePage() {
                 ))}
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="px-6 py-8 text-center text-zinc-500">
-                      No attendance logged today.
+                    <td colSpan={3} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-4">
+                        <p className="text-zinc-400">No attendance logged today.</p>
+                        <Link
+                          href="/owner/members"
+                          className="inline-flex items-center justify-center bg-yellow-600 text-zinc-950 font-bold px-4 py-2 rounded hover:bg-yellow-500 transition-colors"
+                        >
+                          View Members
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 )}
