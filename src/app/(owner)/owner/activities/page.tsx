@@ -70,7 +70,7 @@ export default async function GroupActivitiesPage() {
               </select>
               {(!trainers || trainers.length === 0) && (
                 <div className="mt-2 text-xs text-yellow-500 bg-zinc-900/50 p-2 rounded border border-zinc-800/50">
-                  You haven&apos;t added any trainers yet. Add them in the <Link href="/owner/members" className="underline">Members</Link> section and grant them Trainer roles.
+                  You haven&apos;t added any trainers yet. Add them in the <Link href="/owner/trainers" className="underline">Trainers</Link> section and grant them Trainer roles.
                 </div>
               )}
             </div>
@@ -215,7 +215,7 @@ export default async function GroupActivitiesPage() {
                         </select>
                         {(!trainers || trainers.length === 0) && (
                           <div className="mt-2 text-xs text-yellow-500 bg-zinc-900/50 p-2 rounded border border-zinc-800/50">
-                            No trainers available.
+                            You haven&apos;t added any trainers yet. Add them in the <Link href="/owner/trainers" className="underline">Trainers</Link> section.
                           </div>
                         )}
                       </div>
@@ -337,14 +337,13 @@ export default async function GroupActivitiesPage() {
                 </div>
               ))}
               {(!activities || activities.length === 0) && (
-                <div className="px-6 py-12 text-center flex flex-col items-center justify-center space-y-4 bg-zinc-900 rounded-lg border border-zinc-800">
-                  <div className="text-zinc-500">
-                    No active group activities scheduled.
-                  </div>
+                <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 text-center shadow-xl">
+                  <h3 className="text-lg font-bold text-yellow-500 mb-2">No Scheduled Activities</h3>
+                  <p className="text-sm text-zinc-400 mb-6">There are no active group activities scheduled at the moment.</p>
                   <form action={seedStarterGroupActivities}>
                     <button
                       type="submit"
-                      className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded hover:bg-zinc-700 border border-zinc-700 transition-colors"
+                      className="inline-flex items-center justify-center bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded hover:bg-zinc-700 transition-colors text-sm border border-zinc-700"
                     >
                       Seed Starter Activities
                     </button>
