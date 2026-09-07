@@ -28,6 +28,8 @@ export default async function MemberAttendancePage() {
     ? attendanceRecords.some((a) => new Date(a.occurred_at) >= todayStart)
     : false;
 
+  const hasRecords = !!(attendanceRecords && attendanceRecords.length > 0);
+
   const cardStyle: React.CSSProperties = {
     background: "var(--color-bg-card)",
     border: "1px solid rgba(255,255,255,0.06)",
@@ -45,10 +47,10 @@ export default async function MemberAttendancePage() {
       </div>
 
       <div style={cardStyle}>
-        {attendanceRecords && attendanceRecords.length > 0 ? (
+        {hasRecords ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            {attendanceRecords.map((a, i) => (
-              <div key={a.id} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", paddingBottom: i === attendanceRecords.length - 1 ? 0 : "1rem", borderBottom: i === attendanceRecords.length - 1 ? "none" : "1px solid rgba(255,255,255,0.06)" }}>
+            {attendanceRecords!.map((a, i) => (
+              <div key={a.id} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", paddingBottom: i === attendanceRecords!.length - 1 ? 0 : "1rem", borderBottom: i === attendanceRecords!.length - 1 ? "none" : "1px solid rgba(255,255,255,0.06)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                    <div style={{ fontSize: "0.875rem", fontWeight: 700, color: "#fff" }}>
                       {new Date(a.occurred_at).toLocaleDateString("en-IN", { weekday: "short", year: "numeric", month: "short", day: "numeric" })}
@@ -67,12 +69,12 @@ export default async function MemberAttendancePage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 my-4 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl">
-            <h3 className="text-lg font-bold text-yellow-500 mb-2">
-              No Attendance Found
+          <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+            <h3 className="text-lg font-semibold text-yellow-500">
+              No attendance yet
             </h3>
-            <p className="text-sm text-zinc-400">
-              No attendance records found for your account.
+            <p className="max-w-md text-sm text-zinc-500">
+              Check in when you arrive at the gym. Your visit history will show up here.
             </p>
           </div>
         )}
