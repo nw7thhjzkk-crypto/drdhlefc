@@ -98,3 +98,4 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+// Requirement 3: Offline caching for app shell only
