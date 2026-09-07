@@ -2,6 +2,8 @@ import { createClient } from "@/utils/supabase/server";
 import {
   createWorkoutPlan,
   createDietPlan,
+  updateWorkoutPlan,
+  updateDietPlan,
   assignWorkoutPlan,
   assignDietPlan,
 } from "./actions";
@@ -15,6 +17,8 @@ type WorkoutPlan = {
   goal: string | null;
   duration_days: number | null;
   created_at: string;
+  instructions?: string | null;
+  content?: unknown;
 };
 
 type DietPlan = {
@@ -27,6 +31,8 @@ type DietPlan = {
   carbs_g: number | null;
   fat_g: number | null;
   created_at: string;
+  instructions?: string | null;
+  content?: unknown;
 };
 
 export default async function TrainerPlansPage() {
@@ -61,7 +67,7 @@ export default async function TrainerPlansPage() {
 
   const { data: workoutPlans } = await supabase
     .from("workout_plans")
-    .select("id, name, goal, duration_days, created_at")
+    .select("id, name, goal, duration_days, created_at, instructions, content")
     .eq("created_by", user.id)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
@@ -69,7 +75,7 @@ export default async function TrainerPlansPage() {
   const { data: dietPlans } = await supabase
     .from("diet_plans")
     .select(
-      "id, name, goal, duration_days, target_calories, protein_g, carbs_g, fat_g, created_at"
+      "id, name, goal, duration_days, target_calories, protein_g, carbs_g, fat_g, created_at, instructions, content"
     )
     .eq("created_by", user.id)
     .is("deleted_at", null)
@@ -165,6 +171,68 @@ export default async function TrainerPlansPage() {
                   <p className="text-xs text-zinc-500 mb-3">
                     {plan.duration_days ?? "—"} Days • Goal: {plan.goal ?? "—"}
                   </p>
+
+                  <details className="mb-3 group text-xs text-zinc-400">
+                    <summary className="cursor-pointer hover:text-yellow-500">
+                      Edit plan
+                    </summary>
+                    <form
+                      action={async (formData) => {
+                        "use server";
+                        await updateWorkoutPlan(plan.id, formData);
+                      }}
+                      className="mt-2 space-y-2 bg-zinc-900 p-2 rounded border border-zinc-800"
+                    >
+                      <input
+                        name="name"
+                        defaultValue={plan.name}
+                        required
+                        className="block w-full bg-zinc-950 border border-zinc-800 rounded p-1"
+                        placeholder="Plan Name"
+                      />
+                      <select
+                        name="goal"
+                        defaultValue={plan.goal || "Fitness"}
+                        className="block w-full bg-zinc-950 border border-zinc-800 rounded p-1"
+                      >
+                        <option value="Weight Loss">Weight Loss</option>
+                        <option value="Muscle Gain">Muscle Gain</option>
+                        <option value="Strength">Strength</option>
+                        <option value="Fitness">Fitness</option>
+                        <option value="General Health">General Health</option>
+                        <option value="Custom">Custom</option>
+                      </select>
+                      <input
+                        name="duration_days"
+                        type="number"
+                        defaultValue={plan.duration_days || ""}
+                        required
+                        className="block w-full bg-zinc-950 border border-zinc-800 rounded p-1"
+                        placeholder="Duration (Days)"
+                      />
+                      <textarea
+                        name="content"
+                        rows={2}
+                        defaultValue={plan.content ? JSON.stringify(plan.content) : ""}
+                        placeholder='{"exercises": []}'
+                        className="block w-full bg-zinc-950 border border-zinc-800 rounded p-1 font-mono"
+                      />
+                      <textarea
+                        name="instructions"
+                        rows={2}
+                        defaultValue={plan.instructions || ""}
+                        placeholder="Instructions"
+                        className="block w-full bg-zinc-950 border border-zinc-800 rounded p-1"
+                      />
+                      <button
+                        type="submit"
+                        className="w-full bg-yellow-600 text-zinc-950 font-bold px-2 py-1 rounded hover:bg-yellow-500"
+                      >
+                        Save
+                      </button>
+                    </form>
+                  </details>
+
                   <form action={assignWorkoutPlan} className="pt-3 border-t border-zinc-800">
                     <input type="hidden" name="workout_plan_id" value={plan.id} />
                     <div className="flex space-x-2">
@@ -336,6 +404,104 @@ export default async function TrainerPlansPage() {
                       {plan.fat_g ?? "—"}
                     </div>
                   </div>
+
+                  <details className="mb-3 group text-xs text-zinc-400">
+                    <summary className="cursor-pointer hover:text-yellow-500">
+                      Edit plan
+                    </summary>
+                    <form
+                      action={async (formData) => {
+                        "use server";
+                        await updateDietPlan(plan.id, formData);
+                      }}
+                      className="mt-2 space-y-2 bg-zinc-900 p-2 rounded border border-zinc-800"
+                    >
+                      <input
+                        name="name"
+                        defaultValue={plan.name}
+                        required
+                        className="block w-full bg-zinc-950 border border-zinc-800 rounded p-1"
+                        placeholder="Plan Name"
+                      />
+                      <select
+                        name="goal"
+                        defaultValue={plan.goal || "Custom"}
+                        className="block w-full bg-zinc-950 border border-zinc-800 rounded p-1"
+                      >
+                        <option value="Weight Loss">Weight Loss</option>
+                        <option value="Weight Gain">Weight Gain</option>
+                        <option value="Muscle Gain">Muscle Gain</option>
+                        <option value="Fitness">Fitness</option>
+                        <option value="General Health">General Health</option>
+                        <option value="Custom">Custom</option>
+                      </select>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          name="target_calories"
+                          type="number"
+                          defaultValue={plan.target_calories || ""}
+                          required
+                          className="block w-full bg-zinc-950 border border-zinc-800 rounded p-1"
+                          placeholder="Calories"
+                        />
+                        <input
+                          name="duration_days"
+                          type="number"
+                          defaultValue={plan.duration_days || ""}
+                          required
+                          className="block w-full bg-zinc-950 border border-zinc-800 rounded p-1"
+                          placeholder="Duration (Days)"
+                        />
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <input
+                          name="protein_g"
+                          type="number"
+                          defaultValue={plan.protein_g || ""}
+                          required
+                          className="block w-full bg-zinc-950 border border-zinc-800 rounded p-1"
+                          placeholder="Protein"
+                        />
+                        <input
+                          name="carbs_g"
+                          type="number"
+                          defaultValue={plan.carbs_g || ""}
+                          required
+                          className="block w-full bg-zinc-950 border border-zinc-800 rounded p-1"
+                          placeholder="Carbs"
+                        />
+                        <input
+                          name="fat_g"
+                          type="number"
+                          defaultValue={plan.fat_g || ""}
+                          required
+                          className="block w-full bg-zinc-950 border border-zinc-800 rounded p-1"
+                          placeholder="Fat"
+                        />
+                      </div>
+                      <textarea
+                        name="content"
+                        rows={2}
+                        defaultValue={plan.content ? JSON.stringify(plan.content) : ""}
+                        placeholder='{"meals": []}'
+                        className="block w-full bg-zinc-950 border border-zinc-800 rounded p-1 font-mono"
+                      />
+                      <textarea
+                        name="instructions"
+                        rows={2}
+                        defaultValue={plan.instructions || ""}
+                        placeholder="Instructions"
+                        className="block w-full bg-zinc-950 border border-zinc-800 rounded p-1"
+                      />
+                      <button
+                        type="submit"
+                        className="w-full bg-yellow-600 text-zinc-950 font-bold px-2 py-1 rounded hover:bg-yellow-500"
+                      >
+                        Save
+                      </button>
+                    </form>
+                  </details>
+
                   <form action={assignDietPlan} className="pt-3 border-t border-zinc-800">
                     <input type="hidden" name="diet_plan_id" value={plan.id} />
                     <div className="flex space-x-2">
