@@ -3,6 +3,28 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
+
+async function requireOwner() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "owner") {
+    throw new Error("Unauthorized");
+  }
+
+  return { supabase, user };
+}
+
+
 /**
  * Record a payment against a membership.
  *
@@ -17,11 +39,14 @@ import { revalidatePath } from "next/cache";
  *   writes an audit record — all in one database transaction.
  */
 export async function recordPayment(formData: FormData) {
-  const supabase = await createClient();
+  let supabase;
+  try {
+    const res = await requireOwner();
+    supabase = res.supabase;
 
-  // getUser() performs server-side token verification
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (!user || authError) return { error: "Not authenticated" };
+  } catch (error) {
+    return { error: (error instanceof Error ? error.message : "Unauthorized") };
+  }
 
   const membership_id = formData.get("membership_id") as string;
   const amount_raw    = formData.get("amount") as string;
