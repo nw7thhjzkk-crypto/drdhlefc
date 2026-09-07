@@ -88,7 +88,7 @@ export default async function TrainerDashboardPage() {
       .from("group_activities")
       .select("id, name, start_at, capacity")
       .eq("trainer_id", trainer.id)
-      .is("deleted_at", null)
+      .eq("status", "active")
       .gte("start_at", nowISO)
       .order("start_at", { ascending: true })
       .limit(4),
