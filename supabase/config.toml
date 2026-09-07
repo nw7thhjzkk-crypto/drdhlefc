@@ -5,3 +5,8 @@
 # Service-to-service auth uses ORCHESTRATOR_SHARED_SECRET (Bearer).
 # Disable JWT gate so external orchestrators are not forced through end-user JWT.
 verify_jwt = false
+
+[functions.jules-mcp]
+# Remote MCP for Grok/xAI. Auth: Authorization Bearer MCP_SHARED_SECRET.
+# JWT gate disabled; MCP clients are not Supabase end-users.
+verify_jwt = false
