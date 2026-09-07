@@ -95,6 +95,45 @@ export async function createWorkoutPlan(formData: FormData) {
   revalidatePath("/trainer/plans");
 }
 
+export async function updateWorkoutPlan(planId: string, formData: FormData) {
+  const { supabase, user, trainer } = await requireTrainer();
+
+  if (!planId) throw new Error("planId is required");
+
+  const name = formData.get("name") as string;
+  const goal = formData.get("goal") as string;
+  const duration_days = parseInt(formData.get("duration_days") as string, 10);
+  const instructions = (formData.get("instructions") as string) || "";
+
+  const contentStr = formData.get("content") as string;
+  const content = contentStr ? JSON.parse(contentStr) : { exercises: [] };
+
+  const { error } = await supabase
+    .from("workout_plans")
+    .update({
+      name,
+      goal,
+      duration_days,
+      instructions,
+      content,
+    })
+    .eq("id", planId)
+    .eq("created_by", user.id)
+    .is("deleted_at", null);
+
+  if (error) throw new Error(error.message);
+
+  await softAudit(supabase, {
+    p_action: "UPDATE_WORKOUT_PLAN",
+    p_entity_type: "workout_plan",
+    p_entity_id: planId,
+    p_member_id: null,
+    p_details: { name, trainer_id: trainer.id },
+  });
+
+  revalidatePath("/trainer/plans");
+}
+
 export async function createDietPlan(formData: FormData) {
   const { supabase, user, trainer } = await requireTrainer();
 
@@ -137,6 +176,53 @@ export async function createDietPlan(formData: FormData) {
     p_entity_id: data.id,
     p_member_id: null,
     p_details: { name, trainer_id: trainer.id, source: "trainer" },
+  });
+
+  revalidatePath("/trainer/plans");
+}
+
+export async function updateDietPlan(planId: string, formData: FormData) {
+  const { supabase, user, trainer } = await requireTrainer();
+
+  if (!planId) throw new Error("planId is required");
+
+  const name = formData.get("name") as string;
+  const goal = formData.get("goal") as string;
+  const target_calories = parseFloat(formData.get("target_calories") as string);
+  const protein_g = parseFloat(formData.get("protein_g") as string);
+  const carbs_g = parseFloat(formData.get("carbs_g") as string);
+  const fat_g = parseFloat(formData.get("fat_g") as string);
+  const duration_days = parseInt(formData.get("duration_days") as string, 10);
+  const instructions = (formData.get("instructions") as string) || "";
+
+  const contentStr = formData.get("content") as string;
+  const content = contentStr ? JSON.parse(contentStr) : { meals: [] };
+
+  const { error } = await supabase
+    .from("diet_plans")
+    .update({
+      name,
+      goal,
+      target_calories,
+      protein_g,
+      carbs_g,
+      fat_g,
+      duration_days,
+      instructions,
+      content,
+    })
+    .eq("id", planId)
+    .eq("created_by", user.id)
+    .is("deleted_at", null);
+
+  if (error) throw new Error(error.message);
+
+  await softAudit(supabase, {
+    p_action: "UPDATE_DIET_PLAN",
+    p_entity_type: "diet_plan",
+    p_entity_id: planId,
+    p_member_id: null,
+    p_details: { name, trainer_id: trainer.id },
   });
 
   revalidatePath("/trainer/plans");
