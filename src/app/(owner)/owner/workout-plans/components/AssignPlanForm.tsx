@@ -27,6 +27,11 @@ export default function AssignPlanForm({ members, workout_plan_id }: { members: 
           {isPending ? 'Assigning...' : 'Assign'}
         </button>
       </div>
+      {members.length === 0 && (
+        <p className="mt-2 text-xs text-yellow-600 font-medium">
+          You currently have no members in the system.
+        </p>
+      )}
     </form>
   );
 }

@@ -103,6 +103,11 @@ export default function WorkoutExercisePicker({
               </option>
             ))}
           </select>
+          {exercises.length === 0 && (
+            <p className="mt-2 text-xs text-yellow-600 font-medium">
+              No exercises available. Create exercises first.
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-2">

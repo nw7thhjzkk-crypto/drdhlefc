@@ -138,10 +138,10 @@ export default async function WorkoutPlansPage() {
             </div>
 
             {(!plans || plans.length === 0) && (
-              <div className="text-center py-8">
+              <div className="col-span-full py-12 text-center bg-zinc-900 border border-zinc-800 rounded-lg">
                 <p className="text-zinc-500 mb-4">No active workout plans found.</p>
                 <form action={seedWorkoutPlans}>
-                  <button type="submit" className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded hover:bg-zinc-700 transition-colors border border-zinc-700">
+                  <button type="submit" className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded hover:bg-zinc-700 transition-colors border border-zinc-700 inline-block">
                     Seed Starter Plans
                   </button>
                 </form>
