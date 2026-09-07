@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { addLead } from "./actions";
+import { LeadRow } from "./LeadRow";
 
 export default async function CRMPage() {
   const supabase = await createClient();
@@ -8,6 +9,10 @@ export default async function CRMPage() {
     .from("leads")
     .select("*, trainers(name)")
     .order("created_at", { ascending: false });
+
+  const { data: trainers } = await supabase
+    .from("trainers")
+    .select("id, name");
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -69,26 +74,7 @@ export default async function CRMPage() {
             </thead>
             <tbody className="bg-zinc-900 divide-y divide-zinc-800">
                 {leads?.map((lead) => (
-                <tr key={lead.id} className="hover:bg-zinc-800/50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-bold text-zinc-200">{lead.name}</div>
-                    <div className="text-xs text-zinc-500">{lead.phone} | {lead.email}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400 capitalize">
-                    {lead.source}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className="bg-zinc-800 text-zinc-300 px-2 py-1 rounded text-xs border border-zinc-700 capitalize">
-                        {lead.stage}
-                    </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
-                    {lead.trainers?.name || 'Unassigned'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
-                    {lead.follow_up_at ? new Date(lead.follow_up_at).toLocaleDateString() : '-'}
-                    </td>
-                </tr>
+                  <LeadRow key={lead.id} lead={lead} trainers={trainers || []} />
                 ))}
                 {(!leads || leads.length === 0) && (
                 <tr>
