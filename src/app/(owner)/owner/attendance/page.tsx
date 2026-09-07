@@ -77,9 +77,18 @@ export default async function OwnerAttendancePage() {
                 ))}
               </select>
               {memberList.length === 0 && (
-                <p className="text-xs text-yellow-500 mt-2">
-                  No members available. Add one first.
-                </p>
+                <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-950/80 p-3">
+                  <p className="text-sm font-semibold text-zinc-200">No members yet</p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    Add a member before logging manual check-ins.
+                  </p>
+                  <Link
+                    href="/owner/members"
+                    className="mt-2 inline-block text-xs font-bold text-yellow-500 hover:text-yellow-400"
+                  >
+                    Go to Members
+                  </Link>
+                </div>
               )}
             </div>
             <div>
@@ -107,45 +116,45 @@ export default async function OwnerAttendancePage() {
             <div className="px-6 py-4 border-b border-zinc-800">
               <h2 className="text-lg font-semibold text-zinc-100">Today&apos;s Check-Ins</h2>
             </div>
-            <table className="min-w-full divide-y divide-zinc-800">
-              <thead className="bg-zinc-950">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Time</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Member</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Method</th>
-                </tr>
-              </thead>
-              <tbody className="bg-zinc-900 divide-y divide-zinc-800">
-                {rows.map((record) => (
-                  <tr key={record.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
-                      {new Date(record.occurred_at).toLocaleTimeString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-zinc-200">
-                      {memberName(record.members)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400 capitalize">
-                      {record.method}
-                    </td>
-                  </tr>
-                ))}
-                {rows.length === 0 && (
+            {rows.length === 0 ? (
+              <div className="m-6 flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+                <h3 className="text-lg font-semibold text-zinc-100">No check-ins today</h3>
+                <p className="max-w-md text-sm text-zinc-500">
+                  Today&apos;s attendance list is empty. Log a manual check-in or open members to get started.
+                </p>
+                <Link
+                  href="/owner/members"
+                  className="inline-flex items-center justify-center bg-yellow-600 text-zinc-950 font-bold px-4 py-2 rounded hover:bg-yellow-500 transition-colors"
+                >
+                  View Members
+                </Link>
+              </div>
+            ) : (
+              <table className="min-w-full divide-y divide-zinc-800">
+                <thead className="bg-zinc-950">
                   <tr>
-                    <td colSpan={3} className="px-6 py-12 text-center">
-                      <div className="flex flex-col items-center justify-center space-y-4">
-                        <p className="text-zinc-400">No attendance logged today.</p>
-                        <Link
-                          href="/owner/members"
-                          className="inline-flex items-center justify-center bg-yellow-600 text-zinc-950 font-bold px-4 py-2 rounded hover:bg-yellow-500 transition-colors"
-                        >
-                          View Members
-                        </Link>
-                      </div>
-                    </td>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Time</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Member</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Method</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-zinc-900 divide-y divide-zinc-800">
+                  {rows.map((record) => (
+                    <tr key={record.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
+                        {new Date(record.occurred_at).toLocaleTimeString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-zinc-200">
+                        {memberName(record.members)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400 capitalize">
+                        {record.method}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>
