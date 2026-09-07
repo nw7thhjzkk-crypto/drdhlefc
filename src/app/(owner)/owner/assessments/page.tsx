@@ -1,0 +1,181 @@
+import { createClient } from "@/utils/supabase/server";
+import { logAssessment, updateAssessment } from "./actions";
+
+type Member = {
+  id: string;
+  name: string;
+  member_code?: string | null;
+};
+
+type AssessmentRecord = {
+  id: string;
+  member_id: string;
+  recorded_at: string;
+  recorded_by: string | null;
+  source: string;
+  members: { name: string } | null;
+  height_cm: number | null;
+  weight_kg: number | null;
+  body_fat_pct: number | null;
+  bmi: number | null;
+};
+
+export default async function OwnerAssessmentsPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return <div>Not authenticated</div>;
+
+  const { data: membersData } = await supabase
+    .from("members")
+    .select("id, name, member_code")
+    .order("name");
+
+  const members: Member[] = membersData || [];
+
+  const { data: recentAssessmentsData } = await supabase
+    .from("assessments")
+    .select("*, members(name)")
+    .order("recorded_at", { ascending: false })
+    .limit(50);
+
+  const recentAssessments: AssessmentRecord[] = recentAssessmentsData || [];
+
+  return (
+    <div className="p-8 max-w-7xl mx-auto space-y-8">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-yellow-500">Assessments</h1>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-1 bg-zinc-900 p-6 rounded-lg shadow-xl border border-zinc-800 h-fit">
+          <h2 className="text-lg font-semibold mb-4 border-b border-zinc-800 pb-2 text-zinc-100">
+            Log Assessment
+          </h2>
+          <form action={logAssessment} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-zinc-400">Member</label>
+              <select name="member_id" required className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200">
+                <option value="">Select member</option>
+                {members.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name} {m.member_code ? `(${m.member_code})` : ''}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-400">Height (cm)</label>
+              <input type="number" step="0.1" name="height_cm" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-400">Weight (kg)</label>
+              <input type="number" step="0.1" name="weight_kg" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
+            </div>
+             <div>
+              <label className="block text-sm font-medium text-zinc-400">Body Fat (%)</label>
+              <input type="number" step="0.1" name="body_fat_pct" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
+            </div>
+            <button type="submit" className="w-full bg-yellow-600 text-zinc-950 font-bold px-4 py-2 rounded hover:bg-yellow-500 transition-colors mt-4">
+              Save Assessment
+            </button>
+          </form>
+        </div>
+
+        <div className="lg:col-span-2">
+          <div className="bg-zinc-900 rounded-lg shadow-xl border border-zinc-800 overflow-hidden">
+             <div className="px-6 py-4 border-b border-zinc-800">
+                <h2 className="text-lg font-semibold text-zinc-100">Recent Assessments</h2>
+            </div>
+            <table className="min-w-full divide-y divide-zinc-800">
+              <thead className="bg-zinc-950">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Member</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Height / Weight</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">BMI</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider"></th>
+                </tr>
+              </thead>
+              <tbody className="bg-zinc-900 divide-y divide-zinc-800">
+                {recentAssessments?.map((record) => (
+                  <tr key={record.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
+                      {new Date(record.recorded_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-zinc-200">
+                      {record.members?.name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
+                      {record.height_cm ? `${record.height_cm} cm` : '-'} / {record.weight_kg ? `${record.weight_kg} kg` : '-'}
+                    </td>
+                     <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
+                      {record.bmi || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400 text-right">
+                      <details className="group">
+                        <summary className="cursor-pointer text-xs text-zinc-400 hover:text-yellow-500 list-none">
+                          Edit
+                        </summary>
+                        <form
+                          action={async (formData) => {
+                            "use server";
+                            await updateAssessment(record.id, formData);
+                          }}
+                          className="mt-3 p-3 bg-zinc-950 rounded border border-zinc-800 absolute right-6 z-10 w-64 shadow-xl"
+                        >
+                          <div className="space-y-3 text-left">
+                            <div>
+                              <label className="block text-xs text-zinc-500 mb-1">Height (cm)</label>
+                              <input
+                                name="height_cm"
+                                type="number"
+                                step="0.1"
+                                defaultValue={record.height_cm ?? ""}
+                                className="w-full bg-zinc-900 border border-zinc-800 rounded p-1.5 text-zinc-200 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-zinc-500 mb-1">Weight (kg)</label>
+                              <input
+                                name="weight_kg"
+                                type="number"
+                                step="0.1"
+                                defaultValue={record.weight_kg ?? ""}
+                                className="w-full bg-zinc-900 border border-zinc-800 rounded p-1.5 text-zinc-200 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-zinc-500 mb-1">Body Fat (%)</label>
+                              <input
+                                name="body_fat_pct"
+                                type="number"
+                                step="0.1"
+                                defaultValue={record.body_fat_pct ?? ""}
+                                className="w-full bg-zinc-900 border border-zinc-800 rounded p-1.5 text-zinc-200 text-sm"
+                              />
+                            </div>
+                            <button
+                              type="submit"
+                              className="w-full bg-yellow-600 text-zinc-950 font-bold px-3 py-2 rounded hover:bg-yellow-500 text-sm"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        </form>
+                      </details>
+                    </td>
+                  </tr>
+                ))}
+                {(!recentAssessments || recentAssessments.length === 0) && (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-zinc-500">No assessments recorded recently.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
