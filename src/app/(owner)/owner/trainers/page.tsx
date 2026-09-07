@@ -74,6 +74,17 @@ export default async function TrainersPage() {
             ))}
           </tbody>
         </table>
+        {(!trainers || trainers.length === 0) && (
+          <div className="p-8 text-center flex flex-col items-center gap-4 bg-zinc-900">
+            <span className="text-zinc-500">No trainers found.</span>
+            <Link
+              href="/owner/trainers/new"
+              className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded hover:bg-zinc-700 border border-zinc-700 inline-block"
+            >
+              Add First Trainer
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

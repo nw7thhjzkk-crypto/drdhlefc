@@ -86,7 +86,12 @@ export async function createTrainer(formData: FormData) {
   // handle_new_user always inserts role=member; owner session may promote (000013).
   const { error: roleError } = await supabase
     .from("profiles")
-    .update({ role: "trainer" })
+    .update({
+      role: "trainer",
+      full_name: name,
+      email: email,
+      phone: phone
+    })
     .eq("id", profile_id);
 
   if (roleError) {
