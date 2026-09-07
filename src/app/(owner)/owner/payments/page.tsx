@@ -17,6 +17,10 @@ interface Member {
   name: string;
 }
 
+function formatInr(amount: number) {
+  return `₹${Number(amount).toLocaleString("en-IN")}`;
+}
+
 export default async function PaymentsPage({
   searchParams,
 }: {
@@ -128,7 +132,8 @@ export default async function PaymentsPage({
                         : ms.membership_plans?.name;
                       return (
                         <option key={ms.id} value={ms.id}>
-                          {m.name} - {planName} (${ms.pending_amount} pending)
+                          {m.name} - {planName} ({formatInr(ms.pending_amount)}{" "}
+                          pending)
                         </option>
                       );
                     })
@@ -139,7 +144,7 @@ export default async function PaymentsPage({
 
             <div>
               <label className="block text-sm font-medium text-zinc-400">
-                Amount
+                Amount (₹)
               </label>
               <input
                 name="amount"
@@ -261,7 +266,7 @@ export default async function PaymentsPage({
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-400">
-                        ${payment.amount}
+                        {formatInr(payment.amount)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
                         {payment.method}
