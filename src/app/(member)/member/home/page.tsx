@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { bookActivity, cancelBooking, claimFirstOwner } from "./actions";
+import CheckInButton from "./CheckInButton";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Home" };
@@ -156,6 +157,17 @@ export default async function MemberHomePage() {
     const [ty, tm, td] = todayKey.split("-").map(Number);
     daysLeft = Math.round((Date.UTC(ey, em - 1, ed) - Date.UTC(ty, tm - 1, td)) / 86400000);
   }
+
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const hasCheckedInToday = (myAttendance as Attendance[])?.some(a => {
+    const d = new Date(a.occurred_at);
+    return d >= todayStart && d <= todayEnd;
+  }) || false;
 
   const card: React.CSSProperties = {
     background: "var(--color-bg-card)",
@@ -367,26 +379,32 @@ export default async function MemberHomePage() {
       </div>
 
       {/* Recent attendance */}
-      {myAttendance && myAttendance.length > 0 && (
-        <div style={card}>
+              <div style={card}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.625rem" }}>
             <h2 style={{ fontSize: "0.875rem", fontWeight: 700, color: "#fff" }}>
               Recent Check-ins
             </h2>
             <Link href="/member/attendance" style={{ fontSize: "0.6875rem", color: "var(--color-gold)", textDecoration: "none" }}>History →</Link>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
-            {(myAttendance as Attendance[]).map((a, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8125rem" }}>
-                <span style={{ color: "var(--color-silver)" }}>
-                  {new Date(a.occurred_at).toLocaleDateString("en-IN", { weekday: "short", month: "short", day: "numeric" })}
-                </span>
-                <span className="badge badge-success" style={{ fontSize: "0.625rem" }}>{a.method ?? "manual"}</span>
-              </div>
-            ))}
-          </div>
+          {myAttendance && myAttendance.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+              {(myAttendance as Attendance[]).map((a, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8125rem" }}>
+                  <span style={{ color: "var(--color-silver)" }}>
+                    {new Date(a.occurred_at).toLocaleDateString("en-IN", { weekday: "short", month: "short", day: "numeric" })}
+                  </span>
+                  <span className="badge badge-success" style={{ fontSize: "0.625rem" }}>{a.method ?? "manual"}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p style={{ fontSize: "0.875rem", color: "var(--color-silver-dark)", textAlign: "center", padding: "0.75rem 0" }}>
+              No recent check-ins.
+            </p>
+          )}
+
+          <CheckInButton hasCheckedInToday={hasCheckedInToday} />
         </div>
-      )}
 
     </div>
   );
