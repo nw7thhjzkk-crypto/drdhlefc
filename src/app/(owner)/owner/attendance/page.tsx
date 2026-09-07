@@ -78,7 +78,7 @@ export default async function OwnerAttendancePage() {
               </select>
               {memberList.length === 0 && (
                 <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-950/80 p-3">
-                  <p className="text-sm font-semibold text-zinc-200">No members yet</p>
+                  <p className="text-sm font-semibold text-yellow-500">No members yet</p>
                   <p className="mt-1 text-xs text-zinc-500">
                     Add a member before logging manual check-ins.
                   </p>
@@ -118,7 +118,7 @@ export default async function OwnerAttendancePage() {
             </div>
             {rows.length === 0 ? (
               <div className="m-6 flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
-                <h3 className="text-lg font-semibold text-zinc-100">No check-ins today</h3>
+                <h3 className="text-lg font-semibold text-yellow-500">No check-ins today</h3>
                 <p className="max-w-md text-sm text-zinc-500">
                   Today&apos;s attendance list is empty. Log a manual check-in or open members to get started.
                 </p>
