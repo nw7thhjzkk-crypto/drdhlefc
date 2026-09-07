@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
-import { createWorkoutPlan, softDeleteWorkoutPlan, updateWorkoutPlan } from "./actions";
+import { createWorkoutPlan, softDeleteWorkoutPlan, updateWorkoutPlan, seedStarterWorkoutPlans } from "./actions";
 import AssignPlanForm from "./components/AssignPlanForm";
 import WorkoutExercisePicker from "@/components/WorkoutExercisePicker";
 
@@ -137,7 +137,14 @@ export default async function WorkoutPlansPage() {
                 ))}
             </div>
             {(!plans || plans.length === 0) && (
-              <p className="text-center text-zinc-500 py-8">No active workout plans found.</p>
+              <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                <p className="text-zinc-500">No active workout plans found.</p>
+                <form action={seedStarterWorkoutPlans}>
+                  <button type="submit" className="bg-zinc-800 text-yellow-500 hover:bg-zinc-700 px-4 py-2 rounded text-sm font-bold transition-colors">
+                    Generate Sample Workout Plans
+                  </button>
+                </form>
+              </div>
             )}
           </div>
         </div>

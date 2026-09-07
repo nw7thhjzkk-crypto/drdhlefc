@@ -33,6 +33,12 @@ export default async function OwnerDashboard() {
     { count: openLeads },
     { data: lowStockProducts },
     { count: newLeadsThisMonth },
+    { count: membershipPlansCount },
+    { count: productsCount },
+    { count: exercisesCount },
+    { count: groupActivitiesCount },
+    { count: dietPlansCount },
+    { count: workoutPlansCount },
   ] = await Promise.all([
     supabase.from("members").select("*", { count: "exact", head: true }),
     supabase.from("members").select("*", { count: "exact", head: true }).eq("status", "active"),
@@ -75,6 +81,12 @@ export default async function OwnerDashboard() {
       .from("leads")
       .select("*", { count: "exact", head: true })
       .gte("created_at", firstDayOfMonth),
+    supabase.from("membership_plans").select("*", { count: "exact", head: true }).eq("status", "active"),
+    supabase.from("products").select("*", { count: "exact", head: true }).neq("status", "inactive"),
+    supabase.from("exercises").select("*", { count: "exact", head: true }).is("deleted_at", null),
+    supabase.from("group_activities").select("*", { count: "exact", head: true }).neq("status", "cancelled"),
+    supabase.from("diet_plans").select("*", { count: "exact", head: true }).is("deleted_at", null),
+    supabase.from("workout_plans").select("*", { count: "exact", head: true }).is("deleted_at", null),
   ]);
 
   // Aggregations
@@ -123,6 +135,19 @@ export default async function OwnerDashboard() {
   const fmt = (n: number) =>
     n.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
+  const checklistItems = [
+    { name: "Membership Plans", count: membershipPlansCount ?? 0, link: "/owner/plans" },
+    { name: "Store Products", count: productsCount ?? 0, link: "/owner/store" },
+    { name: "Exercises", count: exercisesCount ?? 0, link: "/owner/exercises" },
+    { name: "Group Activities", count: groupActivitiesCount ?? 0, link: "/owner/activities" },
+    { name: "Diet Plans", count: dietPlansCount ?? 0, link: "/owner/diet-plans" },
+    { name: "Workout Plans", count: workoutPlansCount ?? 0, link: "/owner/workout-plans" },
+    { name: "Leads", count: openLeads ?? 0, link: "/owner/leads" },
+    { name: "Members", count: totalMembers ?? 0, link: "/owner/members" },
+  ];
+
+  const showChecklist = checklistItems.some(item => item.count === 0);
+
   return (
     <div>
       {/* Page header */}
@@ -137,6 +162,34 @@ export default async function OwnerDashboard() {
           + New Member
         </Link>
       </div>
+
+      {/* First-Run Checklist */}
+      {showChecklist && (
+        <div className="card mb-6" style={{ borderColor: "#EAB308", borderWidth: "1px", borderStyle: "solid" }}>
+          <div className="card-header" style={{ backgroundColor: "#18181B", color: "#FBBF24", borderBottom: "1px solid #27272A" }}>
+            <h2 style={{ fontSize: "1rem", fontWeight: 700 }}>🚀 First-Run Checklist</h2>
+          </div>
+          <div className="card-body" style={{ padding: "1.25rem", backgroundColor: "#18181B", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
+            {checklistItems.map(item => (
+              <div key={item.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.5rem", borderRadius: "0.25rem", backgroundColor: "#27272A" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span style={{ fontSize: "1.25rem" }}>
+                    {item.count > 0 ? "✅" : "⭕"}
+                  </span>
+                  <span style={{ color: "#E4E4E7", fontSize: "0.875rem", fontWeight: 500 }}>
+                    {item.name}
+                  </span>
+                </div>
+                {item.count === 0 && (
+                  <Link href={item.link} style={{ fontSize: "0.75rem", color: "#FBBF24", textDecoration: "underline", fontWeight: 600 }}>
+                    Add
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* KPI row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>

@@ -177,3 +177,81 @@ export async function updateDietPlan(id: string, formData: FormData) {
 
   revalidatePath("/owner/diet-plans");
 }
+
+export async function seedStarterDietPlans() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "owner") {
+    throw new Error("Unauthorized");
+  }
+
+  const { count } = await supabase
+    .from("diet_plans")
+    .select("*", { count: "exact", head: true })
+    .is("deleted_at", null);
+
+  if (count && count > 0) {
+    return;
+  }
+
+  const starterPlans = [
+    {
+      name: "Weight Loss Basic",
+      goal: "Weight Loss",
+      target_calories: 1800,
+      protein_g: 150,
+      carbs_g: 150,
+      fat_g: 60,
+      duration_days: 30,
+      instructions: "Focus on whole foods. Drink plenty of water.",
+      content: { meals: [{ type: "Breakfast", name: "Oats with protein powder" }] },
+      source: "owner",
+      created_by: user.id,
+      status: "active"
+    },
+    {
+      name: "Muscle Gain Standard",
+      goal: "Muscle Gain",
+      target_calories: 2800,
+      protein_g: 180,
+      carbs_g: 350,
+      fat_g: 80,
+      duration_days: 60,
+      instructions: "Eat every 3-4 hours. Prioritize post-workout nutrition.",
+      content: { meals: [{ type: "Lunch", name: "Chicken, rice, and broccoli" }] },
+      source: "owner",
+      created_by: user.id,
+      status: "active"
+    }
+  ];
+
+  const { error, data } = await supabase.from("diet_plans").insert(starterPlans).select();
+
+  if (error) throw new Error(error.message);
+
+  if (data && data.length > 0) {
+    for (const plan of data) {
+      try {
+        await supabase.rpc("insert_audit_log", {
+          p_action: "CREATE_DIET_PLAN",
+          p_entity_type: "diet_plan",
+          p_entity_id: plan.id,
+          p_member_id: null,
+          p_details: { name: plan.name, method: "seed" },
+        });
+      } catch (err) {
+        console.error("Failed to insert audit log for seed:", err);
+      }
+    }
+  }
+
+  revalidatePath("/owner/diet-plans");
+}

@@ -173,3 +173,83 @@ export async function updateWorkoutPlan(id: string, formData: FormData) {
 
   revalidatePath("/owner/workout-plans");
 }
+
+export async function seedStarterWorkoutPlans() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "owner") {
+    throw new Error("Unauthorized");
+  }
+
+  const { count } = await supabase
+    .from("workout_plans")
+    .select("*", { count: "exact", head: true })
+    .is("deleted_at", null);
+
+  if (count && count > 0) {
+    return;
+  }
+
+  const starterPlans = [
+    {
+      name: "Full Body Starter",
+      goal: "General Fitness",
+      duration_days: 30,
+      instructions: "Perform exercises with proper form. Rest 60s between sets.",
+      content: {
+        days: [
+          { day: 1, exercises: [{ name: "Squats", sets: 3, reps: "10-12" }] },
+          { day: 2, exercises: [{ name: "Push-ups", sets: 3, reps: "AMRAP" }] },
+        ]
+      },
+      source: "owner",
+      created_by: user.id,
+      status: "active"
+    },
+    {
+      name: "Upper Body Hypertrophy",
+      goal: "Muscle Gain",
+      duration_days: 60,
+      instructions: "Focus on mind-muscle connection. Rest 90s between sets.",
+      content: {
+        days: [
+          { day: 1, exercises: [{ name: "Bench Press", sets: 4, reps: "8-10" }] },
+          { day: 2, exercises: [{ name: "Pull-ups", sets: 4, reps: "8-10" }] },
+        ]
+      },
+      source: "owner",
+      created_by: user.id,
+      status: "active"
+    }
+  ];
+
+  const { error, data } = await supabase.from("workout_plans").insert(starterPlans).select();
+
+  if (error) throw new Error(error.message);
+
+  if (data && data.length > 0) {
+    for (const plan of data) {
+      try {
+        await supabase.rpc("insert_audit_log", {
+          p_action: "CREATE_WORKOUT_PLAN",
+          p_entity_type: "workout_plan",
+          p_entity_id: plan.id,
+          p_member_id: null,
+          p_details: { name: plan.name, method: "seed" },
+        });
+      } catch (err) {
+        console.error("Failed to insert audit log for seed:", err);
+      }
+    }
+  }
+
+  revalidatePath("/owner/workout-plans");
+}

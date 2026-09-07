@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
-import { createDietPlan, softDeleteDietPlan, updateDietPlan } from "./actions";
+import { createDietPlan, softDeleteDietPlan, updateDietPlan, seedStarterDietPlans } from "./actions";
 import AssignPlanForm from "./components/AssignPlanForm";
 
 export default async function DietPlansPage() {
@@ -171,7 +171,14 @@ export default async function DietPlansPage() {
                 ))}
             </div>
             {(!plans || plans.length === 0) && (
-              <p className="text-center text-zinc-500 py-8">No active diet plans found.</p>
+              <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                <p className="text-zinc-500">No active diet plans found.</p>
+                <form action={seedStarterDietPlans}>
+                  <button type="submit" className="bg-zinc-800 text-yellow-500 hover:bg-zinc-700 px-4 py-2 rounded text-sm font-bold transition-colors">
+                    Generate Sample Diet Plans
+                  </button>
+                </form>
+              </div>
             )}
           </div>
         </div>
