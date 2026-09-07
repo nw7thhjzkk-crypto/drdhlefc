@@ -71,6 +71,15 @@ export async function createTrainer(formData: FormData) {
 
   const profile_id = authData.user.id;
 
+  const { error: profileRoleError } = await supabase
+    .from("profiles")
+    .update({ role: "trainer" })
+    .eq("id", profile_id);
+
+  if (profileRoleError) {
+    return { error: `Failed to set trainer role: ${profileRoleError.message}` };
+  }
+
   const { data: trainerData, error: trainerError } = await supabase
     .from("trainers")
     .insert({
