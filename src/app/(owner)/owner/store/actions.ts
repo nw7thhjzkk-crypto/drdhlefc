@@ -248,3 +248,76 @@ export async function processSale(formData: FormData) {
   revalidatePath("/owner/store");
   return { success: true, sale_id };
 }
+
+export async function seedStarterProducts() {
+  const { supabase } = await requireOwner();
+
+  const { count, error: countError } = await supabase
+    .from("products")
+    .select("*", { count: "exact", head: true });
+
+  if (countError) throw new Error(countError.message);
+
+  if (count && count > 0) {
+    return; // idempotent: only seed if empty
+  }
+
+  const starterProducts = [
+    {
+      name: "Whey Protein Isolate (Vanilla)",
+      sku: "WHEY-VAN-01",
+      category: "Supplements",
+      supplier: "Optimum Nutrition",
+      purchase_price: 30.0,
+      selling_price: 45.0,
+      stock_quantity: 20,
+      minimum_stock: 5,
+      status: "active",
+    },
+    {
+      name: "Pre-Workout Energy",
+      sku: "PRE-NRG-01",
+      category: "Supplements",
+      supplier: "Cellucor",
+      purchase_price: 20.0,
+      selling_price: 35.0,
+      stock_quantity: 15,
+      minimum_stock: 5,
+      status: "active",
+    },
+    {
+      name: "GymSmart Shaker Bottle",
+      sku: "BOT-SHK-01",
+      category: "Accessories",
+      supplier: "BlenderBottle",
+      purchase_price: 5.0,
+      selling_price: 12.0,
+      stock_quantity: 50,
+      minimum_stock: 10,
+      status: "active",
+    },
+  ];
+
+  const { data, error } = await supabase
+    .from("products")
+    .insert(starterProducts)
+    .select("id");
+
+  if (error) throw new Error(error.message);
+
+  if (data && data.length > 0) {
+    try {
+      await supabase.rpc("insert_audit_log", {
+        p_action: "SEED_STARTER_PRODUCTS",
+        p_entity_type: "product",
+        p_entity_id: data[0].id,
+        p_member_id: null,
+        p_details: { count: starterProducts.length },
+      });
+    } catch (err) {
+      console.error("Failed to insert audit log:", err);
+    }
+  }
+
+  revalidatePath("/owner/store");
+}
