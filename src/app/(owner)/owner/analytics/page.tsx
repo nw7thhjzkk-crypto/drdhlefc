@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 
@@ -20,6 +21,22 @@ async function safeCount(
 
 export default async function OwnerAnalyticsPage() {
   const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "owner") {
+    redirect("/login");
+  }
 
   const now = new Date();
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -134,6 +151,8 @@ export default async function OwnerAnalyticsPage() {
     },
   ];
 
+  const isAllEmpty = kpis.every((k) => k.empty) && stageEntries.length === 0;
+
   return (
     <div>
       <div className="page-header">
@@ -148,98 +167,123 @@ export default async function OwnerAnalyticsPage() {
         </Link>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "1rem",
-          marginBottom: "1.5rem",
-        }}
-      >
-        {kpis.map((k) => (
-          <div
-            key={k.label}
-            className="stat-card"
-            style={{ borderLeft: `4px solid ${k.accent}` }}
-          >
-            <div className="stat-card-label">{k.label}</div>
-            <div className="stat-card-value" style={{ color: "#111827" }}>
-              {k.value}
-            </div>
-            {k.sub && <div className="stat-card-sub">{k.sub}</div>}
+      {isAllEmpty ? (
+        <div className="text-center py-12 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl">
+          <h2 className="text-xl font-bold text-yellow-500 mb-2">No Analytics Data Yet</h2>
+          <p className="text-zinc-400 mb-6 max-w-md mx-auto">
+            Analytics will appear here once you add members and record payments. Start building your gym community today.
+          </p>
+          <div className="flex justify-center gap-4">
+            <Link
+              href="/owner/members"
+              className="bg-yellow-500 hover:bg-yellow-400 text-zinc-900 font-bold py-2 px-4 rounded transition-colors"
+            >
+              Add Members
+            </Link>
+            <Link
+              href="/owner/payments"
+              className="bg-zinc-800 hover:bg-zinc-700 text-yellow-500 border border-zinc-700 font-bold py-2 px-4 rounded transition-colors"
+            >
+              Record Payments
+            </Link>
           </div>
-        ))}
-      </div>
-
-      <div className="card" style={{ marginBottom: "1.5rem" }}>
-        <div className="card-header">
-          <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>
-            Leads by stage
-          </h2>
         </div>
-        <div className="card-body">
-          {leadsRowsRes.error ? (
-            <div className="empty-state" style={{ padding: "1.5rem" }}>
-              <div className="empty-state-title">Could not load leads</div>
-              <div className="empty-state-body">{leadsRowsRes.error}</div>
-            </div>
-          ) : stageEntries.length === 0 ? (
-            <div className="empty-state" style={{ padding: "1.5rem" }}>
-              <div className="empty-state-title">No leads yet</div>
-              <div className="empty-state-body">
-                Stage breakdown will appear once CRM has data.{" "}
-                <Link href="/owner/leads" style={{ fontWeight: 700, textDecoration: "underline" }}>
-                  Open CRM →
-                </Link>
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {stageEntries.map(([stage, count]) => (
-                <div
-                  key={stage}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "0.6rem 0.75rem",
-                    borderRadius: "var(--radius-md)",
-                    border: "1px solid var(--color-surface-border)",
-                    fontSize: "0.875rem",
-                  }}
-                >
-                  <span style={{ fontWeight: 600, textTransform: "capitalize" }}>{stage}</span>
-                  <span className="badge badge-warning">{count}</span>
+      ) : (
+        <>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: "1rem",
+              marginBottom: "1.5rem",
+            }}
+          >
+            {kpis.map((k) => (
+              <div
+                key={k.label}
+                className="stat-card"
+                style={{ borderLeft: `4px solid ${k.accent}` }}
+              >
+                <div className="stat-card-label">{k.label}</div>
+                <div className="stat-card-value" style={{ color: "#111827" }}>
+                  {k.value}
                 </div>
+                {k.sub && <div className="stat-card-sub">{k.sub}</div>}
+              </div>
+            ))}
+          </div>
+
+          <div className="card" style={{ marginBottom: "1.5rem" }}>
+            <div className="card-header">
+              <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>
+                Leads by stage
+              </h2>
+            </div>
+            <div className="card-body">
+              {leadsRowsRes.error ? (
+                <div className="empty-state" style={{ padding: "1.5rem" }}>
+                  <div className="empty-state-title">Could not load leads</div>
+                  <div className="empty-state-body">{leadsRowsRes.error}</div>
+                </div>
+              ) : stageEntries.length === 0 ? (
+                <div className="empty-state" style={{ padding: "1.5rem" }}>
+                  <div className="empty-state-title">No leads yet</div>
+                  <div className="empty-state-body">
+                    Stage breakdown will appear once CRM has data.{" "}
+                    <Link href="/owner/leads" style={{ fontWeight: 700, textDecoration: "underline" }}>
+                      Open CRM →
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {stageEntries.map(([stage, count]) => (
+                    <div
+                      key={stage}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "0.6rem 0.75rem",
+                        borderRadius: "var(--radius-md)",
+                        border: "1px solid var(--color-surface-border)",
+                        fontSize: "0.875rem",
+                      }}
+                    >
+                      <span style={{ fontWeight: 600, textTransform: "capitalize" }}>{stage}</span>
+                      <span className="badge badge-warning">{count}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-header">
+              <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>
+                Quick links
+              </h2>
+            </div>
+            <div
+              className="card-body"
+              style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}
+            >
+              {[
+                { href: "/owner/members", label: "Members" },
+                { href: "/owner/payments", label: "Payments" },
+                { href: "/owner/attendance", label: "Attendance" },
+                { href: "/owner/leads", label: "CRM" },
+                { href: "/owner/activities", label: "Activities" },
+              ].map((item) => (
+                <Link key={item.href} href={item.href} className="btn btn-ghost btn-sm">
+                  {item.label}
+                </Link>
               ))}
             </div>
-          )}
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="card-header">
-          <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>
-            Quick links
-          </h2>
-        </div>
-        <div
-          className="card-body"
-          style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}
-        >
-          {[
-            { href: "/owner/members", label: "Members" },
-            { href: "/owner/payments", label: "Payments" },
-            { href: "/owner/attendance", label: "Attendance" },
-            { href: "/owner/leads", label: "CRM" },
-            { href: "/owner/activities", label: "Activities" },
-          ].map((item) => (
-            <Link key={item.href} href={item.href} className="btn btn-ghost btn-sm">
-              {item.label}
-            </Link>
-          ))}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
