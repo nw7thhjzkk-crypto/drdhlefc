@@ -164,15 +164,30 @@ export default async function MemberHomePage() {
       {claimBanner}
 
       {/* Greeting */}
-      <div style={{ marginBottom: "1.25rem" }}>
-        <h1 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#fff" }}>
-          Hey, {member.name?.split(" ")[0]} 👋
-        </h1>
-        {member.primary_goal && (
-          <p style={{ fontSize: "0.8125rem", color: "var(--color-silver-dark)", marginTop: "0.2rem" }}>
-            Goal: {member.primary_goal}
-          </p>
-        )}
+      <div style={{ marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.75rem" }}>
+        <div>
+          <h1 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#fff" }}>
+            Hey, {member.name?.split(" ")[0]} 👋
+          </h1>
+          {member.primary_goal && (
+            <p style={{ fontSize: "0.8125rem", color: "var(--color-silver-dark)", marginTop: "0.2rem" }}>
+              Goal: {member.primary_goal}
+            </p>
+          )}
+        </div>
+        <Link
+          href="/member/profile"
+          style={{
+            fontSize: "0.75rem",
+            fontWeight: 600,
+            color: "var(--color-gold)",
+            textDecoration: "none",
+            whiteSpace: "nowrap",
+            paddingTop: "0.2rem",
+          }}
+        >
+          Profile →
+        </Link>
       </div>
 
       {/* Membership status */}
