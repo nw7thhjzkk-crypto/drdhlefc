@@ -14,7 +14,7 @@ export default async function TrainerNotificationsPage() {
     redirect("/login");
   }
 
-const { data: notifications } = await supabase
+  const { data: notifications } = await supabase
     .from("notifications")
     .select("id, title, body, channel, read_at, created_at")
     .eq("recipient_profile_id", user.id)
@@ -131,11 +131,16 @@ const { data: notifications } = await supabase
       </div>
 
       {(!notifications || notifications.length === 0) ? (
-        <div className="py-12 text-center bg-zinc-900 border border-zinc-800 rounded-lg">
-          <p className="text-zinc-500 mb-4">No notifications yet.</p>
-          <span className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block">
-            Inbox Empty
-          </span>
+        <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+          <h3 className="text-lg font-semibold text-yellow-500">
+            No notifications yet
+          </h3>
+          <p className="max-w-md text-sm text-zinc-500">
+            Messages from the gym and members will show up here. You&apos;re all caught up.
+          </p>
+          <Link href="/trainer/dashboard" className="text-sm text-yellow-500 hover:underline">
+            Back to Dashboard
+          </Link>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column" }}>
