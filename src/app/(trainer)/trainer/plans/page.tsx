@@ -7,6 +7,7 @@ import {
   assignWorkoutPlan,
   assignDietPlan,
 } from "./actions";
+import WorkoutExercisePicker from "@/components/WorkoutExercisePicker";
 
 type PlanMember = { id: string; name: string; member_code?: string | null };
 type AssignmentRow = { members: PlanMember | PlanMember[] | null };
@@ -84,6 +85,11 @@ export default async function TrainerPlansPage() {
   const workouts = (workoutPlans as WorkoutPlan[] | null) ?? [];
   const diets = (dietPlans as DietPlan[] | null) ?? [];
 
+  const { data: exercises } = await supabase
+    .from("exercises")
+    .select("id, name")
+    .order("name");
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex justify-between items-center">
@@ -129,15 +135,8 @@ export default async function TrainerPlansPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-400">
-                Content JSON (Exercises)
-              </label>
-              <textarea
-                name="content"
-                rows={3}
-                placeholder='{"exercises": [{"name": "Squat", "sets": 3}]}'
-                className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200 font-mono text-xs"
-              />
+              <label className="block text-sm font-medium text-zinc-400 mb-2">Exercises</label>
+              <WorkoutExercisePicker exercises={exercises || []} />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-400">Instructions</label>
@@ -210,13 +209,13 @@ export default async function TrainerPlansPage() {
                         className="block w-full bg-zinc-950 border border-zinc-800 rounded p-1"
                         placeholder="Duration (Days)"
                       />
-                      <textarea
-                        name="content"
-                        rows={2}
-                        defaultValue={plan.content ? JSON.stringify(plan.content) : ""}
-                        placeholder='{"exercises": []}'
-                        className="block w-full bg-zinc-950 border border-zinc-800 rounded p-1 font-mono"
-                      />
+                      <div className="pt-2">
+                        <label className="block text-xs font-medium text-zinc-400 mb-2">Exercises</label>
+                        <WorkoutExercisePicker
+                          exercises={exercises || []}
+                          defaultValue={(plan.content as { exercises?: { exercise_id: string; name: string; sets?: number; reps?: number; notes?: string; }[] })?.exercises}
+                        />
+                      </div>
                       <textarea
                         name="instructions"
                         rows={2}

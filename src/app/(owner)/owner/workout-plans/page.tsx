@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { createWorkoutPlan, softDeleteWorkoutPlan, updateWorkoutPlan } from "./actions";
 import AssignPlanForm from "./components/AssignPlanForm";
+import WorkoutExercisePicker from "@/components/WorkoutExercisePicker";
 
 export default async function WorkoutPlansPage() {
   const supabase = await createClient();
@@ -13,6 +14,11 @@ export default async function WorkoutPlansPage() {
 
   const { data: members } = await supabase
     .from("members")
+    .select("id, name")
+    .order("name");
+
+  const { data: exercises } = await supabase
+    .from("exercises")
     .select("id, name")
     .order("name");
 
@@ -48,8 +54,8 @@ export default async function WorkoutPlansPage() {
               <input name="duration_days" type="number" required className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-400">Content JSON (Exercises)</label>
-              <textarea name="content" rows={4} placeholder='{"exercises": [{"name": "Squat", "sets": 3}]}' className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200 font-mono text-xs"></textarea>
+              <label className="block text-sm font-medium text-zinc-400 mb-2">Exercises</label>
+              <WorkoutExercisePicker exercises={exercises || []} />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-400">Instructions / Notes</label>
@@ -112,8 +118,11 @@ export default async function WorkoutPlansPage() {
                               <input name="duration_days" type="number" defaultValue={plan.duration_days} required className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200 text-sm" />
                             </div>
                             <div>
-                              <label className="block text-xs text-zinc-500">Content JSON (Exercises)</label>
-                              <textarea name="content" rows={3} defaultValue={JSON.stringify(plan.content)} className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200 font-mono text-xs"></textarea>
+                              <label className="block text-xs text-zinc-500 mb-2">Exercises</label>
+                              <WorkoutExercisePicker
+                                exercises={exercises || []}
+                                defaultValue={plan.content?.exercises}
+                              />
                             </div>
                             <div>
                               <label className="block text-xs text-zinc-500">Instructions / Notes</label>

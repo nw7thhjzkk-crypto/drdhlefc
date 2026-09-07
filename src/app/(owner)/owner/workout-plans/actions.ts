@@ -29,13 +29,17 @@ export async function createWorkoutPlan(formData: FormData) {
 
   if (error) throw new Error(error.message);
 
-  await supabase.rpc("insert_audit_log", {
-    p_action: "CREATE_WORKOUT_PLAN",
-    p_entity_type: "workout_plan",
-    p_entity_id: data.id,
-    p_member_id: null,
-    p_details: { name },
-  });
+  try {
+    await supabase.rpc("insert_audit_log", {
+      p_action: "CREATE_WORKOUT_PLAN",
+      p_entity_type: "workout_plan",
+      p_entity_id: data.id,
+      p_member_id: null,
+      p_details: { name },
+    });
+  } catch (err) {
+    console.error("Audit log failed:", err);
+  }
 
   revalidatePath("/owner/workout-plans");
 }
@@ -52,13 +56,17 @@ export async function softDeleteWorkoutPlan(id: string) {
 
   if (error) throw new Error(error.message);
 
-  await supabase.rpc("insert_audit_log", {
-    p_action: "ARCHIVE_WORKOUT_PLAN",
-    p_entity_type: "workout_plan",
-    p_entity_id: id,
-    p_member_id: null,
-    p_details: null,
-  });
+  try {
+    await supabase.rpc("insert_audit_log", {
+      p_action: "ARCHIVE_WORKOUT_PLAN",
+      p_entity_type: "workout_plan",
+      p_entity_id: id,
+      p_member_id: null,
+      p_details: null,
+    });
+  } catch (err) {
+    console.error("Audit log failed:", err);
+  }
 
   revalidatePath("/owner/workout-plans");
 }
@@ -81,13 +89,17 @@ export async function assignWorkoutPlan(formData: FormData) {
 
   if (error) throw new Error(error.message);
 
-  await supabase.rpc("insert_audit_log", {
-    p_action: "ASSIGN_WORKOUT_PLAN",
-    p_entity_type: "workout_plan",
-    p_entity_id: workout_plan_id,
-    p_member_id: member_id,
-    p_details: null,
-  });
+  try {
+    await supabase.rpc("insert_audit_log", {
+      p_action: "ASSIGN_WORKOUT_PLAN",
+      p_entity_type: "workout_plan",
+      p_entity_id: workout_plan_id,
+      p_member_id: member_id,
+      p_details: null,
+    });
+  } catch (err) {
+    console.error("Audit log failed:", err);
+  }
 
   revalidatePath("/owner/workout-plans");
 }
