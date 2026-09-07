@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
-import { createWorkoutPlan, softDeleteWorkoutPlan, updateWorkoutPlan, seedStarterWorkoutPlans } from "./actions";
+import { createWorkoutPlan, softDeleteWorkoutPlan, updateWorkoutPlan, seedWorkoutPlans } from "./actions";
 import AssignPlanForm from "./components/AssignPlanForm";
 import WorkoutExercisePicker from "@/components/WorkoutExercisePicker";
 
@@ -9,7 +9,7 @@ export default async function WorkoutPlansPage() {
   const { data: plans } = await supabase
     .from("workout_plans")
     .select("*")
-    .is("deleted_at", null)
+    .eq("status", "active")
     .order("created_at", { ascending: false });
 
   const { data: members } = await supabase
@@ -136,16 +136,18 @@ export default async function WorkoutPlansPage() {
                     </div>
                 ))}
             </div>
+
             {(!plans || plans.length === 0) && (
-              <div className="flex flex-col items-center justify-center py-8 space-y-4">
-                <p className="text-zinc-500">No active workout plans found.</p>
-                <form action={seedStarterWorkoutPlans}>
-                  <button type="submit" className="bg-zinc-800 text-yellow-500 hover:bg-zinc-700 px-4 py-2 rounded text-sm font-bold transition-colors">
-                    Generate Sample Workout Plans
+              <div className="text-center py-8">
+                <p className="text-zinc-500 mb-4">No active workout plans found.</p>
+                <form action={seedWorkoutPlans}>
+                  <button type="submit" className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded hover:bg-zinc-700 transition-colors border border-zinc-700">
+                    Seed Starter Plans
                   </button>
                 </form>
               </div>
             )}
+
           </div>
         </div>
       </div>

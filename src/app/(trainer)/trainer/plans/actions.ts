@@ -119,7 +119,7 @@ export async function updateWorkoutPlan(planId: string, formData: FormData) {
     })
     .eq("id", planId)
     .eq("created_by", user.id)
-    .is("deleted_at", null);
+    .eq("status", "active");
 
   if (error) throw new Error(error.message);
 
@@ -213,7 +213,7 @@ export async function updateDietPlan(planId: string, formData: FormData) {
     })
     .eq("id", planId)
     .eq("created_by", user.id)
-    .is("deleted_at", null);
+    .eq("status", "active");
 
   if (error) throw new Error(error.message);
 
@@ -245,7 +245,7 @@ export async function assignWorkoutPlan(formData: FormData) {
     .select("id")
     .eq("id", workout_plan_id)
     .eq("created_by", user.id)
-    .is("deleted_at", null)
+    .eq("status", "active")
     .maybeSingle();
 
   if (planError) throw new Error(planError.message);
@@ -288,7 +288,7 @@ export async function assignDietPlan(formData: FormData) {
     .select("id")
     .eq("id", diet_plan_id)
     .eq("created_by", user.id)
-    .is("deleted_at", null)
+    .eq("status", "active")
     .maybeSingle();
 
   if (planError) throw new Error(planError.message);

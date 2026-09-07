@@ -3,10 +3,27 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
-export async function createWorkoutPlan(formData: FormData) {
+async function requireOwner() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (!user || authError) throw new Error("Not authenticated");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "owner") {
+    throw new Error("Unauthorized");
+  }
+
+  return { supabase, user };
+}
+
+
+export async function createWorkoutPlan(formData: FormData) {
+  const { supabase, user } = await requireOwner();
 
   const name = formData.get("name") as string;
   const goal = formData.get("goal") as string;
@@ -45,13 +62,11 @@ export async function createWorkoutPlan(formData: FormData) {
 }
 
 export async function softDeleteWorkoutPlan(id: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const { supabase, user } = await requireOwner();
 
   const { error } = await supabase
     .from("workout_plans")
-    .update({ deleted_at: new Date().toISOString() })
+    .update({ status: "archived" })
     .eq("id", id);
 
   if (error) throw new Error(error.message);
@@ -72,9 +87,7 @@ export async function softDeleteWorkoutPlan(id: string) {
 }
 
 export async function assignWorkoutPlan(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const { supabase, user } = await requireOwner();
 
   const member_id = formData.get("member_id") as string;
   const workout_plan_id = formData.get("workout_plan_id") as string;
@@ -105,30 +118,18 @@ export async function assignWorkoutPlan(formData: FormData) {
 }
 
 export async function updateWorkoutPlan(id: string, formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "owner") {
-    throw new Error("Unauthorized");
-  }
+  const { supabase, user } = await requireOwner();
 
   const { data: existingPlan, error: fetchError } = await supabase
     .from("workout_plans")
-    .select("deleted_at")
+    .select("status")
     .eq("id", id)
     .single();
 
   if (fetchError || !existingPlan) {
     throw new Error(fetchError?.message || "Plan not found");
   }
-  if (existingPlan.deleted_at !== null) {
+  if (existingPlan.status === "archived") {
     throw new Error("Cannot edit a deleted plan");
   }
 
@@ -174,81 +175,56 @@ export async function updateWorkoutPlan(id: string, formData: FormData) {
   revalidatePath("/owner/workout-plans");
 }
 
-export async function seedStarterWorkoutPlans() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "owner") {
-    throw new Error("Unauthorized");
-  }
-
-  const { count } = await supabase
-    .from("workout_plans")
-    .select("*", { count: "exact", head: true })
-    .is("deleted_at", null);
-
-  if (count && count > 0) {
-    return;
-  }
+export async function seedWorkoutPlans() {
+  const { supabase, user } = await requireOwner();
 
   const starterPlans = [
     {
-      name: "Full Body Starter",
-      goal: "General Fitness",
+      name: "Starter Full Body",
+      goal: "General Health",
       duration_days: 30,
-      instructions: "Perform exercises with proper form. Rest 60s between sets.",
-      content: {
-        days: [
-          { day: 1, exercises: [{ name: "Squats", sets: 3, reps: "10-12" }] },
-          { day: 2, exercises: [{ name: "Push-ups", sets: 3, reps: "AMRAP" }] },
-        ]
-      },
+      instructions: "Perform 3 times a week with a day of rest in between.",
+      content: { exercises: [{ name: "Squats", sets: 3, reps: 10 }, { name: "Pushups", sets: 3, reps: 10 }] },
       source: "owner",
       created_by: user.id,
       status: "active"
     },
     {
-      name: "Upper Body Hypertrophy",
+      name: "Starter Split Routine",
       goal: "Muscle Gain",
       duration_days: 60,
-      instructions: "Focus on mind-muscle connection. Rest 90s between sets.",
-      content: {
-        days: [
-          { day: 1, exercises: [{ name: "Bench Press", sets: 4, reps: "8-10" }] },
-          { day: 2, exercises: [{ name: "Pull-ups", sets: 4, reps: "8-10" }] },
-        ]
-      },
+      instructions: "Upper body on Mon/Thu, Lower body on Tue/Fri.",
+      content: { exercises: [{ name: "Bench Press", sets: 4, reps: 8 }, { name: "Deadlift", sets: 4, reps: 6 }] },
       source: "owner",
       created_by: user.id,
       status: "active"
     }
   ];
 
-  const { error, data } = await supabase.from("workout_plans").insert(starterPlans).select();
+  for (const plan of starterPlans) {
+    // Basic idempotency check by name
+    const { data: existing } = await supabase
+      .from("workout_plans")
+      .select("id")
+      .eq("name", plan.name)
+      .eq("created_by", user.id)
+      .maybeSingle();
 
-  if (error) throw new Error(error.message);
-
-  if (data && data.length > 0) {
-    for (const plan of data) {
-      try {
-        await supabase.rpc("insert_audit_log", {
-          p_action: "CREATE_WORKOUT_PLAN",
-          p_entity_type: "workout_plan",
-          p_entity_id: plan.id,
-          p_member_id: null,
-          p_details: { name: plan.name, method: "seed" },
-        });
-      } catch (err) {
-        console.error("Failed to insert audit log for seed:", err);
-      }
+    if (!existing) {
+      await supabase.from("workout_plans").insert(plan);
     }
+  }
+
+  try {
+    await supabase.rpc("insert_audit_log", {
+      p_action: "SEED_WORKOUT_PLANS",
+      p_entity_type: "workout_plan",
+      p_entity_id: null,
+      p_member_id: null,
+      p_details: null,
+    });
+  } catch (err) {
+    console.error("Audit log failed:", err);
   }
 
   revalidatePath("/owner/workout-plans");
