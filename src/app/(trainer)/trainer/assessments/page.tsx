@@ -105,6 +105,16 @@ export default async function TrainerAssessmentsPage() {
              <div className="px-6 py-4 border-b border-zinc-800">
                 <h2 className="text-lg font-semibold text-zinc-100">Recent Assessments</h2>
             </div>
+            {(!recentAssessments || recentAssessments.length === 0) ? (
+              <div className="flex flex-col items-center justify-center space-y-4 bg-zinc-950/60 p-10 text-center">
+                <h3 className="text-lg font-semibold text-yellow-500">
+                  No assessments yet
+                </h3>
+                <p className="max-w-md text-sm text-zinc-500">
+                  Log your first assessment for an assigned member using the form. Recent entries will show up here.
+                </p>
+              </div>
+            ) : (
             <table className="min-w-full divide-y divide-zinc-800">
               <thead className="bg-zinc-950">
                 <tr>
@@ -116,7 +126,7 @@ export default async function TrainerAssessmentsPage() {
                 </tr>
               </thead>
               <tbody className="bg-zinc-900 divide-y divide-zinc-800">
-                {recentAssessments?.map((record) => (
+                {recentAssessments.map((record) => (
                   <tr key={record.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
                       {new Date(record.recorded_at).toLocaleDateString()}
@@ -187,18 +197,9 @@ export default async function TrainerAssessmentsPage() {
                     </td>
                   </tr>
                 ))}
-                {(!recentAssessments || recentAssessments.length === 0) && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center bg-zinc-900 border-b border-zinc-800">
-                      <p className="text-zinc-500 mb-4">No assessments recorded recently.</p>
-                      <span className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block">
-                        Ready to Log
-                      </span>
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
+            )}
           </div>
         </div>
 
