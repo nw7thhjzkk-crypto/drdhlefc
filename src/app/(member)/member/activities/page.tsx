@@ -205,16 +205,34 @@ export default async function ActivitiesPage() {
             })}
           </div>
         ) : (
-          <p
+          <div
             style={{
-              fontSize: "0.875rem",
-              color: "var(--color-silver-dark)",
               textAlign: "center",
-              padding: "0.75rem 0",
+              padding: "2rem 1rem",
+              background: "rgba(255,255,255,0.03)",
+              borderRadius: "var(--radius-md)",
+              border: "1px dashed rgba(255,255,255,0.1)",
             }}
           >
-            No upcoming activities scheduled.
-          </p>
+            <h3
+              style={{
+                fontSize: "1rem",
+                fontWeight: 600,
+                color: "#fff",
+                marginBottom: "0.5rem",
+              }}
+            >
+              No activities found
+            </h3>
+            <p
+              style={{
+                fontSize: "0.875rem",
+                color: "var(--color-silver-dark)",
+              }}
+            >
+              There are no upcoming activities scheduled at the moment.
+            </p>
+          </div>
         )}
       </div>
     </div>
