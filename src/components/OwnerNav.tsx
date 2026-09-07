@@ -33,9 +33,10 @@ const NAV_SECTIONS = [
   {
     label: "Business",
     items: [
-      { href: "/owner/store", label: "Store / POS",  icon: "🛒" },
-      { href: "/owner/leads", label: "CRM / Leads",  icon: "📞" },
-      { href: "/owner/audit", label: "Audit Logs",   icon: "🔍" },
+      { href: "/owner/store",         label: "Store / POS",   icon: "🛒" },
+      { href: "/owner/leads",         label: "CRM / Leads",   icon: "📞" },
+      { href: "/owner/notifications", label: "Notifications", icon: "🔔" },
+      { href: "/owner/audit",         label: "Audit Logs",    icon: "🔍" },
     ],
   },
   {
