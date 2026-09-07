@@ -99,3 +99,81 @@ export async function assignDietPlan(formData: FormData) {
 
   revalidatePath("/owner/diet-plans");
 }
+
+export async function updateDietPlan(id: string, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "owner") {
+    throw new Error("Unauthorized");
+  }
+
+  const { data: existingPlan, error: fetchError } = await supabase
+    .from("diet_plans")
+    .select("deleted_at")
+    .eq("id", id)
+    .single();
+
+  if (fetchError || !existingPlan) {
+    throw new Error(fetchError?.message || "Plan not found");
+  }
+  if (existingPlan.deleted_at !== null) {
+    throw new Error("Cannot edit a deleted plan");
+  }
+
+  const name = formData.get("name") as string;
+  const goal = formData.get("goal") as string;
+  const target_calories = parseFloat(formData.get("target_calories") as string);
+  const protein_g = parseFloat(formData.get("protein_g") as string);
+  const carbs_g = parseFloat(formData.get("carbs_g") as string);
+  const fat_g = parseFloat(formData.get("fat_g") as string);
+  const duration_days = parseInt(formData.get("duration_days") as string, 10);
+  const instructions = formData.get("instructions") as string;
+
+  const contentStr = formData.get("content") as string;
+  let content;
+  try {
+    content = contentStr ? JSON.parse(contentStr) : { meals: [] };
+  } catch {
+    content = { meals: [] };
+  }
+
+  const { error } = await supabase
+    .from("diet_plans")
+    .update({
+      name,
+      goal,
+      target_calories,
+      protein_g,
+      carbs_g,
+      fat_g,
+      duration_days,
+      instructions,
+      content,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+
+  try {
+    await supabase.rpc("insert_audit_log", {
+      p_action: "UPDATE_DIET_PLAN",
+      p_entity_type: "diet_plan",
+      p_entity_id: id,
+      p_member_id: null,
+      p_details: { name, goal, target_calories, duration_days },
+    });
+  } catch (err) {
+    console.error("Audit log failed:", err);
+  }
+
+  revalidatePath("/owner/diet-plans");
+}
