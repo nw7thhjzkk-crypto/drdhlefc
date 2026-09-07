@@ -20,7 +20,7 @@ export async function saveGymSettings(formData: FormData) {
     .single();
 
   if (profile?.role !== "owner") {
-    throw new Error("Unauthorized");
+    redirect("/login");
   }
 
   const club_name = formData.get("club_name") as string;
@@ -31,7 +31,9 @@ export async function saveGymSettings(formData: FormData) {
   const google_drive_enabled = formData.get("google_drive_enabled") === "on";
 
   if (!club_name) {
-    throw new Error("Club name is required");
+    redirect(
+      `/owner/settings?error=${encodeURIComponent("Club name is required")}`
+    );
   }
 
   const { error } = await supabase
@@ -50,7 +52,9 @@ export async function saveGymSettings(formData: FormData) {
 
   if (error) {
     console.error("Failed to update gym settings:", error);
-    throw new Error("Failed to update settings");
+    redirect(
+      `/owner/settings?error=${encodeURIComponent("Failed to update settings")}`
+    );
   }
 
   // Soft-fail audit logging — match live insert_audit_log(p_action, p_entity_type, p_entity_id, p_member_id, p_details)
@@ -74,4 +78,5 @@ export async function saveGymSettings(formData: FormData) {
   }
 
   revalidatePath("/owner/settings");
+  redirect("/owner/settings?success=1");
 }
