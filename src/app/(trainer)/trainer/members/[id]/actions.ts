@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { calculateBMI } from "@/lib/bmi";
 
 /**
  * Add a body assessment for a member.
@@ -50,11 +51,7 @@ export async function addAssessment(memberId: string, formData: FormData) {
     : null;
   const notes = formData.get("notes") as string;
 
-  let bmi: number | null = null;
-  if (height_cm > 0 && weight_kg > 0) {
-    const height_m = height_cm / 100;
-    bmi = parseFloat((weight_kg / (height_m * height_m)).toFixed(1));
-  }
+  const bmi = calculateBMI(height_cm, weight_kg);
 
   // 4. Insert assessment — recorded_by is server-derived from getUser()
   const { data: assessment, error: insertError } = await supabase

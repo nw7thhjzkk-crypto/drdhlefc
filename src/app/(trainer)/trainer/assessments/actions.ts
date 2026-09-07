@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { calculateBMI } from "@/lib/bmi";
 
 export async function logAssessment(formData: FormData) {
   const supabase = await createClient();
@@ -43,10 +44,7 @@ export async function logAssessment(formData: FormData) {
   const weight_kg: number | null = weight_kg_str ? parseFloat(weight_kg_str) : null;
   const body_fat_pct: number | null = body_fat_pct_str ? parseFloat(body_fat_pct_str) : null;
 
-  let bmi: number | null = null;
-  if (height_cm && weight_kg) {
-    bmi = Number((weight_kg / Math.pow(height_cm / 100, 2)).toFixed(2));
-  }
+  const bmi = calculateBMI(height_cm, weight_kg);
 
   const { error: insertError } = await supabase.from("assessments").insert({
     member_id,
