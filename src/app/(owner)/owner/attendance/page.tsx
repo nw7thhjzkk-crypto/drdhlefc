@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { logAttendance } from "./actions";
+import Link from "next/link";
 
 type MemberOption = { id: string; name: string; member_code?: string | null };
 
@@ -63,18 +64,30 @@ export default async function OwnerAttendancePage() {
           <form action={logAttendance} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-zinc-400">Member</label>
-              <select
-                name="member_id"
-                required
-                className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
-              >
-                <option value="">Select member</option>
-                {memberList.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name} ({m.member_code})
-                  </option>
-                ))}
-              </select>
+              {memberList.length > 0 ? (
+                <select
+                  name="member_id"
+                  required
+                  className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
+                >
+                  <option value="">Select member</option>
+                  {memberList.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} {m.member_code ? `(${m.member_code})` : ""}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="mt-1 bg-zinc-950 border border-zinc-800 rounded p-4 text-center">
+                  <p className="text-zinc-500 text-sm mb-3">No members found.</p>
+                  <Link
+                    href="/owner/members"
+                    className="inline-block bg-yellow-600 text-zinc-950 font-bold px-3 py-1.5 rounded hover:bg-yellow-500 transition-colors text-sm"
+                  >
+                    Add Members First
+                  </Link>
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-400">Notes (Optional)</label>
