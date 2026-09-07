@@ -60,12 +60,14 @@ export default async function MemberProfilePage() {
             Profile
           </h1>
         </div>
-        <div className="empty-state">
-          <div className="empty-state-icon">⚠️</div>
-          <div className="empty-state-title">Member profile not found</div>
-          <div className="empty-state-body">
-            Contact the gym front desk to set up your account.
-          </div>
+        <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+          <h3 className="text-lg font-semibold text-yellow-500">
+            Member profile not found
+          </h3>
+          <p className="max-w-md text-sm text-zinc-500">
+            Contact the gym front desk to set up your account, then your
+            details and edit form will show here.
+          </p>
         </div>
       </div>
     );
