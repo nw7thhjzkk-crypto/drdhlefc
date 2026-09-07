@@ -139,6 +139,11 @@ export default async function CRMPage() {
                             <option key={t.id} value={t.id}>{t.name}</option>
                         ))}
                     </select>
+                    {(!trainers || trainers.length === 0) && (
+                        <div className="mt-2 text-[10px] text-yellow-500 bg-zinc-900/50 p-1.5 rounded border border-zinc-800/50 whitespace-normal w-full max-w-[140px]">
+                            No trainers available.
+                        </div>
+                    )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
                     <input
@@ -168,9 +173,9 @@ export default async function CRMPage() {
                 ))}
                 {(!leads || leads.length === 0) && (
                 <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-zinc-500">
-                      <div className="flex flex-col items-center justify-center space-y-4">
-                        <p>No leads in the pipeline.</p>
+                    <td colSpan={6} className="px-6 py-8">
+                      <div className="flex flex-col items-center justify-center space-y-4 bg-zinc-900 rounded-lg border border-zinc-800 p-8">
+                        <p className="text-zinc-500">No leads in the pipeline.</p>
                         <form action={seedStarterLeads}>
                           <button
                             type="submit"
