@@ -27,6 +27,11 @@ export default function AssignPlanForm({ members, diet_plan_id }: { members: {id
           {isPending ? 'Assigning...' : 'Assign'}
         </button>
       </div>
+      {members.length === 0 && (
+        <p className="mt-2 text-xs text-yellow-500/80 bg-yellow-500/10 p-2 rounded border border-yellow-500/20">
+          No members available to assign.
+        </p>
+      )}
     </form>
   );
 }
