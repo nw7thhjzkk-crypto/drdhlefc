@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { sendNotification } from "./actions";
 import type { Metadata } from "next";
 
@@ -62,6 +63,17 @@ export default async function OwnerNotificationsPage() {
                   </option>
                 ))}
               </select>
+              {(!members || members.length === 0) && (
+                <div className="mt-4 p-4 text-center flex flex-col items-center gap-2 bg-zinc-950 border border-zinc-800 rounded">
+                  <span className="text-zinc-500 text-sm">No active members found to notify.</span>
+                  <Link
+                    href="/owner/members"
+                    className="text-yellow-500 hover:text-yellow-400 text-sm font-semibold underline underline-offset-2"
+                  >
+                    Go to Members
+                  </Link>
+                </div>
+              )}
             </div>
 
             <div>
@@ -96,7 +108,9 @@ export default async function OwnerNotificationsPage() {
         <div className="bg-zinc-900 p-6 rounded-lg shadow-xl border border-zinc-800">
           <h2 className="text-xl font-semibold mb-6 text-zinc-200">Recent Sent (Global)</h2>
           {(!recentNotifications || recentNotifications.length === 0) ? (
-            <p className="text-zinc-500 text-sm">No notifications have been sent yet.</p>
+            <div className="p-8 text-center flex flex-col items-center gap-4 bg-zinc-950 border border-zinc-800 rounded">
+              <span className="text-zinc-500">No notifications have been sent yet.</span>
+            </div>
           ) : (
             <div className="space-y-4">
               {recentNotifications.map((notif) => (
