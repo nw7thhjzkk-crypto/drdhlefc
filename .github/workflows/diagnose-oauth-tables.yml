@@ -1,0 +1,187 @@
+name: Diagnose OAuth tables (read-only)
+
+# Diagnostic only — never deploys functions or mutates schema/migration history.
+# Distinguishes network/TLS/auth failures from missing OAuth tables (run 34058233779).
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_diagnostic:
+        description: Type exactly diagnose-oauth-tables-readonly to proceed
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  SUPABASE_PROJECT_REF: "ahkwooaqayqikvotwuac"
+
+jobs:
+  diagnose:
+    name: Read-only PostgreSQL connectivity + OAuth table probe
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Fail closed — confirmation phrase
+        if: ${{ inputs.confirm_diagnostic != 'diagnose-oauth-tables-readonly' }}
+        run: |
+          echo "Refusing: confirm_diagnostic must be exactly diagnose-oauth-tables-readonly"
+          exit 1
+
+      - name: Install postgresql-client
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          command -v psql
+          psql --version
+
+      - name: Setup Supabase CLI (optional fallback only)
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Read-only diagnostic (psql primary)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PGSSLMODE: require
+        run: |
+          set -uo pipefail
+
+          sanitize() {
+            # Strip secrets / credential-bearing material from diagnostic text
+            sed -E \
+              -e 's/[Pp]assword[^[:space:]]*/[REDACTED]/gi' \
+              -e 's/[Tt]oken[^[:space:]]*/[REDACTED]/gi' \
+              -e 's/Bearer[[:space:]]+[^[:space:]]+/Bearer [REDACTED]/gi' \
+              -e 's/postgres:\/\/[^[:space:]]+/[REDACTED_CONN]/gi' \
+              -e 's/postgresql:\/\/[^[:space:]]+/[REDACTED_CONN]/gi' \
+              -e 's/sbp_[A-Za-z0-9_]+/[REDACTED]/g' \
+              || true
+          }
+
+          classify_psql_err() {
+            local msg
+            msg="$(cat "$1" 2>/dev/null | sanitize || true)"
+            local lower
+            lower="$(echo "$msg" | tr '[:upper:]' '[:lower:]')"
+            if echo "$lower" | grep -qE 'could not translate host name|name or service not known|temporary failure in name resolution|no address associated'; then
+              echo "CATEGORY=DNS/network"
+            elif echo "$lower" | grep -qE 'ssl|tls|certificate|secure connection'; then
+              echo "CATEGORY=TLS/SSL"
+            elif echo "$lower" | grep -qE 'password authentication failed|authentication failed|no password supplied|role ".*" does not exist|invalid authorization'; then
+              echo "CATEGORY=authentication"
+            elif echo "$lower" | grep -qE 'connection refused|connection timed out|timeout expired|could not connect to server|network is unreachable'; then
+              echo "CATEGORY=connection refused/timeout"
+            elif [ -z "${msg//[[:space:]]/}" ]; then
+              echo "CATEGORY=unknown (empty error output)"
+            else
+              echo "CATEGORY=other PostgreSQL connection failure"
+            fi
+            echo "SANITIZED_ERROR_SNIPPET:"
+            echo "$msg" | tail -n 15
+          }
+
+          PROJECT_REF="${SUPABASE_PROJECT_ID:-$SUPABASE_PROJECT_REF}"
+          if [ "$PROJECT_REF" != "ahkwooaqayqikvotwuac" ]; then
+            echo "Refusing: project ref must be ahkwooaqayqikvotwuac"
+            exit 1
+          fi
+          if [ -z "${SUPABASE_DB_PASSWORD:-}" ]; then
+            echo "Missing SUPABASE_DB_PASSWORD secret (value not printed)"
+            exit 1
+          fi
+
+          DB_HOST="db.${PROJECT_REF}.supabase.co"
+          CONN="host=${DB_HOST} port=5432 dbname=postgres user=postgres sslmode=require"
+
+          echo "=== DIAGNOSTIC START (read-only) ==="
+          echo "PROJECT_REF_EXPECTED=ahkwooaqayqikvotwuac"
+          echo "DB_HOST=db.<project-ref>.supabase.co (host constructed; credentials not printed)"
+          echo "SSLMODE=require"
+
+          if ! command -v psql >/dev/null 2>&1; then
+            echo "PSQL_AVAILABLE=no"
+            echo "Cannot continue primary probe without psql"
+            exit 1
+          fi
+          echo "PSQL_AVAILABLE=yes"
+          psql --version
+
+          # --- Step A: SELECT 1 ---
+          set +e
+          OUT1=$(psql "$CONN" -v ON_ERROR_STOP=1 -tAc "SELECT 1;" 2>/tmp/psql_select1_err)
+          RC1=$?
+          set -e
+          echo "SELECT1_EXIT_CODE=$RC1"
+          echo "SELECT1_STDOUT=$(echo "$OUT1" | tr -d '\r' | head -c 80)"
+
+          if [ "$RC1" -ne 0 ]; then
+            echo "SELECT1_RESULT=FAILED"
+            echo "CONNECTION_RESULT=FAILED"
+            classify_psql_err /tmp/psql_select1_err
+            echo "TABLE_QUERY=SKIPPED (connection failed)"
+            echo "=== DIAGNOSTIC END ==="
+            exit 0
+          fi
+
+          echo "SELECT1_RESULT=OK"
+          echo "CONNECTION_RESULT=OK"
+          echo "TLS_SSL_RESULT=OK (sslmode=require connection succeeded)"
+          echo "AUTHENTICATION_RESULT=OK"
+
+          # --- Step B: table existence (read-only) ---
+          READ_SQL="SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename IN ('jules_mcp_oauth_clients','jules_mcp_oauth_codes','jules_mcp_oauth_refresh_tokens') ORDER BY tablename;"
+          set +e
+          OUT2=$(psql "$CONN" -v ON_ERROR_STOP=1 -tAc "$READ_SQL" 2>/tmp/psql_tables_err)
+          RC2=$?
+          set -e
+          echo "TABLE_QUERY_EXIT_CODE=$RC2"
+
+          if [ "$RC2" -ne 0 ]; then
+            echo "TABLE_QUERY_RESULT=FAILED"
+            classify_psql_err /tmp/psql_tables_err
+            echo "=== DIAGNOSTIC END ==="
+            exit 0
+          fi
+
+          # Normalize rows
+          ROWS=$(echo "$OUT2" | tr -d '\r' | sed '/^$/d')
+          COUNT=$(echo "$ROWS" | sed '/^$/d' | grep -c . || true)
+          if [ -z "${ROWS//[[:space:]]/}" ]; then
+            COUNT=0
+          fi
+          echo "TABLE_QUERY_RESULT=OK"
+          echo "TABLE_ROW_COUNT=$COUNT"
+          echo "DETECTED_TABLES_BEGIN"
+          if [ "$COUNT" -gt 0 ]; then
+            echo "$ROWS"
+          fi
+          echo "DETECTED_TABLES_END"
+
+          for t in jules_mcp_oauth_clients jules_mcp_oauth_codes jules_mcp_oauth_refresh_tokens; do
+            if echo "$ROWS" | grep -qx "$t"; then
+              echo "TABLE_$t=PRESENT"
+            else
+              echo "TABLE_$t=ABSENT"
+            fi
+          done
+
+          echo "NO_SCHEMA_CHANGES=true"
+          echo "NO_DEPLOY=true"
+          echo "=== DIAGNOSTIC END ==="
+
+      - name: Optional fallback — supabase db query --linked (if psql path inconclusive)
+        if: failure()
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          set -uo pipefail
+          echo "Primary job already reported; optional fallback not required when primary completes."
