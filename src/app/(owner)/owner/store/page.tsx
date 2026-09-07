@@ -340,7 +340,7 @@ export default async function StorePage() {
                 </div>
               ))}
               {(!products || products.length === 0) && (
-                <div className="px-6 py-8 text-center flex flex-col items-center gap-4">
+                <div className="p-8 text-center flex flex-col items-center gap-4 bg-zinc-900 rounded-lg shadow-xl border border-zinc-800 m-6">
                   <span className="text-zinc-500">Inventory empty.</span>
                   <form action={seedStarterProducts}>
                     <button
@@ -392,11 +392,13 @@ export default async function StorePage() {
                 ))}
                 {(!recentSales || recentSales.length === 0) && (
                   <tr>
-                    <td
-                      colSpan={3}
-                      className="px-6 py-8 text-center text-zinc-500"
-                    >
-                      No recent sales.
+                    <td colSpan={3} className="p-6">
+                      <div className="p-8 text-center flex flex-col items-center gap-4 bg-zinc-900 rounded-lg shadow-xl border border-zinc-800">
+                        <span className="text-zinc-500">No recent sales.</span>
+                        <span className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block">
+                          Awaiting Sales
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 )}
