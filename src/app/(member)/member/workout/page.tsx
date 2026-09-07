@@ -56,17 +56,20 @@ export default async function MemberWorkoutPage() {
     .eq("status", "accepted")
     .order("added_to_routine_at", { ascending: false });
 
+  const hasPending = !!(pendingPlans && pendingPlans.length > 0);
+  const hasActive = !!(activePlans && activePlans.length > 0);
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-yellow-500">My Workouts</h1>
       </div>
 
-      {pendingPlans && pendingPlans.length > 0 && (
+      {hasPending && (
         <div className="bg-yellow-900/20 border border-yellow-700/50 p-6 rounded-lg shadow-xl mb-8">
             <h2 className="text-lg font-semibold text-yellow-500 mb-4">New Recommendations</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {pendingPlans.map((rec: MemberWorkoutPlanRow) => (
+                {pendingPlans!.map((rec: MemberWorkoutPlanRow) => (
                     <div key={rec.id} className="bg-zinc-950 border border-zinc-800 p-4 rounded-lg flex justify-between items-center">
                         <div>
                             <p className="font-bold text-zinc-200">{asSingle(rec.workout_plans)?.name}</p>
@@ -86,34 +89,48 @@ export default async function MemberWorkoutPage() {
         </div>
       )}
 
-      <div className="bg-zinc-900 rounded-lg shadow-xl border border-zinc-800 p-6">
-        <h2 className="text-lg font-semibold text-zinc-100 mb-4 border-b border-zinc-800 pb-2">Active Workout Routine</h2>
-        {activePlans && activePlans.length > 0 ? (
-            <div className="space-y-6">
-                {activePlans.map((plan: MemberWorkoutPlanRow) => (
-                    <div key={plan.id} className="bg-zinc-950 border border-zinc-800 p-6 rounded-lg">
-                        <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-xl font-bold text-yellow-500">{asSingle(plan.workout_plans)?.name}</h3>
-                            <span className="bg-zinc-800 text-zinc-400 text-xs px-2 py-1 rounded border border-zinc-700">{asSingle(plan.workout_plans)?.duration_days} Days</span>
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-zinc-400 mb-1">Instructions:</p>
-                            <p className="text-sm text-zinc-300 bg-zinc-900 p-3 rounded whitespace-pre-wrap">{asSingle(plan.workout_plans)?.instructions || 'None provided.'}</p>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        ) : (
-            <div className="text-center py-8 my-4 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl">
-              <h3 className="text-lg font-bold text-yellow-500 mb-2">
-                No Active Workouts
-              </h3>
-              <p className="text-sm text-zinc-400">
-                No active workout plans in your routine.
-              </p>
-            </div>
-        )}
-      </div>
+      {!hasPending && !hasActive ? (
+        <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+          <h3 className="text-lg font-semibold text-yellow-500">
+            No workout plan yet
+          </h3>
+          <p className="max-w-md text-sm text-zinc-500">
+            When your trainer assigns a workout plan, you can accept it here and track it in your routine.
+          </p>
+          <span className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block">
+            Waiting for First Plan
+          </span>
+        </div>
+      ) : (
+        <div className="bg-zinc-900 rounded-lg shadow-xl border border-zinc-800 p-6">
+          <h2 className="text-lg font-semibold text-zinc-100 mb-4 border-b border-zinc-800 pb-2">Active Workout Routine</h2>
+          {hasActive ? (
+              <div className="space-y-6">
+                  {activePlans!.map((plan: MemberWorkoutPlanRow) => (
+                      <div key={plan.id} className="bg-zinc-950 border border-zinc-800 p-6 rounded-lg">
+                          <div className="flex justify-between items-start mb-4">
+                              <h3 className="text-xl font-bold text-yellow-500">{asSingle(plan.workout_plans)?.name}</h3>
+                              <span className="bg-zinc-800 text-zinc-400 text-xs px-2 py-1 rounded border border-zinc-700">{asSingle(plan.workout_plans)?.duration_days} Days</span>
+                          </div>
+                          <div>
+                              <p className="text-sm font-medium text-zinc-400 mb-1">Instructions:</p>
+                              <p className="text-sm text-zinc-300 bg-zinc-900 p-3 rounded whitespace-pre-wrap">{asSingle(plan.workout_plans)?.instructions || 'None provided.'}</p>
+                          </div>
+                      </div>
+                  ))}
+              </div>
+          ) : (
+              <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+                <h3 className="text-lg font-semibold text-yellow-500">
+                  No active workout plan
+                </h3>
+                <p className="max-w-md text-sm text-zinc-500">
+                  Accept a pending recommendation above to add it to your routine.
+                </p>
+              </div>
+          )}
+        </div>
+      )}
 
     </div>
   );
