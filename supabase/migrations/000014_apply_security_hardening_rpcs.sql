@@ -1,18 +1,19 @@
 -- 000014_apply_security_hardening_rpcs.sql
 -- live never applied sequential 000008; this forward migration is the apply path.
+-- Role helpers live in public (is_owner/is_trainer/is_member), not auth.*
 
 -- 1a. members table: member can only READ their own row (owner/trainer manage it)
 DROP POLICY IF EXISTS "Member ALL own member record" ON members;
 CREATE POLICY "Member SELECT own member record"
   ON members FOR SELECT TO authenticated
-  USING (auth.is_member() AND profile_id = auth.uid());
+  USING (public.is_member() AND profile_id = auth.uid());
 
 -- 1b. memberships: member can only READ their own memberships
 DROP POLICY IF EXISTS "Member ALL own memberships" ON memberships;
 CREATE POLICY "Member SELECT own memberships"
   ON memberships FOR SELECT TO authenticated
   USING (
-    auth.is_member() AND member_id IN (
+    public.is_member() AND member_id IN (
       SELECT id FROM members WHERE profile_id = auth.uid()
     )
   );
@@ -22,7 +23,7 @@ DROP POLICY IF EXISTS "Member ALL own payments" ON payments;
 CREATE POLICY "Member SELECT own payments"
   ON payments FOR SELECT TO authenticated
   USING (
-    auth.is_member() AND member_id IN (
+    public.is_member() AND member_id IN (
       SELECT id FROM members WHERE profile_id = auth.uid()
     )
   );
@@ -32,7 +33,7 @@ DROP POLICY IF EXISTS "Member ALL own attendance" ON attendance;
 CREATE POLICY "Member SELECT own attendance"
   ON attendance FOR SELECT TO authenticated
   USING (
-    auth.is_member() AND member_id IN (
+    public.is_member() AND member_id IN (
       SELECT id FROM members WHERE profile_id = auth.uid()
     )
   );
@@ -41,30 +42,28 @@ CREATE POLICY "Member SELECT own attendance"
 DROP POLICY IF EXISTS "Trainer ALL own trainer record" ON trainers;
 CREATE POLICY "Trainer SELECT own trainer record"
   ON trainers FOR SELECT TO authenticated
-  USING (auth.is_trainer() AND profile_id = auth.uid());
+  USING (public.is_trainer() AND profile_id = auth.uid());
 
 -- 2b. member_trainers: trainer may only READ assignments (owner manages these)
 DROP POLICY IF EXISTS "Trainer ALL own member_trainers" ON member_trainers;
 CREATE POLICY "Trainer SELECT own member_trainers"
   ON member_trainers FOR SELECT TO authenticated
   USING (
-    auth.is_trainer() AND trainer_id IN (
+    public.is_trainer() AND trainer_id IN (
       SELECT id FROM trainers WHERE profile_id = auth.uid()
     )
   );
 
--- 3a. Drop the overly-permissive FOR ALL policy for owners
+-- 3a. Drop overly-permissive / prior SELECT policies for owners
+DROP POLICY IF EXISTS "Owner SELECT audit_logs" ON audit_logs;
 DROP POLICY IF EXISTS "Owner ALL audit_logs" ON audit_logs;
 
 -- 3b. Owner can only SELECT audit records (cannot update or delete)
 CREATE POLICY "Owner SELECT audit_logs"
   ON audit_logs FOR SELECT TO authenticated
-  USING (auth.is_owner());
+  USING (public.is_owner());
 
 -- 3c. SECURITY DEFINER function: the only way to write an audit record.
---     Callers supply action / entity details; actor_profile_id is ALWAYS
---     set to auth.uid() inside this function — it cannot be spoofed.
---     Returns the new audit log id.
 CREATE OR REPLACE FUNCTION public.insert_audit_log(
   p_action        TEXT,
   p_entity_type   TEXT,
@@ -88,7 +87,7 @@ BEGIN
     member_id,
     details
   ) VALUES (
-    auth.uid(),       -- always the authenticated caller; callers cannot override
+    auth.uid(),
     p_action,
     p_entity_type,
     p_entity_id,
@@ -100,47 +99,22 @@ BEGIN
 END;
 $$;
 
--- Grant execute to authenticated users (INSERT into the table itself is NOT
--- granted — only this function path can write audit records).
 GRANT EXECUTE ON FUNCTION public.insert_audit_log(TEXT, TEXT, UUID, UUID, JSONB)
   TO authenticated;
 
--- Revoke direct INSERT/UPDATE/DELETE on audit_logs from the authenticated
--- role so that no policy path allows bypassing insert_audit_log().
--- (RLS USING checks still gate SELECT, but there are now no INSERT/UPDATE/
--- DELETE policies, so those operations are denied regardless.)
--- NOTE: We do NOT need an explicit REVOKE here because no INSERT/UPDATE/DELETE
--- policy exists for the authenticated role — denied by default under RLS.
--- The SECURITY DEFINER function runs as its owner (postgres/service role),
--- which bypasses RLS entirely when writing the row.
-
--- 4a. Partial unique index: one active booking per member per activity
---     Allows the same member to rebook after cancellation.
 CREATE UNIQUE INDEX IF NOT EXISTS uix_activity_bookings_active
   ON activity_bookings (activity_id, member_id)
   WHERE status = 'booked';
 
--- 4b. Drop the "Member ALL" policy; members can only read bookings directly.
---     Writes go exclusively through the SECURITY DEFINER RPCs below.
 DROP POLICY IF EXISTS "Member ALL own activity_bookings" ON activity_bookings;
 CREATE POLICY "Member SELECT own activity_bookings"
   ON activity_bookings FOR SELECT TO authenticated
   USING (
-    auth.is_member() AND member_id IN (
+    public.is_member() AND member_id IN (
       SELECT id FROM members WHERE profile_id = auth.uid()
     )
   );
 
--- 4c. SECURITY DEFINER RPC: book_activity_for_member
---     - Derives member_id from auth.uid() — never trusts caller-supplied value.
---     - Acquires a FOR UPDATE lock on the activity row (serialises concurrent
---       bookings for the same activity).
---     - Checks remaining capacity.
---     - Checks for an existing active booking (belt-and-suspenders alongside
---       the partial unique index).
---     - Inserts the booking.
---     - Writes an audit record via insert_audit_log().
---     Returns the new booking id.
 CREATE OR REPLACE FUNCTION public.book_activity_for_member(
   p_activity_id UUID
 )
@@ -155,7 +129,6 @@ DECLARE
   v_booked_count  INTEGER;
   v_booking_id    UUID;
 BEGIN
-  -- 1. Resolve member_id from the authenticated user's profile
   SELECT id INTO v_member_id
     FROM members
    WHERE profile_id = auth.uid()
@@ -165,7 +138,6 @@ BEGIN
     RAISE EXCEPTION 'No member record found for the current user';
   END IF;
 
-  -- 2. Lock the activity row to serialise concurrent booking attempts
   SELECT * INTO v_activity
     FROM group_activities
    WHERE id = p_activity_id
@@ -177,7 +149,6 @@ BEGIN
     RAISE EXCEPTION 'Activity not found or not available';
   END IF;
 
-  -- 3. Check for an existing active booking for this member
   IF EXISTS (
     SELECT 1 FROM activity_bookings
      WHERE activity_id = p_activity_id
@@ -187,7 +158,6 @@ BEGIN
     RAISE EXCEPTION 'You already have an active booking for this activity';
   END IF;
 
-  -- 4. Count current active bookings and check capacity
   SELECT COUNT(*) INTO v_booked_count
     FROM activity_bookings
    WHERE activity_id = p_activity_id
@@ -197,12 +167,10 @@ BEGIN
     RAISE EXCEPTION 'Activity is fully booked (capacity: %)', v_activity.capacity;
   END IF;
 
-  -- 5. Insert the booking
   INSERT INTO activity_bookings (activity_id, member_id, status)
   VALUES (p_activity_id, v_member_id, 'booked')
   RETURNING id INTO v_booking_id;
 
-  -- 6. Write audit record (actor_profile_id is set to auth.uid() inside the function)
   PERFORM public.insert_audit_log(
     'BOOK_ACTIVITY',
     'activity_booking',
@@ -218,9 +186,6 @@ $$;
 GRANT EXECUTE ON FUNCTION public.book_activity_for_member(UUID)
   TO authenticated;
 
--- 4d. SECURITY DEFINER RPC: cancel_activity_booking
---     A member may cancel only their own booking.
---     Owner may cancel any booking (checked inside the function).
 CREATE OR REPLACE FUNCTION public.cancel_activity_booking(
   p_booking_id UUID
 )
@@ -234,7 +199,6 @@ DECLARE
   v_member_id     UUID;
   v_caller_role   TEXT;
 BEGIN
-  -- 1. Fetch the booking row (lock it)
   SELECT * INTO v_booking
     FROM activity_bookings
    WHERE id = p_booking_id
@@ -248,7 +212,6 @@ BEGIN
     RAISE EXCEPTION 'Booking is not in an active state (status: %)', v_booking.status;
   END IF;
 
-  -- 2. Authorisation: the caller must be the booking owner or an owner
   v_caller_role := (SELECT role::text FROM profiles WHERE id = auth.uid());
 
   IF v_caller_role = 'member' THEN
@@ -261,10 +224,8 @@ BEGIN
     RAISE EXCEPTION 'Not authorised to cancel bookings';
   END IF;
 
-  -- 3. Cancel
   UPDATE activity_bookings SET status = 'cancelled' WHERE id = p_booking_id;
 
-  -- 4. Audit
   PERFORM public.insert_audit_log(
     'CANCEL_BOOKING',
     'activity_booking',
@@ -278,7 +239,6 @@ $$;
 GRANT EXECUTE ON FUNCTION public.cancel_activity_booking(UUID)
   TO authenticated;
 
--- 5a. DB-level constraints on memberships (idempotent DO block)
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_memberships_total_amount_positive') THEN
@@ -292,7 +252,6 @@ BEGIN
     END IF;
 END $$;
 
--- 5b. DB-level constraint on payments (idempotent DO block)
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_payments_amount_positive') THEN
@@ -300,15 +259,6 @@ BEGIN
     END IF;
 END $$;
 
--- 5c. SECURITY DEFINER RPC: record_payment_atomic
---     - Requires auth.uid() to be an owner (checked inside function).
---     - Validates p_amount > 0.
---     - Locks the membership row FOR UPDATE (serialises concurrent payments).
---     - Prevents overpayment: paid_amount + p_amount must not exceed total_amount.
---     - Inserts payment with created_by = auth.uid().
---     - Atomically updates membership paid_amount, pending_amount, status.
---     - Writes audit record via insert_audit_log().
---     Returns the new payment id.
 CREATE OR REPLACE FUNCTION public.record_payment_atomic(
   p_membership_id UUID,
   p_amount        NUMERIC,
@@ -329,18 +279,15 @@ DECLARE
   v_payment_id    UUID;
   v_caller_role   TEXT;
 BEGIN
-  -- 1. Caller must be owner
   v_caller_role := (SELECT role::text FROM profiles WHERE id = auth.uid());
   IF v_caller_role <> 'owner' THEN
     RAISE EXCEPTION 'Only owners may record payments';
   END IF;
 
-  -- 2. Validate amount
   IF p_amount IS NULL OR p_amount <= 0 THEN
     RAISE EXCEPTION 'Payment amount must be greater than zero';
   END IF;
 
-  -- 3. Lock the membership row
   SELECT * INTO v_membership
     FROM memberships
    WHERE id = p_membership_id
@@ -350,7 +297,6 @@ BEGIN
     RAISE EXCEPTION 'Membership not found';
   END IF;
 
-  -- 4. Overpayment guard
   v_new_paid := COALESCE(v_membership.paid_amount, 0) + p_amount;
   IF v_new_paid > v_membership.total_amount THEN
     RAISE EXCEPTION
@@ -361,7 +307,6 @@ BEGIN
   v_new_pending := v_membership.total_amount - v_new_paid;
   v_new_status  := CASE WHEN v_new_pending <= 0 THEN 'active' ELSE 'pending_payment' END;
 
-  -- 5. Insert the payment record
   INSERT INTO payments (
     member_id, membership_id, amount, method, reference, notes, created_by
   ) VALUES (
@@ -375,14 +320,12 @@ BEGIN
   )
   RETURNING id INTO v_payment_id;
 
-  -- 6. Update membership totals atomically
   UPDATE memberships
      SET paid_amount    = v_new_paid,
          pending_amount = v_new_pending,
          status         = v_new_status
    WHERE id = p_membership_id;
 
-  -- 7. Audit
   PERFORM public.insert_audit_log(
     'RECORD_PAYMENT',
     'payment',
