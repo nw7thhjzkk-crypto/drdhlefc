@@ -1,5 +1,10 @@
 import { createClient } from "@/utils/supabase/server";
-import { createActivity, cancelActivity, updateActivity } from "./actions";
+import {
+  createActivity,
+  cancelActivity,
+  updateActivity,
+  cancelBookingOwner,
+} from "./actions";
 
 function toDatetimeLocalValue(iso: string | null | undefined): string {
   if (!iso) return "";
@@ -20,7 +25,7 @@ export default async function GroupActivitiesPage() {
   // Live schema has no deleted_at — hide cancelled via status.
   const { data: activities } = await supabase
     .from("group_activities")
-    .select("*, trainers(name)")
+    .select("*, trainers(name), activity_bookings(id, status, members(name, email))")
     .neq("status", "cancelled")
     .order("start_at", { ascending: true });
 
@@ -272,6 +277,51 @@ export default async function GroupActivitiesPage() {
                       </div>
                     </form>
                   </details>
+
+                  {activity.activity_bookings && activity.activity_bookings.length > 0 && (
+                    <details className="group mt-2">
+                      <summary className="cursor-pointer text-xs text-zinc-400 hover:text-yellow-500 list-none">
+                        View bookings ({activity.activity_bookings.filter((b: { id: string; status: string; members: { name: string; email: string } | null }) => b.status === "booked").length})
+                      </summary>
+                      <div className="mt-3 space-y-2">
+                        {activity.activity_bookings
+                          .filter((b: { id: string; status: string; members: { name: string; email: string } | null }) => b.status === "booked")
+                          .map((booking: { id: string; status: string; members: { name: string; email: string } | null }) => (
+                            <div
+                              key={booking.id}
+                              className="flex items-center justify-between bg-zinc-950 p-2 rounded border border-zinc-800"
+                            >
+                              <div className="text-sm text-zinc-300">
+                                {booking.members?.name || "Unknown Member"}
+                                {booking.members?.email && (
+                                  <span className="text-xs text-zinc-500 ml-2">
+                                    ({booking.members.email})
+                                  </span>
+                                )}
+                              </div>
+                              <form
+                                action={async () => {
+                                  "use server";
+                                  await cancelBookingOwner(booking.id);
+                                }}
+                              >
+                                <button
+                                  type="submit"
+                                  className="text-red-400 hover:text-red-300 text-xs font-medium px-2 py-1 bg-red-950/30 rounded border border-red-900/50"
+                                >
+                                  Cancel Booking
+                                </button>
+                              </form>
+                            </div>
+                          ))}
+                        {activity.activity_bookings.filter((b: { id: string; status: string; members: { name: string; email: string } | null }) => b.status === "booked").length === 0 && (
+                          <div className="text-xs text-zinc-500">
+                            No active bookings.
+                          </div>
+                        )}
+                      </div>
+                    </details>
+                  )}
                 </div>
               ))}
               {(!activities || activities.length === 0) && (
