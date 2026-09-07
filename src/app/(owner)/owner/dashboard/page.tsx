@@ -274,8 +274,14 @@ export default async function OwnerDashboard() {
               </div>
             ) : (
               <div className="card-body">
-                <div className="empty-state" style={{ padding: "1.5rem" }}>
-                  <div className="empty-state-title">No expiring memberships in the next 30 days</div>
+                <div className="flex flex-col items-center justify-center space-y-3 rounded-lg border border-zinc-800 bg-zinc-950/60 p-8 text-center">
+                  <h3 className="text-lg font-semibold text-yellow-500">
+                    No memberships expiring soon
+                  </h3>
+                  <p className="max-w-md text-sm text-zinc-500">
+                    When active memberships approach their end date in the next
+                    30 days, they will appear here for follow-up.
+                  </p>
                 </div>
               </div>
             )}
@@ -344,9 +350,15 @@ export default async function OwnerDashboard() {
                   ))}
                 </ul>
               ) : (
-                <p style={{ fontSize: "0.875rem", color: "#9CA3AF", textAlign: "center", padding: "0.5rem 0" }}>
-                  No birthdays this month.
-                </p>
+                <div className="flex flex-col items-center justify-center space-y-3 rounded-lg border border-zinc-800 bg-zinc-950/60 p-6 text-center">
+                  <h3 className="text-lg font-semibold text-yellow-500">
+                    No birthdays this month
+                  </h3>
+                  <p className="max-w-md text-sm text-zinc-500">
+                    Active members with a date of birth on file will show up
+                    here when their birthday falls in the current month.
+                  </p>
+                </div>
               )}
             </div>
           </div>
