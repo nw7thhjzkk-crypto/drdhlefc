@@ -76,6 +76,11 @@ export default async function TrainerAssessmentsPage() {
                     <option key={m.id} value={m.id}>{m.name} {m.member_code ? `(${m.member_code})` : ''}</option>
                 ))}
               </select>
+              {members.length === 0 && (
+                <p className="mt-2 text-xs text-yellow-600 font-medium">
+                  You currently have no members assigned to you.
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-400">Height (cm)</label>
@@ -184,7 +189,12 @@ export default async function TrainerAssessmentsPage() {
                 ))}
                 {(!recentAssessments || recentAssessments.length === 0) && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-zinc-500">No assessments recorded recently.</td>
+                    <td colSpan={5} className="px-6 py-12 text-center bg-zinc-900 border-b border-zinc-800">
+                      <p className="text-zinc-500 mb-4">No assessments recorded recently.</p>
+                      <span className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block">
+                        Ready to Log
+                      </span>
+                    </td>
                   </tr>
                 )}
               </tbody>
