@@ -108,8 +108,11 @@ export default async function OwnerNotificationsPage() {
         <div className="bg-zinc-900 p-6 rounded-lg shadow-xl border border-zinc-800">
           <h2 className="text-xl font-semibold mb-6 text-zinc-200">Recent Sent (Global)</h2>
           {(!recentNotifications || recentNotifications.length === 0) ? (
-            <div className="py-12 text-center bg-zinc-900 border border-zinc-800 rounded-lg">
-              <p className="text-zinc-500 mb-4">No notifications have been sent yet.</p>
+            <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+              <h3 className="text-lg font-semibold text-yellow-500">No notifications sent yet</h3>
+              <p className="max-w-md text-sm text-zinc-500">
+                The outbox is empty. Compose a message for a member or broadcast to all active members to get started.
+              </p>
               <span className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block">
                 Outbox Empty
               </span>
