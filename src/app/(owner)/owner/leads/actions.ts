@@ -8,6 +8,16 @@ export async function addLead(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "owner") {
+    throw new Error("Unauthorized");
+  }
+
   const name   = formData.get("name")   as string;
   const phone  = formData.get("phone")  as string;
   const email  = formData.get("email")  as string;
@@ -22,14 +32,51 @@ export async function addLead(formData: FormData) {
 
   if (error) throw new Error(error.message);
 
-  await supabase.rpc("insert_audit_log", {
-    p_action: "CREATE_LEAD",
-    p_entity_type: "lead",
-    p_entity_id: data.id,
-    p_member_id: null,
-    p_details: { name, source, stage },
-  });
+  try {
+    await supabase.rpc("insert_audit_log", {
+      p_action: "CREATE_LEAD",
+      p_entity_type: "lead",
+      p_entity_id: data.id,
+      p_member_id: null,
+      p_details: { name, source, stage },
+    });
+  } catch (err) {
+    console.error("Failed to insert audit log:", err);
+  }
 
+  revalidatePath("/owner/leads");
+}
+
+export async function seedStarterLeads() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "owner") {
+    throw new Error("Unauthorized");
+  }
+
+  const { count } = await supabase
+    .from("leads")
+    .select("*", { count: "exact", head: true });
+
+  if (count && count > 0) {
+    return;
+  }
+
+  const starterLeads = [
+    { name: "John Doe", phone: "555-0101", email: "john@example.com", source: "Website", stage: "new" },
+    { name: "Jane Smith", phone: "555-0102", email: "jane@example.com", source: "Instagram", stage: "contacted" },
+    { name: "Mike Johnson", phone: "555-0103", email: "mike@example.com", source: "Referral", stage: "trial" }
+  ];
+
+  await supabase.from("leads").insert(starterLeads);
   revalidatePath("/owner/leads");
 }
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
-import { addLead, updateLead } from "./actions";
+import { addLead, updateLead, seedStarterLeads } from "./actions";
 
 function isConvertibleStage(stage: string | null | undefined): boolean {
   const normalized = (stage ?? "").trim().toLowerCase();
@@ -168,7 +168,19 @@ export default async function CRMPage() {
                 ))}
                 {(!leads || leads.length === 0) && (
                 <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-zinc-500">No leads in the pipeline.</td>
+                    <td colSpan={6} className="px-6 py-8 text-center text-zinc-500">
+                      <div className="flex flex-col items-center justify-center space-y-4">
+                        <p>No leads in the pipeline.</p>
+                        <form action={seedStarterLeads}>
+                          <button
+                            type="submit"
+                            className="bg-zinc-800 text-yellow-500 hover:bg-zinc-700 px-4 py-2 rounded text-sm font-bold transition-colors"
+                          >
+                            Generate Sample Leads
+                          </button>
+                        </form>
+                      </div>
+                    </td>
                 </tr>
                 )}
             </tbody>
