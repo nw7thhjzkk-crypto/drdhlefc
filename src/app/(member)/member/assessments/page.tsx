@@ -36,8 +36,20 @@ export default async function MemberAssessmentsPage() {
         </h1>
       </div>
 
-      <div style={cardStyle}>
-        {assessments && assessments.length > 0 ? (
+      {(!assessments || assessments.length === 0) ? (
+        <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+          <h3 className="text-lg font-semibold text-yellow-500">
+            No assessments yet
+          </h3>
+          <p className="max-w-md text-sm text-zinc-500">
+            When your trainer logs a body assessment, weight, BMI, and body-fat history will show up here.
+          </p>
+          <span className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block">
+            Waiting for First Assessment
+          </span>
+        </div>
+      ) : (
+        <div style={cardStyle}>
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             {assessments.map((a, i) => (
               <div key={a.id} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", paddingBottom: i === assessments.length - 1 ? 0 : "1rem", borderBottom: i === assessments.length - 1 ? "none" : "1px solid rgba(255,255,255,0.06)" }}>
@@ -58,15 +70,8 @@ export default async function MemberAssessmentsPage() {
               </div>
             ))}
           </div>
-        ) : (
-          <div className="p-8 text-center flex flex-col items-center gap-4 bg-zinc-900 rounded-lg shadow-xl border border-zinc-800">
-            <span className="text-zinc-500">No assessments recorded yet.</span>
-            <span className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block">
-              Waiting for First Assessment
-            </span>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
