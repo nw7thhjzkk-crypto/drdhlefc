@@ -28,6 +28,7 @@ const NAV_SECTIONS = [
       { href: "/owner/attendance",    label: "Attendance",    icon: "✅" },
       { href: "/owner/diet-plans",    label: "Diet Plans",    icon: "🥗" },
       { href: "/owner/workout-plans", label: "Workout Plans", icon: "💪" },
+      { href: "/owner/exercises",     label: "Exercises",     icon: "🏋️‍♂️" },
     ],
   },
   {
