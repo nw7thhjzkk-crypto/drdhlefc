@@ -62,6 +62,8 @@ export default async function PaymentsPage({
     `)
     .eq("status", "active");
 
+  const paymentRows = payments ?? [];
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex justify-between items-center">
@@ -192,88 +194,88 @@ export default async function PaymentsPage({
 
         <div className="md:col-span-2">
           <div className="bg-zinc-900 rounded-lg shadow-xl border border-zinc-800 overflow-hidden">
-            <table className="min-w-full divide-y divide-zinc-800">
-              <thead className="bg-zinc-950">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                    Member
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                    Method
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-zinc-900 divide-y divide-zinc-800">
-                {payments?.map((payment) => (
-                  <tr key={payment.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
-                      {new Date(payment.paid_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-zinc-200">
-                        {(payment.members as Member)?.name}
-                      </div>
-                      <div className="text-sm text-zinc-500">
-                        {Array.isArray(
-                          (payment.memberships as Membership)?.membership_plans
-                        )
-                          ? (
-                              (payment.memberships as Membership)
-                                ?.membership_plans as MembershipPlan[]
-                            )[0]?.name
-                          : (
-                              (payment.memberships as Membership)
-                                ?.membership_plans as MembershipPlan
-                            )?.name}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-400">
-                      ${payment.amount}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
-                      {payment.method}
-                      {payment.reference && (
-                        <span className="block text-xs text-zinc-500">
-                          Ref: {payment.reference}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {(!payments || payments.length === 0) && (
+            <div className="px-6 py-4 border-b border-zinc-800">
+              <h2 className="text-lg font-semibold text-zinc-100">Payment History</h2>
+            </div>
+            {paymentRows.length === 0 ? (
+              <div className="m-6 flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+                <h3 className="text-lg font-semibold text-zinc-100">No payments yet</h3>
+                <p className="max-w-md text-sm text-zinc-500">
+                  Payment history is empty. Record a payment once a member has an active membership, or open plans and members to get started.
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <Link
+                    href="/owner/plans"
+                    className="inline-flex items-center justify-center bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded hover:bg-zinc-700 transition-colors"
+                  >
+                    Manage Plans
+                  </Link>
+                  <Link
+                    href="/owner/members"
+                    className="inline-flex items-center justify-center bg-yellow-600 text-zinc-950 font-bold px-4 py-2 rounded hover:bg-yellow-500 transition-colors"
+                  >
+                    View Members
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <table className="min-w-full divide-y divide-zinc-800">
+                <thead className="bg-zinc-950">
                   <tr>
-                    <td
-                      colSpan={4}
-                      className="px-6 py-12 text-center"
-                    >
-                      <div className="flex flex-col items-center justify-center space-y-4">
-                        <p className="text-zinc-500">No payments have been recorded yet.</p>
-                        <div className="flex gap-4">
-                          <Link
-                            href="/owner/plans"
-                            className="bg-zinc-800 text-yellow-500 px-4 py-2 rounded hover:bg-zinc-700 transition-colors"
-                          >
-                            Manage Plans
-                          </Link>
-                          <Link
-                            href="/owner/members"
-                            className="bg-yellow-600 text-zinc-950 px-4 py-2 rounded hover:bg-yellow-500 font-medium transition-colors"
-                          >
-                            View Members
-                          </Link>
-                        </div>
-                      </div>
-                    </td>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                      Member
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                      Method
+                    </th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-zinc-900 divide-y divide-zinc-800">
+                  {paymentRows.map((payment) => (
+                    <tr key={payment.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
+                        {new Date(payment.paid_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-zinc-200">
+                          {(payment.members as Member)?.name}
+                        </div>
+                        <div className="text-sm text-zinc-500">
+                          {Array.isArray(
+                            (payment.memberships as Membership)?.membership_plans
+                          )
+                            ? (
+                                (payment.memberships as Membership)
+                                  ?.membership_plans as MembershipPlan[]
+                              )[0]?.name
+                            : (
+                                (payment.memberships as Membership)
+                                  ?.membership_plans as MembershipPlan
+                              )?.name}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-400">
+                        ${payment.amount}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
+                        {payment.method}
+                        {payment.reference && (
+                          <span className="block text-xs text-zinc-500">
+                            Ref: {payment.reference}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>
