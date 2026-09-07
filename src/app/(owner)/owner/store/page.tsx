@@ -25,11 +25,63 @@ export default async function StorePage() {
     .select("id, name")
     .order("name");
 
+  const lowStockProducts =
+    products?.filter(
+      (p) =>
+        (p.stock_quantity ?? 0) <= (p.minimum_stock ?? 0) &&
+        p.status !== "inactive"
+    ) || [];
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-yellow-500">Store & POS</h1>
       </div>
+
+      {lowStockProducts.length > 0 && (
+        <div className="bg-red-950/50 border border-red-900 rounded-lg p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-red-500 mb-4 flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Low Stock Alerts
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {lowStockProducts.map((product) => (
+              <div
+                key={`alert-${product.id}`}
+                className="bg-red-950 border border-red-900/50 rounded p-3 flex justify-between items-center"
+              >
+                <div>
+                  <div className="text-sm font-medium text-red-200">
+                    {product.name}
+                  </div>
+                  <div className="text-xs text-red-400/70">
+                    SKU: {product.sku || "—"}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-lg font-bold text-red-500">
+                    {product.stock_quantity ?? 0}
+                  </div>
+                  <div className="text-xs text-red-400/50">
+                    Min: {product.minimum_stock ?? 0}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* POS Flow */}
