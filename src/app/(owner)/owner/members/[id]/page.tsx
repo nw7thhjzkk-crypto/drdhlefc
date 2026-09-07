@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
-import { updateMember, archiveMember, addAssessment, assignMembership, assignTrainer, unassignTrainer } from "../actions";
+import { updateMember, archiveMember, addAssessment, assignMembership, assignTrainer, unassignTrainer, recordPayment } from "../actions";
 import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
@@ -198,6 +198,44 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
                   <p><span className="font-medium text-gray-500">Paid:</span> ${membership.paid_amount}</p>
                   <p><span className="font-medium text-gray-500">Pending:</span> ${membership.pending_amount}</p>
                 </div>
+
+                {membership.pending_amount > 0 && (
+                  <details className="group mt-4 pt-4 border-t border-gray-100">
+                    <summary className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-800 list-none">
+                      + Record Payment
+                    </summary>
+                    <form action={async (formData) => {
+                      "use server";
+                      await recordPayment(membership.id, id, formData);
+                    }} className="mt-4 space-y-4 text-sm bg-gray-50 p-4 rounded-md border border-gray-200">
+                      <div>
+                        <label className="block text-gray-700">Amount to Pay</label>
+                        <input name="amount" type="number" step="0.01" min="0.01" max={membership.pending_amount} defaultValue={membership.pending_amount} required className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                      </div>
+                      <div>
+                        <label className="block text-gray-700">Payment Method</label>
+                        <select name="method" required className="mt-1 block w-full border border-gray-300 rounded p-2">
+                          <option value="cash">Cash</option>
+                          <option value="credit_card">Credit Card</option>
+                          <option value="bank_transfer">Bank Transfer</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-gray-700">Reference (Optional)</label>
+                        <input name="reference" type="text" className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                      </div>
+                      <div>
+                        <label className="block text-gray-700">Notes (Optional)</label>
+                        <input name="notes" type="text" className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                      </div>
+                      <button type="submit" className="w-full bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">
+                        Submit Payment
+                      </button>
+                    </form>
+                  </details>
+                )}
+
                 {membership.payments && membership.payments.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-gray-100">
                     <p className="font-medium text-gray-700 mb-2">Payment History:</p>
