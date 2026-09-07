@@ -70,7 +70,7 @@ export default async function TrainerPlansPage() {
     .from("workout_plans")
     .select("id, name, goal, duration_days, created_at, instructions, content")
     .eq("created_by", user.id)
-    .is("deleted_at", null)
+    .eq("status", "active")
     .order("created_at", { ascending: false });
 
   const { data: dietPlans } = await supabase
@@ -79,7 +79,7 @@ export default async function TrainerPlansPage() {
       "id, name, goal, duration_days, target_calories, protein_g, carbs_g, fat_g, created_at, instructions, content"
     )
     .eq("created_by", user.id)
-    .is("deleted_at", null)
+    .eq("status", "active")
     .order("created_at", { ascending: false });
 
   const workouts = (workoutPlans as WorkoutPlan[] | null) ?? [];
