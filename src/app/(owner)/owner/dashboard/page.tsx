@@ -85,8 +85,8 @@ export default async function OwnerDashboard() {
     supabase.from("products").select("*", { count: "exact", head: true }).neq("status", "inactive"),
     supabase.from("exercises").select("*", { count: "exact", head: true }).is("deleted_at", null),
     supabase.from("group_activities").select("*", { count: "exact", head: true }).neq("status", "cancelled"),
-    supabase.from("diet_plans").select("*", { count: "exact", head: true }).is("deleted_at", null),
-    supabase.from("workout_plans").select("*", { count: "exact", head: true }).is("deleted_at", null),
+    supabase.from("diet_plans").select("*", { count: "exact", head: true }).eq("status", "active"),
+    supabase.from("workout_plans").select("*", { count: "exact", head: true }).eq("status", "active"),
   ]);
 
   // Aggregations
