@@ -174,8 +174,13 @@ export default async function CRMPage() {
                 {(!leads || leads.length === 0) && (
                 <tr>
                     <td colSpan={6} className="px-6 py-8">
-                      <div className="flex flex-col items-center justify-center space-y-4 bg-zinc-900 rounded-lg border border-zinc-800 p-8">
-                        <p className="text-zinc-500">No leads in the pipeline.</p>
+                      <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+                        <h3 className="text-lg font-semibold text-yellow-500">
+                          No leads in the pipeline
+                        </h3>
+                        <p className="max-w-md text-sm text-zinc-500">
+                          Add a walk-in or referral above, or generate sample leads to try the CRM pipeline.
+                        </p>
                         <form action={seedStarterLeads}>
                           <button
                             type="submit"
