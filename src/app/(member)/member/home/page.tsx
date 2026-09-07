@@ -208,10 +208,13 @@ export default async function MemberHomePage() {
 
       {/* Latest stats */}
       {latestAssessment && (
-        <div style={{ ...card, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
+        <div style={{ ...card, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem", position: "relative" }}>
           <Stat label="Weight"   value={`${latestAssessment.weight_kg} kg`} />
           <Stat label="BMI"      value={latestAssessment.bmi ? String(latestAssessment.bmi) : "—"} />
           <Stat label="Body fat" value={latestAssessment.body_fat_pct ? `${latestAssessment.body_fat_pct}%` : "—"} />
+          <div style={{ position: "absolute", top: "0.5rem", right: "0.75rem" }}>
+            <Link href="/member/assessments" style={{ fontSize: "0.6875rem", color: "var(--color-gold)", textDecoration: "none" }}>History →</Link>
+          </div>
         </div>
       )}
 
