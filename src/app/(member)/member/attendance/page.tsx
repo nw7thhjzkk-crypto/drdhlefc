@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import CheckInButton from "../home/CheckInButton";
 
 export default async function MemberAttendancePage() {
   const supabase = await createClient();
@@ -19,6 +20,13 @@ export default async function MemberAttendancePage() {
     .select("id, occurred_at, method")
     .eq("member_id", member.id)
     .order("occurred_at", { ascending: false });
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const hasCheckedInToday = attendanceRecords
+    ? attendanceRecords.some((a) => new Date(a.occurred_at) >= todayStart)
+    : false;
 
   const cardStyle: React.CSSProperties = {
     background: "var(--color-bg-card)",
@@ -63,6 +71,8 @@ export default async function MemberAttendancePage() {
             No attendance records found.
           </p>
         )}
+
+        <CheckInButton hasCheckedInToday={hasCheckedInToday} />
       </div>
     </div>
   );
