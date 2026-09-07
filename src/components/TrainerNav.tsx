@@ -9,6 +9,7 @@ const TRAINER_NAV = [
   { href: "/trainer/attendance",  label: "Attendance",  icon: "✅" },
   { href: "/trainer/assessments", label: "Assessments", icon: "📏" },
   { href: "/trainer/plans",       label: "Plans",       icon: "📋" },
+  { href: "/trainer/notifications", label: "Inbox",     icon: "🔔" },
 ];
 
 export default function TrainerNav() {
