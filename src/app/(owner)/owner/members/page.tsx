@@ -44,6 +44,7 @@ export default async function MembersPage({
     .order("created_at", { ascending: false });
 
   const totalPages = Math.ceil((count || 0) / pageSize);
+  const hasFilters = Boolean(q || status || goal || membership_status);
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
@@ -88,14 +89,23 @@ export default async function MembersPage({
       </div>
 
       {(!members || members.length === 0) ? (
-        <div className="py-12 text-center bg-zinc-900 border border-zinc-800 rounded-lg">
-          <p className="text-zinc-500 mb-4">No members found.</p>
-          <Link
-            href="/owner/members/new"
-            className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded hover:bg-zinc-700 transition-colors border border-zinc-700 inline-block"
-          >
-            Add New Member
-          </Link>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+          <div className="flex flex-col items-center justify-center space-y-4 bg-zinc-950/60 p-10 text-center">
+            <h3 className="text-lg font-semibold text-yellow-500">
+              {hasFilters ? "No members match" : "No members yet"}
+            </h3>
+            <p className="max-w-md text-sm text-zinc-500">
+              {hasFilters
+                ? "Try clearing filters or search to see everyone in the directory."
+                : "Add your first member to start memberships, attendance, and trainer assignments."}
+            </p>
+            <Link
+              href="/owner/members/new"
+              className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded hover:bg-zinc-700 transition-colors border border-zinc-700 inline-block"
+            >
+              {hasFilters ? "Add Member" : "Add First Member"}
+            </Link>
+          </div>
         </div>
       ) : (
         <>
