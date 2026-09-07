@@ -8,13 +8,23 @@ export default async function ActivitiesPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: member } = await supabase
+  const { data: profile } = await supabase
     .from("profiles")
-    .select("id, role")
+    .select("role")
     .eq("id", user.id)
     .single();
 
-  if (!member || member.role !== "member") {
+  if (!profile || profile.role !== "member") {
+    redirect("/login");
+  }
+
+  const { data: member } = await supabase
+    .from("members")
+    .select("id")
+    .eq("profile_id", user.id)
+    .single();
+
+  if (!member) {
     redirect("/login");
   }
 
