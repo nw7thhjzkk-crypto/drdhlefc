@@ -21,7 +21,7 @@ export default async function MembersPage({
     .from("members")
     .select(`
       *,
-      member_trainers(trainer_id, trainers(name)),
+      member_trainers(trainer_id, unassigned_at, trainers(name)),
       memberships${membership_status ? "!inner" : ""}(status, end_date)
     `, { count: "exact" });
 
@@ -128,7 +128,7 @@ export default async function MembersPage({
                   <div className="text-sm text-gray-500 mt-1">{member.primary_goal || 'None'}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {member.member_trainers?.[0]?.trainers?.name || "Unassigned"}
+                  {member.member_trainers?.find((t: { unassigned_at: string | null }) => t.unassigned_at === null)?.trainers?.name || "Unassigned"}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {member.memberships?.[0]?.status || "None"}

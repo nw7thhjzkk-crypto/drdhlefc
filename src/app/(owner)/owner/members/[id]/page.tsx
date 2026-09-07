@@ -23,7 +23,7 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
       .from("members")
       .select(`
         *,
-        member_trainers(id, trainer_id, trainers(name)),
+        member_trainers(id, trainer_id, unassigned_at, trainers(name)),
         memberships(id, start_date, end_date, total_amount, paid_amount, pending_amount, status, payments(amount, method, paid_at), membership_plans(id, name, price)),
         assessments(*)
       `)
@@ -37,7 +37,8 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
     redirect("/owner/members");
   }
 
-  const trainerAssignment = member.member_trainers?.[0];
+  const activeAssignments = member.member_trainers?.filter((ta: { unassigned_at: string | null }) => ta.unassigned_at === null) || [];
+  const trainerAssignment = activeAssignments[0];
   const trainer = trainerAssignment?.trainers;
 
   const membership = member.memberships?.[0];
