@@ -120,3 +120,9 @@ deno test supabase/functions/jules-orchestrator/orchestrator_logic_test.ts
 ## ChatGPT limitation
 
 ChatGPT must be able to call arbitrary HTTPS endpoints with a custom `Authorization` header and hold `ORCHESTRATOR_SHARED_SECRET` in a private tool/connector configuration. This environment does **not** make the endpoint public to avoid that requirement.
+
+## Legacy Migration Note
+
+**Important Note for Operators**:
+Migration `000012` reconciles the live legacy table to strictly match the `000010` contract. This must be applied to the live database via controlled operator SQL at a later date without rewriting migration history.
+The legacy live orchestrator must **not** be used against the post-reconcile schema. Redeploying the GitHub orchestrator (or retiring it) is a separate high-risk operator step.
