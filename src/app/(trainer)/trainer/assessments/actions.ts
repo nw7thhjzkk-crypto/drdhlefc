@@ -84,17 +84,14 @@ export async function createAssessment(formData: FormData) {
 
   if (insertError) throw new Error(insertError.message);
 
-  try {
-    await supabase.rpc("insert_audit_log", {
-      p_action: "CREATE_ASSESSMENT",
-      p_entity_type: "assessment",
-      p_entity_id: null,
-      p_member_id: member_id,
-      p_details: { trainer_id: trainer.id, source: "manual", bmi },
-    });
-  } catch {
-    // soft-fail: assessment already saved
-  }
+  // Soft-fail audit — do not block the assessment on audit RPC errors
+  await supabase.rpc("insert_audit_log", {
+    p_action: "CREATE_ASSESSMENT",
+    p_entity_type: "assessment",
+    p_entity_id: null,
+    p_member_id: member_id,
+    p_details: { trainer_id: trainer.id, source: "manual", bmi },
+  });
 
   revalidatePath("/trainer/assessments");
 }

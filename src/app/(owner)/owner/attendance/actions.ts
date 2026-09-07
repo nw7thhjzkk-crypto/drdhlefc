@@ -43,17 +43,14 @@ export async function logAttendance(formData: FormData) {
 
   if (insertError) throw new Error(insertError.message);
 
-  try {
-    await supabase.rpc("insert_audit_log", {
-      p_action: "LOG_ATTENDANCE",
-      p_entity_type: "attendance",
-      p_entity_id: null,
-      p_member_id: member_id,
-      p_details: { method: "manual", by: "owner" },
-    });
-  } catch {
-    // soft-fail: attendance already saved
-  }
+  // Soft-fail audit — ignore RPC result/errors
+  await supabase.rpc("insert_audit_log", {
+    p_action: "LOG_ATTENDANCE",
+    p_entity_type: "attendance",
+    p_entity_id: null,
+    p_member_id: member_id,
+    p_details: { method: "manual", by: "owner" },
+  });
 
   revalidatePath("/owner/attendance");
 }
