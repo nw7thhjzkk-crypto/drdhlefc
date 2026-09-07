@@ -38,11 +38,16 @@ export default async function MemberNotificationsPage() {
       </div>
 
       {(!notifications || notifications.length === 0) ? (
-        <div className="p-8 text-center flex flex-col items-center gap-4 bg-zinc-900 rounded-lg shadow-xl border border-zinc-800">
-          <span className="text-zinc-500">No notifications</span>
-          <span className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block">
-            All Caught Up!
-          </span>
+        <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+          <h3 className="text-lg font-semibold text-yellow-500">
+            No notifications yet
+          </h3>
+          <p className="max-w-md text-sm text-zinc-500">
+            Messages from your gym will show up here. You&apos;re all caught up.
+          </p>
+          <Link href="/member/home" className="text-sm text-yellow-500 hover:underline">
+            Back to Home
+          </Link>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column" }}>
