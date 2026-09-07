@@ -54,6 +54,8 @@ export default async function CRMPage() {
                         <option value="new">New</option>
                         <option value="contacted">Contacted</option>
                         <option value="trial">Trial</option>
+                        <option value="won">Won</option>
+                        <option value="lost">Lost</option>
                     </select>
                 </div>
                 <button type="submit" className="w-full bg-yellow-600 text-zinc-950 font-bold px-4 py-2 rounded hover:bg-yellow-500 transition-colors">
@@ -97,6 +99,8 @@ export default async function CRMPage() {
                         <option value="new">New</option>
                         <option value="contacted">Contacted</option>
                         <option value="trial">Trial</option>
+                        <option value="won">Won</option>
+                        <option value="lost">Lost</option>
                     </select>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
