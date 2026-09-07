@@ -70,7 +70,11 @@ export default async function GroupActivitiesPage() {
               </select>
               {(!trainers || trainers.length === 0) && (
                 <div className="mt-2 text-xs text-yellow-500 bg-zinc-900/50 p-2 rounded border border-zinc-800/50">
-                  You haven&apos;t added any trainers yet. Add them in the <Link href="/owner/members" className="underline">Members</Link> section and grant them Trainer roles.
+                  You haven&apos;t added any trainers yet. Add them in the{" "}
+                  <Link href="/owner/trainers" className="underline">
+                    Trainers
+                  </Link>{" "}
+                  section.
                 </div>
               )}
             </div>
@@ -215,7 +219,11 @@ export default async function GroupActivitiesPage() {
                         </select>
                         {(!trainers || trainers.length === 0) && (
                           <div className="mt-2 text-xs text-yellow-500 bg-zinc-900/50 p-2 rounded border border-zinc-800/50">
-                            No trainers available.
+                            No trainers available. Add them in{" "}
+                            <Link href="/owner/trainers" className="underline">
+                              Trainers
+                            </Link>
+                            .
                           </div>
                         )}
                       </div>
@@ -337,10 +345,13 @@ export default async function GroupActivitiesPage() {
                 </div>
               ))}
               {(!activities || activities.length === 0) && (
-                <div className="px-6 py-12 text-center flex flex-col items-center justify-center space-y-4 bg-zinc-900 rounded-lg border border-zinc-800">
-                  <div className="text-zinc-500">
-                    No active group activities scheduled.
-                  </div>
+                <div className="m-6 flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+                  <h3 className="text-lg font-semibold text-zinc-100">
+                    No activities scheduled
+                  </h3>
+                  <p className="max-w-md text-sm text-zinc-500">
+                    The schedule is empty. Create an activity on the left, or seed a few starter group sessions to get going.
+                  </p>
                   <form action={seedStarterGroupActivities}>
                     <button
                       type="submit"
