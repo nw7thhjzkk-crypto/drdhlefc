@@ -112,13 +112,24 @@ export default async function OwnerAssessmentsPage() {
                 <h2 className="text-lg font-semibold text-zinc-100">Recent Assessments</h2>
             </div>
             {(!recentAssessments || recentAssessments.length === 0) ? (
-              <div className="p-8 text-center flex flex-col items-center gap-4 bg-zinc-900">
-                <span className="text-zinc-500">No assessments recorded recently.</span>
-                {(!members || members.length === 0) && (
-                  <Link href="/owner/members" className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block hover:bg-zinc-700 transition-colors">
-                    Add Members First
-                  </Link>
-                )}
+              <div className="p-6">
+                <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+                  <h3 className="text-lg font-semibold text-yellow-500">
+                    No assessments recorded recently
+                  </h3>
+                  <p className="max-w-md text-sm text-zinc-500">
+                    Log a member assessment with the form, then recent height,
+                    weight, and BMI entries will show here.
+                  </p>
+                  {(!members || members.length === 0) && (
+                    <Link
+                      href="/owner/members"
+                      className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block hover:bg-zinc-700 transition-colors"
+                    >
+                      Add Members First
+                    </Link>
+                  )}
+                </div>
               </div>
             ) : (
               <table className="min-w-full divide-y divide-zinc-800">
