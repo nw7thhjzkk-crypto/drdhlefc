@@ -19,10 +19,14 @@ export default async function TrainerDashboardPage() {
 
   if (!trainer) {
     return (
-      <div className="empty-state">
-        <div className="empty-state-icon">⚠️</div>
-        <div className="empty-state-title">Trainer profile not found</div>
-        <div className="empty-state-body">Contact the gym administrator to set up your trainer account.</div>
+      <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+        <h3 className="text-lg font-semibold text-yellow-500">
+          Trainer profile not found
+        </h3>
+        <p className="max-w-md text-sm text-zinc-500">
+          Contact the gym administrator to set up your trainer account, then your
+          members and schedule will show here.
+        </p>
       </div>
     );
   }
@@ -229,9 +233,15 @@ export default async function TrainerDashboardPage() {
             ))}
           </div>
         ) : (
-          <p style={{ fontSize: "0.875rem", color: "var(--color-silver-dark)", textAlign: "center", padding: "1rem 0" }}>
-            No members assigned yet.
-          </p>
+          <div className="flex flex-col items-center justify-center space-y-3 rounded-lg border border-zinc-800 bg-zinc-950/60 p-8 text-center">
+            <h3 className="text-lg font-semibold text-yellow-500">
+              No members assigned yet
+            </h3>
+            <p className="max-w-md text-sm text-zinc-500">
+              When the owner assigns members to you, they will show up here for
+              quick access.
+            </p>
+          </div>
         )}
       </div>
 
@@ -268,9 +278,15 @@ export default async function TrainerDashboardPage() {
             ))}
           </div>
         ) : (
-          <p style={{ fontSize: "0.875rem", color: "var(--color-silver-dark)", textAlign: "center", padding: "0.75rem 0" }}>
-            No assessments recorded yet.
-          </p>
+          <div className="flex flex-col items-center justify-center space-y-3 rounded-lg border border-zinc-800 bg-zinc-950/60 p-8 text-center">
+            <h3 className="text-lg font-semibold text-yellow-500">
+              No assessments yet
+            </h3>
+            <p className="max-w-md text-sm text-zinc-500">
+              Record a body assessment for an assigned member and the latest
+              results will appear here.
+            </p>
+          </div>
         )}
         <Link
           href="/trainer/members"
@@ -287,11 +303,11 @@ export default async function TrainerDashboardPage() {
       </div>
 
       {/* Upcoming activities */}
-      {upcomingActivities && upcomingActivities.length > 0 && (
-        <div style={cardStyle}>
-          <h2 style={{ fontSize: "0.875rem", fontWeight: 700, color: "#fff", marginBottom: "0.75rem" }}>
-            My Upcoming Activities
-          </h2>
+      <div style={cardStyle}>
+        <h2 style={{ fontSize: "0.875rem", fontWeight: 700, color: "#fff", marginBottom: "0.75rem" }}>
+          My Upcoming Activities
+        </h2>
+        {upcomingActivities && upcomingActivities.length > 0 ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
             {(upcomingActivities as GroupActivity[]).map((act) => (
               <div
@@ -311,8 +327,18 @@ export default async function TrainerDashboardPage() {
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="flex flex-col items-center justify-center space-y-3 rounded-lg border border-zinc-800 bg-zinc-950/60 p-8 text-center">
+            <h3 className="text-lg font-semibold text-yellow-500">
+              No upcoming activities
+            </h3>
+            <p className="max-w-md text-sm text-zinc-500">
+              When you are scheduled to lead a group activity, it will show up
+              here.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
