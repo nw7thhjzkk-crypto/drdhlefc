@@ -12,6 +12,7 @@ export default function POSCart({ members, products }: { members: Member[]; prod
   const [selectedProductId, setSelectedProductId] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [memberId, setMemberId] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
 
   const activeProducts = products.filter(p => p.stock_quantity > 0 && p.status !== "inactive");
 
@@ -72,45 +73,49 @@ export default function POSCart({ members, products }: { members: Member[]; prod
           </select>
         </div>
 
-        <div className="flex gap-2 items-end">
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-zinc-400">
-              Product
-            </label>
-            <select
-              value={selectedProductId}
-              onChange={(e) => setSelectedProductId(e.target.value)}
-              className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
+        {activeProducts.length === 0 ? (
+          <p className="text-sm text-zinc-500 italic">No active products available.</p>
+        ) : (
+          <div className="flex gap-2 items-end">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-zinc-400">
+                Product
+              </label>
+              <select
+                value={selectedProductId}
+                onChange={(e) => setSelectedProductId(e.target.value)}
+                className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
+              >
+                <option value="">Select product...</option>
+                {activeProducts.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} - ${p.selling_price} ({p.stock_quantity} in stock)
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="w-24">
+              <label className="block text-sm font-medium text-zinc-400">
+                Qty
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={quantity}
+                onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              disabled={!selectedProductId || quantity < 1}
+              className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded hover:bg-zinc-700 transition-colors border border-zinc-700 h-10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <option value="">Select product...</option>
-              {activeProducts.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} - ${p.selling_price} ({p.stock_quantity} in stock)
-                </option>
-              ))}
-            </select>
+              Add
+            </button>
           </div>
-          <div className="w-24">
-            <label className="block text-sm font-medium text-zinc-400">
-              Qty
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={quantity}
-              onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-              className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={handleAddToCart}
-            disabled={!selectedProductId || quantity < 1}
-            className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded hover:bg-zinc-700 transition-colors border border-zinc-700 h-10 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Add
-          </button>
-        </div>
+        )}
 
         {cart.length > 0 && (
           <div className="mt-6 border border-zinc-800 rounded-lg overflow-hidden">
@@ -162,7 +167,22 @@ export default function POSCart({ members, products }: { members: Member[]; prod
           >
             <input type="hidden" name="member_id" value={memberId} />
             <input type="hidden" name="items" value={JSON.stringify(cartPayload)} />
-            <input type="hidden" name="payment_method" value="cash" />
+            <input type="hidden" name="payment_method" value={paymentMethod} />
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-zinc-400 mb-1">
+                Payment Method
+              </label>
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
+              >
+                <option value="cash">Cash</option>
+                <option value="card">Card</option>
+                <option value="upi">UPI</option>
+              </select>
+            </div>
 
             <button
               type="submit"
