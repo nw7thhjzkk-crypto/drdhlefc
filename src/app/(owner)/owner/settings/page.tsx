@@ -2,7 +2,12 @@ import { createClient } from "@/utils/supabase/server";
 import { saveGymSettings } from "./actions";
 import { redirect } from "next/navigation";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ error?: string; success?: string }>;
+}) {
+  const params = searchParams ? await searchParams : {};
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -31,6 +36,20 @@ export default async function SettingsPage() {
       <div className="flex justify-between items-center border-b border-zinc-800 pb-4">
         <h1 className="text-2xl font-bold text-yellow-500">Gym Settings</h1>
       </div>
+
+      {params.error && (
+        <div
+          className="rounded-lg border border-red-800 bg-red-950/60 px-4 py-3 text-sm text-red-300"
+          role="alert"
+        >
+          {params.error}
+        </div>
+      )}
+      {params.success && (
+        <div className="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-yellow-500">
+          Settings saved.
+        </div>
+      )}
 
       <div className="bg-zinc-900 p-8 rounded-lg shadow-xl border border-zinc-800">
         <h2 className="text-xl font-semibold mb-6 text-zinc-200">Club Information</h2>
