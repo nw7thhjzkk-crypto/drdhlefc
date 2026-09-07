@@ -172,15 +172,13 @@ export default async function DietPlansPage() {
             </div>
 
             {(!plans || plans.length === 0) && (
-              <div className="flex flex-col items-center justify-center py-12 px-4 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl text-center">
-                <div className="h-12 w-12 text-yellow-500 mb-4 flex items-center justify-center bg-yellow-500/10 rounded-full">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-bold text-zinc-100 mb-2">No active diet plans</h3>
-                <p className="text-sm text-zinc-400 max-w-sm mb-6">
-                  Get started by creating a new diet plan, or seed some starter plans.
+              <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+                <h3 className="text-lg font-semibold text-yellow-500">
+                  No active diet plans
+                </h3>
+                <p className="max-w-md text-sm text-zinc-500">
+                  Create a plan with the form, or seed starter plans so trainers
+                  can assign nutrition templates to members.
                 </p>
                 <form action={seedDietPlans}>
                   <button type="submit" className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded hover:bg-zinc-700 transition-colors border border-zinc-700">
