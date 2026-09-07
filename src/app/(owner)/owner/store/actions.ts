@@ -213,17 +213,29 @@ export async function processSale(formData: FormData) {
   const { supabase } = await requireOwner();
 
   const member_id = (formData.get("member_id") as string) || null;
-  const product_id = formData.get("product_id") as string;
-  const quantity_raw = formData.get("quantity") as string;
-  const payment_method =
-    (formData.get("payment_method") as string) || "cash";
+  const payment_method = (formData.get("payment_method") as string) || "cash";
+  const items_raw = formData.get("items") as string;
 
-  const quantity = parseInt(quantity_raw, 10);
-  if (!product_id || isNaN(quantity) || quantity < 1) {
-    throw new Error("product_id and a positive quantity are required");
+  if (!items_raw) {
+    throw new Error("No items provided");
   }
 
-  const items = [{ product_id, quantity }];
+  let items: { product_id: string; quantity: number }[] = [];
+  try {
+    items = JSON.parse(items_raw);
+  } catch (err) {
+    throw new Error("Invalid items format");
+  }
+
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error("Cart is empty");
+  }
+
+  for (const item of items) {
+    if (!item.product_id || typeof item.quantity !== "number" || item.quantity < 1) {
+      throw new Error("Invalid item in cart");
+    }
+  }
 
   const { data: sale_id, error } = await supabase.rpc("checkout_store_sale", {
     p_member_id: member_id,

@@ -1,10 +1,10 @@
 import { createClient } from "@/utils/supabase/server";
 import {
   createProduct,
-  processSale,
   restockProduct,
   updateProduct,
 } from "./actions";
+import POSCart from "./POSCart";
 
 export default async function StorePage() {
   const supabase = await createClient();
@@ -33,74 +33,10 @@ export default async function StorePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* POS Flow */}
-        <div className="bg-zinc-900 rounded-lg shadow-xl border border-zinc-800 p-6">
-          <h2 className="text-lg font-semibold text-zinc-100 mb-4 border-b border-zinc-800 pb-2">
-            New Sale (POS)
-          </h2>
-          <form
-            action={async (formData) => {
-              "use server";
-              await processSale(formData);
-            }}
-            className="space-y-4"
-          >
-            <div>
-              <label className="block text-sm font-medium text-zinc-400">
-                Member (Optional)
-              </label>
-              <select
-                name="member_id"
-                className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
-              >
-                <option value="">Walk-in Customer</option>
-                {members?.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-400">
-                Product
-              </label>
-              <select
-                name="product_id"
-                required
-                className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
-              >
-                <option value="">Select product...</option>
-                {products
-                  ?.filter((p) => p.stock_quantity > 0 && p.status !== "inactive")
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} - ${p.selling_price} ({p.stock_quantity} in stock)
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-400">
-                Quantity
-              </label>
-              <input
-                name="quantity"
-                type="number"
-                min="1"
-                defaultValue="1"
-                required
-                className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-green-600 text-white font-bold px-4 py-2 rounded hover:bg-green-500 transition-colors"
-            >
-              Complete Sale (Cash)
-            </button>
-          </form>
+        <div className="space-y-8">
+          <POSCart members={members || []} products={products || []} />
 
-          <div className="mt-8 border-t border-zinc-800 pt-6">
+          <div className="bg-zinc-900 rounded-lg shadow-xl border border-zinc-800 p-6">
             <h2 className="text-lg font-semibold text-zinc-100 mb-4 border-b border-zinc-800 pb-2">
               Add New Product
             </h2>
