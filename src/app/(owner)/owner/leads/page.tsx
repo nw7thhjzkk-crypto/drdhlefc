@@ -22,6 +22,8 @@ type LeadRow = {
   trainers: TrainerRef;
 };
 
+type TrainerOption = { id: string; name: string | null };
+
 function followUpInputValue(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -45,7 +47,7 @@ export default async function CRMPage() {
   ]);
 
   const leadRows = (leads ?? []) as LeadRow[];
-  const trainerOptions = trainers ?? [];
+  const trainerOptions = (trainers ?? []) as TrainerOption[];
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -54,7 +56,6 @@ export default async function CRMPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Add Lead Form */}
         <div className="lg:col-span-1 bg-zinc-900 rounded-lg shadow-xl border border-zinc-800 p-6 h-fit">
           <h2 className="text-lg font-semibold text-zinc-100 mb-4 border-b border-zinc-800 pb-2">
             New Lead

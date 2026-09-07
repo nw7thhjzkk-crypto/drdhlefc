@@ -34,7 +34,7 @@ async function softAudit(
     p_entity_type: string;
     p_entity_id: string | null;
     p_member_id: string | null;
-    p_details: Record<string, unknown>;
+    p_details: Record<string, unknown> | null;
   }
 ) {
   try {
@@ -44,7 +44,7 @@ async function softAudit(
   }
 }
 
-export async function addLead(formData: FormData) {
+export async function addLead(formData: FormData): Promise<void> {
   const supabase = await createClient();
   const auth = await verifyOwner(supabase);
   if (!auth) throw new Error("Unauthorized");
@@ -78,23 +78,26 @@ export async function addLead(formData: FormData) {
   revalidatePath("/owner/leads");
 }
 
-export async function updateLeadStage(leadId: string, formData: FormData) {
+export async function updateLeadStage(
+  leadId: string,
+  formData: FormData
+): Promise<void> {
   const supabase = await createClient();
   const auth = await verifyOwner(supabase);
-  if (!auth) return { error: "Unauthorized" };
+  if (!auth) throw new Error("Unauthorized");
 
   const stage = String(formData.get("stage") ?? "");
   if (!LEAD_STAGES.includes(stage as LeadStage)) {
-    return { error: "Invalid stage" };
+    throw new Error("Invalid stage");
   }
-  if (!leadId) return { error: "Missing lead id" };
+  if (!leadId) throw new Error("Missing lead id");
 
   const { error } = await supabase
     .from("leads")
     .update({ stage, updated_at: new Date().toISOString() })
     .eq("id", leadId);
 
-  if (error) return { error: error.message };
+  if (error) throw new Error(error.message);
 
   await softAudit(supabase, {
     p_action: "UPDATE_LEAD_STAGE",
@@ -105,15 +108,17 @@ export async function updateLeadStage(leadId: string, formData: FormData) {
   });
 
   revalidatePath("/owner/leads");
-  return { success: true };
 }
 
-export async function assignLeadTrainer(leadId: string, formData: FormData) {
+export async function assignLeadTrainer(
+  leadId: string,
+  formData: FormData
+): Promise<void> {
   const supabase = await createClient();
   const auth = await verifyOwner(supabase);
-  if (!auth) return { error: "Unauthorized" };
+  if (!auth) throw new Error("Unauthorized");
 
-  if (!leadId) return { error: "Missing lead id" };
+  if (!leadId) throw new Error("Missing lead id");
 
   const raw = String(formData.get("trainer_id") ?? "");
   const trainerId = raw.trim() === "" ? null : raw;
@@ -126,8 +131,8 @@ export async function assignLeadTrainer(leadId: string, formData: FormData) {
       .neq("status", "inactive")
       .maybeSingle();
 
-    if (trainerError) return { error: trainerError.message };
-    if (!trainer) return { error: "Trainer not found" };
+    if (trainerError) throw new Error(trainerError.message);
+    if (!trainer) throw new Error("Trainer not found");
   }
 
   const { error } = await supabase
@@ -138,7 +143,7 @@ export async function assignLeadTrainer(leadId: string, formData: FormData) {
     })
     .eq("id", leadId);
 
-  if (error) return { error: error.message };
+  if (error) throw new Error(error.message);
 
   await softAudit(supabase, {
     p_action: "ASSIGN_LEAD_TRAINER",
@@ -149,15 +154,17 @@ export async function assignLeadTrainer(leadId: string, formData: FormData) {
   });
 
   revalidatePath("/owner/leads");
-  return { success: true };
 }
 
-export async function setLeadFollowUp(leadId: string, formData: FormData) {
+export async function setLeadFollowUp(
+  leadId: string,
+  formData: FormData
+): Promise<void> {
   const supabase = await createClient();
   const auth = await verifyOwner(supabase);
-  if (!auth) return { error: "Unauthorized" };
+  if (!auth) throw new Error("Unauthorized");
 
-  if (!leadId) return { error: "Missing lead id" };
+  if (!leadId) throw new Error("Missing lead id");
 
   const raw = String(formData.get("follow_up_at") ?? "").trim();
   let followUpAt: string | null = null;
@@ -166,7 +173,7 @@ export async function setLeadFollowUp(leadId: string, formData: FormData) {
     // date input yields YYYY-MM-DD; store as noon UTC to avoid TZ edge noise
     const parsed = new Date(`${raw}T12:00:00.000Z`);
     if (Number.isNaN(parsed.getTime())) {
-      return { error: "Invalid follow-up date" };
+      throw new Error("Invalid follow-up date");
     }
     followUpAt = parsed.toISOString();
   }
@@ -179,7 +186,7 @@ export async function setLeadFollowUp(leadId: string, formData: FormData) {
     })
     .eq("id", leadId);
 
-  if (error) return { error: error.message };
+  if (error) throw new Error(error.message);
 
   await softAudit(supabase, {
     p_action: "SET_LEAD_FOLLOW_UP",
@@ -190,5 +197,4 @@ export async function setLeadFollowUp(leadId: string, formData: FormData) {
   });
 
   revalidatePath("/owner/leads");
-  return { success: true };
 }
