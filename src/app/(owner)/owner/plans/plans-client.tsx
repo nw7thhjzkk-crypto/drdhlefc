@@ -13,6 +13,10 @@ export interface MembershipPlan {
   status: string;
 }
 
+function formatInr(price: number) {
+  return `₹${Number(price).toLocaleString("en-IN")}`;
+}
+
 export default function PlansClient({ plans }: { plans: MembershipPlan[] }) {
   const [editingPlan, setEditingPlan] = useState<MembershipPlan | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -54,7 +58,7 @@ export default function PlansClient({ plans }: { plans: MembershipPlan[] }) {
               <input name="duration_days" type="number" defaultValue={editingPlan?.duration_days || ""} required className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200 focus:border-yellow-500" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-400">Price</label>
+              <label className="block text-sm font-medium text-zinc-400">Price (₹)</label>
               <input name="price" type="number" step="0.01" defaultValue={editingPlan?.price || ""} required className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200 focus:border-yellow-500" />
             </div>
             <div>
@@ -126,7 +130,7 @@ export default function PlansClient({ plans }: { plans: MembershipPlan[] }) {
                         {plan.duration_days} Days
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-yellow-500">
-                        ${plan.price}
+                        {formatInr(plan.price)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
