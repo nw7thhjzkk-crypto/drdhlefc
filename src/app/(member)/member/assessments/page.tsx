@@ -59,9 +59,12 @@ export default async function MemberAssessmentsPage() {
             ))}
           </div>
         ) : (
-           <p style={{ fontSize: "0.875rem", color: "var(--color-silver-dark)", textAlign: "center", padding: "0.75rem 0" }}>
-            No assessments recorded yet.
-          </p>
+          <div className="p-8 text-center flex flex-col items-center gap-4 bg-zinc-900 rounded-lg shadow-xl border border-zinc-800">
+            <span className="text-zinc-500">No assessments recorded yet.</span>
+            <span className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block">
+              Waiting for First Assessment
+            </span>
+          </div>
         )}
       </div>
     </div>
