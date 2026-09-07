@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { recordPayment } from "./actions";
 
 interface MembershipPlan {
@@ -24,6 +25,24 @@ export default async function PaymentsPage({
   const params = searchParams ? await searchParams : {};
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "owner") {
+    redirect("/login");
+  }
+
   const { data: payments } = await supabase
     .from("payments")
     .select(`
@@ -41,6 +60,12 @@ export default async function PaymentsPage({
       memberships (id, status, pending_amount, membership_plans(name))
     `)
     .eq("status", "active");
+
+  const hasMemberships =
+    membersWithMemberships &&
+    membersWithMemberships.some(
+      (m) => m.memberships && m.memberships.length > 0
+    );
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -84,25 +109,47 @@ export default async function PaymentsPage({
               <label className="block text-sm font-medium text-zinc-400">
                 Membership
               </label>
-              <select
-                name="membership_id"
-                required
-                className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
-              >
-                <option value="">Select Membership...</option>
-                {membersWithMemberships?.map((m) =>
-                  m.memberships?.map((ms: Membership) => {
-                    const planName = Array.isArray(ms.membership_plans)
-                      ? ms.membership_plans[0]?.name
-                      : ms.membership_plans?.name;
-                    return (
-                      <option key={ms.id} value={ms.id}>
-                        {m.name} - {planName} (${ms.pending_amount} pending)
-                      </option>
-                    );
-                  })
-                )}
-              </select>
+              {!hasMemberships ? (
+                <div className="mt-1 p-4 border border-yellow-600 bg-zinc-950 rounded-lg text-center space-y-3">
+                  <p className="text-zinc-400 text-sm">
+                    No active memberships found to record payments for.
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    <Link
+                      href="/owner/members"
+                      className="text-xs bg-zinc-800 text-yellow-500 font-bold px-3 py-2 rounded hover:bg-zinc-700 transition-colors border border-zinc-700 block w-full"
+                    >
+                      View Members
+                    </Link>
+                    <Link
+                      href="/owner/plans"
+                      className="text-xs bg-zinc-800 text-yellow-500 font-bold px-3 py-2 rounded hover:bg-zinc-700 transition-colors border border-zinc-700 block w-full"
+                    >
+                      View Plans
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <select
+                  name="membership_id"
+                  required
+                  className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
+                >
+                  <option value="">Select Membership...</option>
+                  {membersWithMemberships?.map((m) =>
+                    m.memberships?.map((ms: Membership) => {
+                      const planName = Array.isArray(ms.membership_plans)
+                        ? ms.membership_plans[0]?.name
+                        : ms.membership_plans?.name;
+                      return (
+                        <option key={ms.id} value={ms.id}>
+                          {m.name} - {planName} (${ms.pending_amount} pending)
+                        </option>
+                      );
+                    })
+                  )}
+                </select>
+              )}
             </div>
 
             <div>
