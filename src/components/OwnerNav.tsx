@@ -26,6 +26,7 @@ const NAV_SECTIONS = [
     items: [
       { href: "/owner/activities",    label: "Activities",    icon: "🗓️" },
       { href: "/owner/attendance",    label: "Attendance",    icon: "✅" },
+      { href: "/owner/assessments",   label: "Assessments",   icon: "📏" },
       { href: "/owner/diet-plans",    label: "Diet Plans",    icon: "🥗" },
       { href: "/owner/workout-plans", label: "Workout Plans", icon: "💪" },
     ],
