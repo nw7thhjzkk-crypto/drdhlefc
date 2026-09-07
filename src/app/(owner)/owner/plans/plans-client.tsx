@@ -89,14 +89,9 @@ export default function PlansClient({ plans }: { plans: MembershipPlan[] }) {
 
         <div className="md:col-span-2">
           {plans.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 px-4 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl text-center">
-              <div className="h-12 w-12 text-yellow-500 mb-4 flex items-center justify-center bg-yellow-500/10 rounded-full">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-bold text-zinc-100 mb-2">No Membership Plans</h3>
-              <p className="text-sm text-zinc-400 max-w-sm mb-6">
+            <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center shadow-xl">
+              <h3 className="text-lg font-semibold text-yellow-500">No Membership Plans</h3>
+              <p className="max-w-md text-sm text-zinc-500">
                 Get started quickly by generating a set of standard membership plans for your gym.
               </p>
               <form action={seedStarterMembershipPlans}>
