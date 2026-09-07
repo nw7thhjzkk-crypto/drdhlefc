@@ -25,6 +25,12 @@ export default async function StorePage() {
     .select("id, name")
     .order("name");
 
+  const lowStockProducts = products?.filter(
+    (p) =>
+      (p.stock_quantity ?? 0) <= (p.minimum_stock ?? 0) &&
+      (p.status || "active") !== "inactive"
+  );
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex justify-between items-center">
@@ -111,6 +117,45 @@ export default async function StorePage() {
         </div>
 
         <div className="space-y-8">
+          {/* Low Stock Alerts */}
+          {lowStockProducts && lowStockProducts.length > 0 && (
+            <div className="bg-red-950/20 rounded-lg shadow-xl border border-red-900/50 overflow-hidden">
+              <div className="px-6 py-4 border-b border-red-900/50 flex justify-between items-center bg-red-900/20">
+                <h2 className="text-lg font-semibold text-red-400 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  Low Stock Alerts
+                </h2>
+                <span className="text-xs font-medium bg-red-900 text-red-200 px-2 py-1 rounded-full">
+                  {lowStockProducts.length} items
+                </span>
+              </div>
+              <div className="divide-y divide-red-900/30">
+                {lowStockProducts.map((product) => (
+                  <div key={product.id} className="px-6 py-3 flex justify-between items-center bg-red-950/10 hover:bg-red-950/30 transition-colors">
+                    <div>
+                      <div className="text-sm font-bold text-red-200">
+                        {product.name}
+                      </div>
+                      <div className="text-xs text-red-400/80">
+                        SKU: {product.sku || "—"}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-bold text-red-400">
+                        {product.stock_quantity ?? 0} left
+                      </div>
+                      <div className="text-xs text-red-400/60">
+                        Min: {product.minimum_stock ?? 0}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Inventory List */}
           <div className="bg-zinc-900 rounded-lg shadow-xl border border-zinc-800 overflow-hidden">
             <div className="px-6 py-4 border-b border-zinc-800 flex justify-between">
