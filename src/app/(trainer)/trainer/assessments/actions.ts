@@ -74,3 +74,88 @@ export async function logAssessment(formData: FormData) {
 
   revalidatePath("/trainer/assessments");
 }
+
+export async function updateAssessment(assessmentId: string, formData: FormData) {
+  const supabase = await createClient();
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (!user || authError) throw new Error("Not authenticated");
+
+  const { data: trainer, error: trainerError } = await supabase
+    .from("trainers")
+    .select("id")
+    .eq("profile_id", user.id)
+    .single();
+
+  if (trainerError || !trainer) throw new Error("Trainer profile not found");
+
+  if (!assessmentId) throw new Error("assessmentId is required");
+
+  // Fetch the assessment
+  const { data: assessment, error: assessmentError } = await supabase
+    .from("assessments")
+    .select("id, member_id, recorded_by")
+    .eq("id", assessmentId)
+    .single();
+
+  if (assessmentError || !assessment) {
+    throw new Error("Assessment not found");
+  }
+
+  // Verify that the assessment was recorded by this trainer
+  if (assessment.recorded_by !== user.id) {
+    throw new Error("You can only edit assessments that you recorded");
+  }
+
+  // Verify the target member is CURRENTLY assigned to this trainer.
+  const { data: assignment, error: assignmentError } = await supabase
+    .from("member_trainers")
+    .select("id")
+    .eq("member_id", assessment.member_id)
+    .eq("trainer_id", trainer.id)
+    .is("unassigned_at", null)
+    .maybeSingle();
+
+  if (assignmentError) throw new Error(assignmentError.message);
+
+  if (!assignment) {
+    throw new Error("Member is not currently assigned to you — cannot edit assessment");
+  }
+
+  const height_cm_str = formData.get("height_cm") as string;
+  const weight_kg_str = formData.get("weight_kg") as string;
+  const body_fat_pct_str = formData.get("body_fat_pct") as string;
+
+  const height_cm: number | null = height_cm_str ? parseFloat(height_cm_str) : null;
+  const weight_kg: number | null = weight_kg_str ? parseFloat(weight_kg_str) : null;
+  const body_fat_pct: number | null = body_fat_pct_str ? parseFloat(body_fat_pct_str) : null;
+
+  const bmi = calculateBMI(height_cm, weight_kg);
+
+  const { error: updateError } = await supabase
+    .from("assessments")
+    .update({
+      height_cm,
+      weight_kg,
+      body_fat_pct,
+      bmi,
+    })
+    .eq("id", assessmentId);
+
+  if (updateError) throw new Error(updateError.message);
+
+  // Soft-fail on audit log
+  await Promise.resolve(
+    supabase.rpc("insert_audit_log", {
+      p_action: "UPDATE_ASSESSMENT",
+      p_entity_type: "assessments",
+      p_entity_id: assessmentId,
+      p_member_id: assessment.member_id,
+      p_details: { trainer_id: trainer.id, height_cm, weight_kg, body_fat_pct, bmi },
+    })
+  ).catch((err) => {
+    console.error("Failed to insert audit log:", err);
+  });
+
+  revalidatePath("/trainer/assessments");
+}
