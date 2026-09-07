@@ -216,6 +216,11 @@ export async function processSale(formData: FormData) {
   const payment_method = (formData.get("payment_method") as string) || "cash";
   const items_raw = formData.get("items") as string;
 
+  const validPaymentMethods = ["cash", "card", "upi"];
+  if (!validPaymentMethods.includes(payment_method)) {
+    throw new Error("Invalid payment method. Must be cash, card, or upi.");
+  }
+
   if (!items_raw) {
     throw new Error("No items provided");
   }
