@@ -265,11 +265,13 @@ export default async function TrainerPlansPage() {
               ))}
             </div>
             {workouts.length === 0 && (
-              <div className="col-span-full py-12 text-center bg-zinc-900 border border-zinc-800 rounded-lg">
-                <p className="text-zinc-500 mb-4">No workout plans created yet.</p>
-                <span className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block">
-                  Create Plan
-                </span>
+              <div className="col-span-full flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+                <h3 className="text-lg font-semibold text-yellow-500">
+                  No workout plans yet
+                </h3>
+                <p className="max-w-md text-sm text-zinc-500">
+                  Create a workout plan on the left, then assign it to your members from here.
+                </p>
               </div>
             )}
           </div>
@@ -544,11 +546,13 @@ export default async function TrainerPlansPage() {
               ))}
             </div>
             {diets.length === 0 && (
-              <div className="col-span-full py-12 text-center bg-zinc-900 border border-zinc-800 rounded-lg">
-                <p className="text-zinc-500 mb-4">No diet plans created yet.</p>
-                <span className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block">
-                  Create Plan
-                </span>
+              <div className="col-span-full flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+                <h3 className="text-lg font-semibold text-yellow-500">
+                  No diet plans yet
+                </h3>
+                <p className="max-w-md text-sm text-zinc-500">
+                  Create a diet plan on the left, then assign it to your members from here.
+                </p>
               </div>
             )}
           </div>
