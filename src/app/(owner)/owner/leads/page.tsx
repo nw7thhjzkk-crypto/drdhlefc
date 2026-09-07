@@ -1,5 +1,33 @@
+import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { addLead, updateLead } from "./actions";
+
+function isConvertibleStage(stage: string | null | undefined): boolean {
+  const normalized = (stage ?? "").trim().toLowerCase();
+  return normalized === "won" || normalized === "converted";
+}
+
+function buildConvertMemberHref(lead: {
+  id: string;
+  name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+}): string {
+  const params = new URLSearchParams();
+  params.set("lead_id", lead.id);
+  if (lead.name) params.set("name", lead.name);
+  if (lead.phone) params.set("phone", lead.phone);
+  if (lead.email) params.set("email", lead.email);
+  return `/owner/members/new?${params.toString()}`;
+}
+
+const STAGE_OPTIONS = [
+  { value: "new", label: "New" },
+  { value: "contacted", label: "Contacted" },
+  { value: "trial", label: "Trial" },
+  { value: "won", label: "Won" },
+  { value: "lost", label: "Lost" },
+] as const;
 
 export default async function CRMPage() {
   const supabase = await createClient();
@@ -51,9 +79,9 @@ export default async function CRMPage() {
                 <div>
                     <label className="block text-sm font-medium text-zinc-400">Stage</label>
                     <select name="stage" required className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200">
-                        <option value="new">New</option>
-                        <option value="contacted">Contacted</option>
-                        <option value="trial">Trial</option>
+                        {STAGE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
                     </select>
                 </div>
                 <button type="submit" className="w-full bg-yellow-600 text-zinc-950 font-bold px-4 py-2 rounded hover:bg-yellow-500 transition-colors">
@@ -94,9 +122,9 @@ export default async function CRMPage() {
                         defaultValue={lead.stage}
                         className="bg-zinc-950 border border-zinc-800 rounded p-1 text-zinc-200 text-xs w-full max-w-[120px]"
                     >
-                        <option value="new">New</option>
-                        <option value="contacted">Contacted</option>
-                        <option value="trial">Trial</option>
+                        {STAGE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
                     </select>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
@@ -122,9 +150,19 @@ export default async function CRMPage() {
                     />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
-                    <button type="submit" form={`form-${lead.id}`} className="bg-zinc-800 text-yellow-500 hover:bg-zinc-700 px-3 py-1 rounded text-xs font-bold transition-colors">
-                        Save
-                    </button>
+                    <div className="flex flex-col gap-1 items-start">
+                      <button type="submit" form={`form-${lead.id}`} className="bg-zinc-800 text-yellow-500 hover:bg-zinc-700 px-3 py-1 rounded text-xs font-bold transition-colors">
+                          Save
+                      </button>
+                      {isConvertibleStage(lead.stage) && (
+                        <Link
+                          href={buildConvertMemberHref(lead)}
+                          className="text-yellow-500 hover:text-yellow-400 hover:underline text-xs font-bold"
+                        >
+                          Convert to member
+                        </Link>
+                      )}
+                    </div>
                     </td>
                 </tr>
                 ))}

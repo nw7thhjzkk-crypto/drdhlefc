@@ -1,12 +1,20 @@
 "use client";
 
+import { Suspense } from "react";
 import { createMember } from "../actions";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useFormMutation } from "@/hooks/useFormMutation";
 
-export default function NewMemberPage() {
+function NewMemberForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const leadId = searchParams.get("lead_id") ?? "";
+  const defaultName = searchParams.get("name") ?? "";
+  const defaultPhone = searchParams.get("phone") ?? "";
+  const defaultEmail = searchParams.get("email") ?? "";
+  const convertingFromLead = Boolean(leadId || defaultName || defaultPhone || defaultEmail);
 
   const { handleSubmit, isPending: loading, error } = useFormMutation(
     createMember,
@@ -24,6 +32,14 @@ export default function NewMemberPage() {
         <Link href="/owner/members" className="text-blue-600 hover:underline">Back to Members</Link>
       </div>
 
+      {convertingFromLead && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-900 p-4 rounded mb-6 text-sm">
+          Converting CRM lead{leadId ? ` (${leadId})` : ""} — name, phone, and email are prefilled. Complete the form and create the member.
+          {" "}
+          <Link href="/owner/leads" className="underline font-medium">Back to leads</Link>
+        </div>
+      )}
+
       {error && <div className="bg-red-50 text-red-700 p-4 rounded mb-6">{error}</div>}
 
       <form action={handleSubmit} className="bg-white p-6 rounded-lg shadow space-y-6">
@@ -31,15 +47,15 @@ export default function NewMemberPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700">Name *</label>
-            <input name="name" type="text" required className="mt-1 block w-full border border-gray-300 rounded p-2" />
+            <input name="name" type="text" required defaultValue={defaultName} className="mt-1 block w-full border border-gray-300 rounded p-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Email *</label>
-            <input name="email" type="email" required className="mt-1 block w-full border border-gray-300 rounded p-2" />
+            <input name="email" type="email" required defaultValue={defaultEmail} className="mt-1 block w-full border border-gray-300 rounded p-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Phone</label>
-            <input name="phone" type="text" className="mt-1 block w-full border border-gray-300 rounded p-2" />
+            <input name="phone" type="text" defaultValue={defaultPhone} className="mt-1 block w-full border border-gray-300 rounded p-2" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Date of Birth</label>
@@ -106,7 +122,12 @@ export default function NewMemberPage() {
           </div>
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700">Internal Notes</label>
-            <textarea name="notes" rows={2} className="mt-1 block w-full border border-gray-300 rounded p-2"></textarea>
+            <textarea
+              name="notes"
+              rows={2}
+              defaultValue={leadId ? `Converted from CRM lead ${leadId}` : ""}
+              className="mt-1 block w-full border border-gray-300 rounded p-2"
+            ></textarea>
           </div>
         </div>
 
@@ -121,5 +142,13 @@ export default function NewMemberPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function NewMemberPage() {
+  return (
+    <Suspense fallback={<div className="p-8 max-w-3xl mx-auto text-gray-500">Loading form…</div>}>
+      <NewMemberForm />
+    </Suspense>
   );
 }
