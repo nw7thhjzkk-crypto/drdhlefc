@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
-import { createExercise, updateExercise, deleteExercise } from "./actions";
+import { createExercise, updateExercise, deleteExercise, seedStarterExercises } from "./actions";
 
 export default async function ExercisesPage() {
   const supabase = await createClient();
@@ -37,7 +37,15 @@ export default async function ExercisesPage() {
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
           {exercises?.length === 0 ? (
-            <div className="erp-card text-zinc-400">No exercises found.</div>
+            <div className="erp-card text-center py-12">
+              <h3 className="text-xl font-semibold text-zinc-200 mb-2">No exercises found</h3>
+              <p className="text-zinc-400 mb-6">Your exercise library is empty. Get started quickly by seeding standard exercises.</p>
+              <form action={seedStarterExercises}>
+                <button type="submit" className="bg-yellow-600 text-zinc-900 font-bold px-6 py-2 rounded hover:bg-yellow-500 transition-colors">
+                  Seed Starter Exercises
+                </button>
+              </form>
+            </div>
           ) : (
             exercises?.map((exercise) => (
               <div key={exercise.id} className="erp-card">
