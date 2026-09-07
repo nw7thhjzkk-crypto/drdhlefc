@@ -49,11 +49,11 @@ export default async function ActivitiesPage() {
 
   const nowISO = new Date().toISOString();
 
+  // Live group_activities has status (no deleted_at column).
   const [{ data: upcomingActivities }, { data: myBookings }] = await Promise.all([
     supabase
       .from("group_activities")
       .select("id, name, start_at, duration_minutes, location, capacity, trainer_id")
-      .is("deleted_at", null)
       .eq("status", "active")
       .gte("start_at", nowISO)
       .order("start_at", { ascending: true }),
