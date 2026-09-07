@@ -47,7 +47,8 @@ export default async function TrainerMembersPage() {
         primary_goal
       )
     `)
-    .eq("trainer_id", trainer.id);
+    .eq("trainer_id", trainer.id)
+    .is("unassigned_at", null);
 
   const members: AssignedMember[] = ((assignments as AssignmentRow[] | null) ?? []).flatMap((a) => {
     const m = a.members;
