@@ -111,93 +111,99 @@ export default async function OwnerAssessmentsPage() {
              <div className="px-6 py-4 border-b border-zinc-800">
                 <h2 className="text-lg font-semibold text-zinc-100">Recent Assessments</h2>
             </div>
-            <table className="min-w-full divide-y divide-zinc-800">
-              <thead className="bg-zinc-950">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Member</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Height / Weight</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">BMI</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider"></th>
-                </tr>
-              </thead>
-              <tbody className="bg-zinc-900 divide-y divide-zinc-800">
-                {recentAssessments?.map((record) => (
-                  <tr key={record.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
-                      {new Date(record.recorded_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-zinc-200">
-                      {record.members?.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
-                      {record.height_cm ? `${record.height_cm} cm` : '-'} / {record.weight_kg ? `${record.weight_kg} kg` : '-'}
-                    </td>
-                     <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
-                      {record.bmi || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400 text-right">
-                      <details className="group">
-                        <summary className="cursor-pointer text-xs text-zinc-400 hover:text-yellow-500 list-none">
-                          Edit
-                        </summary>
-                        <form
-                          action={async (formData) => {
-                            "use server";
-                            await updateAssessment(record.id, formData);
-                          }}
-                          className="mt-3 p-3 bg-zinc-950 rounded border border-zinc-800 absolute right-6 z-10 w-64 shadow-xl"
-                        >
-                          <div className="space-y-3 text-left">
-                            <div>
-                              <label className="block text-xs text-zinc-500 mb-1">Height (cm)</label>
-                              <input
-                                name="height_cm"
-                                type="number"
-                                step="0.1"
-                                defaultValue={record.height_cm ?? ""}
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded p-1.5 text-zinc-200 text-sm"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-zinc-500 mb-1">Weight (kg)</label>
-                              <input
-                                name="weight_kg"
-                                type="number"
-                                step="0.1"
-                                defaultValue={record.weight_kg ?? ""}
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded p-1.5 text-zinc-200 text-sm"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-zinc-500 mb-1">Body Fat (%)</label>
-                              <input
-                                name="body_fat_pct"
-                                type="number"
-                                step="0.1"
-                                defaultValue={record.body_fat_pct ?? ""}
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded p-1.5 text-zinc-200 text-sm"
-                              />
-                            </div>
-                            <button
-                              type="submit"
-                              className="w-full bg-yellow-600 text-zinc-950 font-bold px-3 py-2 rounded hover:bg-yellow-500 text-sm"
-                            >
-                              Save
-                            </button>
-                          </div>
-                        </form>
-                      </details>
-                    </td>
-                  </tr>
-                ))}
-                {(!recentAssessments || recentAssessments.length === 0) && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-zinc-500">No assessments recorded recently.</td>
-                  </tr>
+            {(!recentAssessments || recentAssessments.length === 0) ? (
+              <div className="p-8 text-center flex flex-col items-center gap-4 bg-zinc-900">
+                <span className="text-zinc-500">No assessments recorded recently.</span>
+                {(!members || members.length === 0) && (
+                  <Link href="/owner/members" className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block hover:bg-zinc-700 transition-colors">
+                    Add Members First
+                  </Link>
                 )}
-              </tbody>
-            </table>
+              </div>
+            ) : (
+              <table className="min-w-full divide-y divide-zinc-800">
+                <thead className="bg-zinc-950">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Member</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Height / Weight</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">BMI</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider"></th>
+                  </tr>
+                </thead>
+                <tbody className="bg-zinc-900 divide-y divide-zinc-800">
+                  {recentAssessments?.map((record) => (
+                    <tr key={record.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
+                        {new Date(record.recorded_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-zinc-200">
+                        {record.members?.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
+                        {record.height_cm ? `${record.height_cm} cm` : '-'} / {record.weight_kg ? `${record.weight_kg} kg` : '-'}
+                      </td>
+                       <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
+                        {record.bmi || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400 text-right">
+                        <details className="group">
+                          <summary className="cursor-pointer text-xs text-zinc-400 hover:text-yellow-500 list-none">
+                            Edit
+                          </summary>
+                          <form
+                            action={async (formData) => {
+                              "use server";
+                              await updateAssessment(record.id, formData);
+                            }}
+                            className="mt-3 p-3 bg-zinc-950 rounded border border-zinc-800 absolute right-6 z-10 w-64 shadow-xl"
+                          >
+                            <div className="space-y-3 text-left">
+                              <div>
+                                <label className="block text-xs text-zinc-500 mb-1">Height (cm)</label>
+                                <input
+                                  name="height_cm"
+                                  type="number"
+                                  step="0.1"
+                                  defaultValue={record.height_cm ?? ""}
+                                  className="w-full bg-zinc-900 border border-zinc-800 rounded p-1.5 text-zinc-200 text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-zinc-500 mb-1">Weight (kg)</label>
+                                <input
+                                  name="weight_kg"
+                                  type="number"
+                                  step="0.1"
+                                  defaultValue={record.weight_kg ?? ""}
+                                  className="w-full bg-zinc-900 border border-zinc-800 rounded p-1.5 text-zinc-200 text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-zinc-500 mb-1">Body Fat (%)</label>
+                                <input
+                                  name="body_fat_pct"
+                                  type="number"
+                                  step="0.1"
+                                  defaultValue={record.body_fat_pct ?? ""}
+                                  className="w-full bg-zinc-900 border border-zinc-800 rounded p-1.5 text-zinc-200 text-sm"
+                                />
+                              </div>
+                              <button
+                                type="submit"
+                                className="w-full bg-yellow-600 text-zinc-950 font-bold px-3 py-2 rounded hover:bg-yellow-500 text-sm"
+                              >
+                                Save
+                              </button>
+                            </div>
+                          </form>
+                        </details>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
