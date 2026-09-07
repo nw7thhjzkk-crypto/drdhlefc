@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import Link from "next/link";
 import {
   createActivity,
   cancelActivity,
@@ -67,6 +68,11 @@ export default async function GroupActivitiesPage() {
                   </option>
                 ))}
               </select>
+              {(!trainers || trainers.length === 0) && (
+                <div className="mt-2 text-xs text-yellow-500 bg-zinc-900/50 p-2 rounded border border-zinc-800/50">
+                  You haven&apos;t added any trainers yet. Add them in the <Link href="/owner/members" className="underline">Members</Link> section and grant them Trainer roles.
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-400">
@@ -207,6 +213,11 @@ export default async function GroupActivitiesPage() {
                             </option>
                           ))}
                         </select>
+                        {(!trainers || trainers.length === 0) && (
+                          <div className="mt-2 text-xs text-yellow-500 bg-zinc-900/50 p-2 rounded border border-zinc-800/50">
+                            No trainers available.
+                          </div>
+                        )}
                       </div>
                       <div className="col-span-2">
                         <label className="block text-xs text-zinc-500">
@@ -326,8 +337,8 @@ export default async function GroupActivitiesPage() {
                 </div>
               ))}
               {(!activities || activities.length === 0) && (
-                <div className="px-6 py-12 text-center flex flex-col items-center justify-center space-y-4">
-                  <div className="text-zinc-400">
+                <div className="px-6 py-12 text-center flex flex-col items-center justify-center space-y-4 bg-zinc-900 rounded-lg border border-zinc-800">
+                  <div className="text-zinc-500">
                     No active group activities scheduled.
                   </div>
                   <form action={seedStarterGroupActivities}>
