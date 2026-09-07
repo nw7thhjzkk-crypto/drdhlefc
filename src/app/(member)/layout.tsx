@@ -1,4 +1,5 @@
 import MemberNav from "@/components/MemberNav";
+import InstallPrompt from "@/components/InstallPrompt";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -6,6 +7,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: { default: "My Fitness", template: "%s | DR DHL Fitness" },
+  manifest: "/manifest.json",
 };
 
 export default async function MemberLayout({
@@ -49,6 +51,7 @@ export default async function MemberLayout({
 
       {/* Bottom nav */}
       <MemberNav />
+      <InstallPrompt />
     </div>
   );
 }
