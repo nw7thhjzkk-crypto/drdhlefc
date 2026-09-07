@@ -287,13 +287,17 @@ export default async function MemberPaymentsPage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 my-4 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl">
-            <h3 className="text-lg font-bold text-yellow-500 mb-2">
-              No Payments Yet
+          <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+            <h3 className="text-lg font-semibold text-yellow-500">
+              No payments yet
             </h3>
-            <p className="text-sm text-zinc-400">
-              No payments have been recorded for your account.
+            <p className="max-w-md text-sm text-zinc-500">
+              No payments have been recorded for your account. Once the front
+              desk logs a payment, it will show up here.
             </p>
+            <span className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block">
+              Waiting
+            </span>
           </div>
         )}
       </div>
