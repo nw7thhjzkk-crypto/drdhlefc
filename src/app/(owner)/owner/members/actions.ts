@@ -380,3 +380,39 @@ export async function unassignTrainer(assignmentId: string, memberId: string) {
   revalidatePath(`/owner/members/${memberId}`);
   return { success: true };
 }
+
+// ---------------------------------------------------------------------------
+// recordPayment
+// ---------------------------------------------------------------------------
+export async function recordPayment(membershipId: string, memberId: string, formData: FormData) {
+  const supabase = await createClient();
+
+  const auth = await verifyOwner(supabase);
+  if (!auth) return { error: "Unauthorized" };
+
+  const amount_raw = formData.get("amount") as string;
+  const amount = parseFloat(amount_raw);
+  const method = formData.get("method") as string;
+  const reference = formData.get("reference") as string;
+  const notes = formData.get("notes") as string;
+
+  if (isNaN(amount) || amount <= 0) {
+    return { error: "Amount must be a positive number" };
+  }
+
+  const { data: payment_id, error: rpcError } = await supabase.rpc(
+    "record_payment_atomic",
+    {
+      p_membership_id: membershipId,
+      p_amount: amount,
+      p_method: method || null,
+      p_reference: reference || null,
+      p_notes: notes || null,
+    }
+  );
+
+  if (rpcError) return { error: rpcError.message };
+
+  revalidatePath(`/owner/members/${memberId}`);
+  return { success: true, payment_id };
+}
