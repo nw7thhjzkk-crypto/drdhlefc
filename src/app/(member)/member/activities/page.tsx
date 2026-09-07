@@ -96,8 +96,20 @@ export default async function ActivitiesPage() {
         </p>
       </div>
 
-      <div style={card}>
-        {upcomingActivities && upcomingActivities.length > 0 ? (
+      {(!upcomingActivities || upcomingActivities.length === 0) ? (
+        <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+          <h3 className="text-lg font-semibold text-yellow-500">
+            No activities yet
+          </h3>
+          <p className="max-w-md text-sm text-zinc-500">
+            When the gym schedules group sessions, you can browse and book them here.
+          </p>
+          <span className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block">
+            Waiting for Upcoming Sessions
+          </span>
+        </div>
+      ) : (
+        <div style={card}>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
             {upcomingActivities.map((act) => {
               const alreadyBooked = bookedActivityIds.has(act.id);
@@ -204,37 +216,8 @@ export default async function ActivitiesPage() {
               );
             })}
           </div>
-        ) : (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "2rem 1rem",
-              background: "rgba(255,255,255,0.03)",
-              borderRadius: "var(--radius-md)",
-              border: "1px dashed rgba(255,255,255,0.1)",
-            }}
-          >
-            <h3
-              style={{
-                fontSize: "1rem",
-                fontWeight: 600,
-                color: "#fff",
-                marginBottom: "0.5rem",
-              }}
-            >
-              No activities found
-            </h3>
-            <p
-              style={{
-                fontSize: "0.875rem",
-                color: "var(--color-silver-dark)",
-              }}
-            >
-              There are no upcoming activities scheduled at the moment.
-            </p>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
