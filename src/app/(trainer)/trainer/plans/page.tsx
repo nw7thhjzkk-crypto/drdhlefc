@@ -255,12 +255,22 @@ export default async function TrainerPlansPage() {
                         Assign
                       </button>
                     </div>
+                    {members.length === 0 && (
+                      <p className="mt-2 text-xs text-yellow-600 font-medium">
+                        You currently have no members assigned to you.
+                      </p>
+                    )}
                   </form>
                 </div>
               ))}
             </div>
             {workouts.length === 0 && (
-              <p className="text-center text-zinc-500 py-8">No workout plans yet.</p>
+              <div className="col-span-full py-12 text-center bg-zinc-900 border border-zinc-800 rounded-lg">
+                <p className="text-zinc-500 mb-4">No workout plans created yet.</p>
+                <span className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block">
+                  Create Plan
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -524,12 +534,22 @@ export default async function TrainerPlansPage() {
                         Assign
                       </button>
                     </div>
+                    {members.length === 0 && (
+                      <p className="mt-2 text-xs text-yellow-600 font-medium">
+                        You currently have no members assigned to you.
+                      </p>
+                    )}
                   </form>
                 </div>
               ))}
             </div>
             {diets.length === 0 && (
-              <p className="text-center text-zinc-500 py-8">No diet plans yet.</p>
+              <div className="col-span-full py-12 text-center bg-zinc-900 border border-zinc-800 rounded-lg">
+                <p className="text-zinc-500 mb-4">No diet plans created yet.</p>
+                <span className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block">
+                  Create Plan
+                </span>
+              </div>
             )}
           </div>
         </div>
