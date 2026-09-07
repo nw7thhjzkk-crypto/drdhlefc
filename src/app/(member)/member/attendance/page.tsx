@@ -67,9 +67,14 @@ export default async function MemberAttendancePage() {
             ))}
           </div>
         ) : (
-           <p style={{ fontSize: "0.875rem", color: "var(--color-silver-dark)", textAlign: "center", padding: "0.75rem 0" }}>
-            No attendance records found.
-          </p>
+          <div className="text-center py-8 my-4 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl">
+            <h3 className="text-lg font-bold text-yellow-500 mb-2">
+              No Attendance Found
+            </h3>
+            <p className="text-sm text-zinc-400">
+              No attendance records found for your account.
+            </p>
+          </div>
         )}
 
         <CheckInButton hasCheckedInToday={hasCheckedInToday} />
