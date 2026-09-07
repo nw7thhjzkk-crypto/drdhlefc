@@ -1,5 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { logAssessment, updateAssessment } from "./actions";
+import { redirect } from "next/navigation";
+import Link from "next/link";
 
 type Member = {
   id: string;
@@ -24,7 +26,19 @@ export default async function OwnerAssessmentsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) return <div>Not authenticated</div>;
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "owner") {
+    redirect("/login");
+  }
 
   const { data: membersData } = await supabase
     .from("members")
@@ -55,12 +69,24 @@ export default async function OwnerAssessmentsPage() {
           <form action={logAssessment} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-zinc-400">Member</label>
-              <select name="member_id" required className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200">
-                <option value="">Select member</option>
-                {members.map((m) => (
-                    <option key={m.id} value={m.id}>{m.name} {m.member_code ? `(${m.member_code})` : ''}</option>
-                ))}
-              </select>
+              {members.length > 0 ? (
+                <select name="member_id" required className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200">
+                  <option value="">Select member</option>
+                  {members.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name} {m.member_code ? `(${m.member_code})` : ''}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="mt-1 bg-zinc-950 border border-zinc-800 rounded p-4 text-center">
+                  <p className="text-zinc-500 text-sm mb-3">No members found.</p>
+                  <Link
+                    href="/owner/members"
+                    className="inline-block bg-yellow-600 text-zinc-950 font-bold px-3 py-1.5 rounded hover:bg-yellow-500 transition-colors text-sm"
+                  >
+                    Add Members First
+                  </Link>
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-400">Height (cm)</label>
