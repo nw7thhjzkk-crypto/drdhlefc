@@ -69,6 +69,11 @@ export default async function TrainerAttendancePage() {
                     <option key={m.id} value={m.id}>{m.name} ({m.member_code})</option>
                 ))}
               </select>
+              {(!members || members.length === 0) && (
+                <p className="text-xs text-yellow-500 mt-2">
+                  No assigned members available.
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-400">Notes (Optional)</label>
