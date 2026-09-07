@@ -218,3 +218,78 @@ export async function cancelActivity(id: string) {
 
   revalidatePath("/owner/activities");
 }
+
+
+export async function seedStarterGroupActivities() {
+  const { supabase } = await requireOwner();
+
+  // Idempotency check
+  const { data: existing, error: countError } = await supabase
+    .from("group_activities")
+    .select("id")
+    .neq("status", "cancelled")
+    .limit(1);
+
+  if (countError) throw new Error(countError.message);
+  if (existing && existing.length > 0) {
+    return; // Already has non-cancelled activities
+  }
+
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(9, 0, 0, 0);
+
+  const dayAfter = new Date(now);
+  dayAfter.setDate(dayAfter.getDate() + 2);
+  dayAfter.setHours(18, 0, 0, 0);
+
+  const { data, error } = await supabase
+    .from("group_activities")
+    .insert([
+      {
+        name: "Morning Yoga",
+        description: "Start your day with a relaxing yoga session.",
+        start_at: tomorrow.toISOString(),
+        duration_minutes: 60,
+        location: "Studio A",
+        capacity: 20,
+        status: "active",
+      },
+      {
+        name: "HIIT Blast",
+        description: "High-intensity interval training to burn calories.",
+        start_at: dayAfter.toISOString(),
+        duration_minutes: 45,
+        location: "Main Gym",
+        capacity: 15,
+        status: "active",
+      },
+      {
+        name: "Pilates Basics",
+        description: "Core strengthening and flexibility.",
+        start_at: tomorrow.toISOString(),
+        duration_minutes: 50,
+        location: "Studio B",
+        capacity: 12,
+        status: "active",
+      }
+    ])
+    .select("id, name");
+
+  if (error) throw new Error(error.message);
+
+  if (data) {
+    for (const activity of data) {
+      await softFailAudit(supabase, {
+        p_action: "SEED_ACTIVITIES",
+        p_entity_type: "group_activity",
+        p_entity_id: activity.id,
+        p_member_id: null,
+        p_details: { name: activity.name },
+      });
+    }
+  }
+
+  revalidatePath("/owner/activities");
+}
