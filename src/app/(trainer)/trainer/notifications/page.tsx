@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import { markNotificationRead } from "./actions";
+import { markNotificationRead, sendNotification } from "./actions";
 import Link from "next/link";
 import type { Metadata } from "next";
 
@@ -14,11 +14,36 @@ export default async function TrainerNotificationsPage() {
     redirect("/login");
   }
 
-  const { data: notifications } = await supabase
+const { data: notifications } = await supabase
     .from("notifications")
     .select("id, title, body, channel, read_at, created_at")
     .eq("recipient_profile_id", user.id)
     .order("created_at", { ascending: false });
+
+  // Get trainer ID
+  const { data: trainer } = await supabase
+    .from("trainers")
+    .select("id")
+    .eq("profile_id", user.id)
+    .single();
+
+  // Fetch members assigned to this trainer
+  let assignedMembers: { id: string; name: string; profile_id: string }[] = [];
+  if (trainer) {
+    const { data: assignments } = await supabase
+      .from("member_trainers")
+      .select("members(id, name, profile_id, status)")
+      .eq("trainer_id", trainer.id)
+      .is("unassigned_at", null);
+
+    if (assignments) {
+      // Supabase can return arrays or objects for joined relations. In this 1:1 context we expect an object or an array with 1 item.
+      assignedMembers = assignments
+        .map((a) => Array.isArray(a.members) ? a.members[0] : a.members)
+        .filter((m): m is NonNullable<typeof m> => Boolean(m && m.profile_id && m.status === "active"))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    }
+  }
 
   const cardStyle: React.CSSProperties = {
     background: "var(--color-bg-card)",
@@ -35,6 +60,69 @@ export default async function TrainerNotificationsPage() {
         <Link href="/trainer/dashboard" style={{ fontSize: "0.75rem", color: "var(--color-gold)", textDecoration: "none" }}>
           ← Back
         </Link>
+      </div>
+
+      {/* Compose Form */}
+
+      <div style={{ ...cardStyle, marginBottom: "2rem" }}>
+        <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", margin: "0 0 1rem 0" }}>Compose New</h2>
+        <form action={sendNotification} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div>
+            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--color-silver)", marginBottom: "0.25rem" }}>Recipient</label>
+            <select
+              name="recipient_profile_id"
+              required
+              style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius-md)", padding: "0.5rem", color: "#fff", fontSize: "0.875rem" }}
+            >
+              <option value="">Select an assigned member...</option>
+              {assignedMembers.map((member) => (
+                <option key={member.id} value={member.profile_id}>
+                  {member.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--color-silver)", marginBottom: "0.25rem" }}>Title</label>
+            <input
+              type="text"
+              name="title"
+              required
+              placeholder="Notification subject..."
+              style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius-md)", padding: "0.5rem", color: "#fff", fontSize: "0.875rem" }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "var(--color-silver)", marginBottom: "0.25rem" }}>Message Body</label>
+            <textarea
+              name="body"
+              required
+              rows={4}
+              placeholder="Write your message here..."
+              style={{ width: "100%", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius-md)", padding: "0.5rem", color: "#fff", fontSize: "0.875rem" }}
+            ></textarea>
+          </div>
+
+          <button
+            type="submit"
+            style={{
+              width: "100%",
+              background: "var(--color-gold)",
+              color: "#000",
+              fontWeight: 700,
+              padding: "0.625rem",
+              borderRadius: "var(--radius-md)",
+              border: "none",
+              cursor: "pointer",
+              fontSize: "0.875rem",
+              marginTop: "0.5rem"
+            }}
+          >
+            Send Notification
+          </button>
+        </form>
       </div>
 
       {(!notifications || notifications.length === 0) ? (
