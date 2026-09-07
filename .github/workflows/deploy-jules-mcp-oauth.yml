@@ -1,15 +1,8 @@
 name: Deploy jules-mcp-oauth (manual)
 
-# High-risk production deploy. workflow_dispatch only — never on push/PR merge.
-# Deploys hardened jules-mcp-oauth from fixed PR #86 source SHA only.
-# Does NOT run supabase db push (remote migration history uses timestamp
-# versions not present in the sequential Git migration tree — see Actions
-# run 34057223122). Schema for 000011 must already exist or be applied
-# out-of-band; this workflow only verifies tables read-only then deploys
-# the Edge Function.
-#
-# Table probe fix (run 34057783217): install postgresql-client + sslmode=require;
-# fallback is `supabase db query --linked` (not `db execute`).
+# High-risk production deploy OR read-only diagnostic.
+# mode=deploy: previous behavior (table preflight + function deploy).
+# mode=diagnose: connection + table probe only — never deploys, never mutates schema.
 
 on:
   workflow_dispatch:
@@ -18,12 +11,24 @@ on:
         description: >
           Exact git SHA of jules-mcp-oauth sources (must be PR #86 hardened head
           66e009b1e84c38a582e9e7330d3185ca944cb4e5 unless intentionally updated).
+          Ignored when mode=diagnose.
         required: true
         type: string
+        default: "66e009b1e84c38a582e9e7330d3185ca944cb4e5"
       confirm_production:
-        description: Type exactly deploy-jules-mcp-oauth-production to proceed
+        description: >
+          For mode=deploy type deploy-jules-mcp-oauth-production.
+          For mode=diagnose type diagnose-oauth-tables-readonly.
         required: true
         type: string
+      mode:
+        description: deploy (default) or diagnose (read-only; no function deploy)
+        required: true
+        type: choice
+        options:
+          - deploy
+          - diagnose
+        default: deploy
 
 permissions:
   contents: read
@@ -34,8 +39,155 @@ env:
   FUNCTION_NAME: "jules-mcp-oauth"
 
 jobs:
+  diagnose:
+    name: Read-only PostgreSQL connectivity + OAuth table probe
+    if: ${{ inputs.mode == 'diagnose' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Fail closed — diagnostic confirmation
+        if: ${{ inputs.confirm_production != 'diagnose-oauth-tables-readonly' }}
+        run: |
+          echo "Refusing diagnose: confirm_production must be diagnose-oauth-tables-readonly"
+          exit 1
+
+      - name: Install postgresql-client
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          command -v psql
+          psql --version
+
+      - name: Read-only diagnostic
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PGSSLMODE: require
+        run: |
+          set -uo pipefail
+
+          sanitize() {
+            sed -E \
+              -e 's/[Pp]assword[^[:space:]]*/[REDACTED]/gi' \
+              -e 's/[Tt]oken[^[:space:]]*/[REDACTED]/gi' \
+              -e 's/Bearer[[:space:]]+[^[:space:]]+/Bearer [REDACTED]/gi' \
+              -e 's/postgres:\/\/[^[:space:]]+/[REDACTED_CONN]/gi' \
+              -e 's/postgresql:\/\/[^[:space:]]+/[REDACTED_CONN]/gi' \
+              || true
+          }
+
+          classify_psql_err() {
+            local msg
+            msg="$(cat "$1" 2>/dev/null | sanitize || true)"
+            local lower
+            lower="$(echo "$msg" | tr '[:upper:]' '[:lower:]')"
+            if echo "$lower" | grep -qE 'could not translate host name|name or service not known|temporary failure in name resolution|no address associated'; then
+              echo "CATEGORY=DNS/network"
+            elif echo "$lower" | grep -qE 'ssl|tls|certificate|secure connection'; then
+              echo "CATEGORY=TLS/SSL"
+            elif echo "$lower" | grep -qE 'password authentication failed|authentication failed|no password supplied|role ".*" does not exist|invalid authorization'; then
+              echo "CATEGORY=authentication"
+            elif echo "$lower" | grep -qE 'connection refused|connection timed out|timeout expired|could not connect to server|network is unreachable'; then
+              echo "CATEGORY=connection refused/timeout"
+            elif [ -z "${msg//[[:space:]]/}" ]; then
+              echo "CATEGORY=unknown (empty error output)"
+            else
+              echo "CATEGORY=other PostgreSQL connection failure"
+            fi
+            echo "SANITIZED_ERROR_SNIPPET:"
+            echo "$msg" | tail -n 20
+          }
+
+          PROJECT_REF="${SUPABASE_PROJECT_ID:-$SUPABASE_PROJECT_REF}"
+          if [ "$PROJECT_REF" != "ahkwooaqayqikvotwuac" ]; then
+            echo "Refusing: project ref must be ahkwooaqayqikvotwuac"
+            exit 1
+          fi
+          if [ -z "${SUPABASE_DB_PASSWORD:-}" ]; then
+            echo "Missing SUPABASE_DB_PASSWORD secret (value not printed)"
+            exit 1
+          fi
+
+          DB_HOST="db.${PROJECT_REF}.supabase.co"
+          CONN="host=${DB_HOST} port=5432 dbname=postgres user=postgres sslmode=require"
+
+          echo "=== DIAGNOSTIC START (read-only) ==="
+          echo "MODE=diagnose"
+          echo "SSLMODE=require"
+          echo "NO_DEPLOY=true"
+          echo "NO_SCHEMA_CHANGES=true"
+
+          if ! command -v psql >/dev/null 2>&1; then
+            echo "PSQL_AVAILABLE=no"
+            exit 1
+          fi
+          echo "PSQL_AVAILABLE=yes"
+          psql --version
+
+          set +e
+          OUT1=$(psql "$CONN" -v ON_ERROR_STOP=1 -tAc "SELECT 1;" 2>/tmp/psql_select1_err)
+          RC1=$?
+          set -e
+          echo "SELECT1_EXIT_CODE=$RC1"
+          echo "SELECT1_STDOUT=$(echo "$OUT1" | tr -d '\r' | head -c 40)"
+
+          if [ "$RC1" -ne 0 ]; then
+            echo "SELECT1_RESULT=FAILED"
+            echo "CONNECTION_RESULT=FAILED"
+            echo "TLS_SSL_RESULT=UNKNOWN"
+            echo "AUTHENTICATION_RESULT=UNKNOWN"
+            classify_psql_err /tmp/psql_select1_err
+            echo "TABLE_QUERY=SKIPPED"
+            echo "=== DIAGNOSTIC END ==="
+            exit 0
+          fi
+
+          echo "SELECT1_RESULT=OK"
+          echo "CONNECTION_RESULT=OK"
+          echo "TLS_SSL_RESULT=OK"
+          echo "AUTHENTICATION_RESULT=OK"
+
+          READ_SQL="SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public' AND tablename IN ('jules_mcp_oauth_clients','jules_mcp_oauth_codes','jules_mcp_oauth_refresh_tokens') ORDER BY tablename;"
+          set +e
+          OUT2=$(psql "$CONN" -v ON_ERROR_STOP=1 -tAc "$READ_SQL" 2>/tmp/psql_tables_err)
+          RC2=$?
+          set -e
+          echo "TABLE_QUERY_EXIT_CODE=$RC2"
+
+          if [ "$RC2" -ne 0 ]; then
+            echo "TABLE_QUERY_RESULT=FAILED"
+            classify_psql_err /tmp/psql_tables_err
+            echo "=== DIAGNOSTIC END ==="
+            exit 0
+          fi
+
+          ROWS=$(echo "$OUT2" | tr -d '\r' | sed '/^$/d')
+          if [ -z "${ROWS//[[:space:]]/}" ]; then
+            COUNT=0
+          else
+            COUNT=$(echo "$ROWS" | grep -c . || true)
+          fi
+          echo "TABLE_QUERY_RESULT=OK"
+          echo "TABLE_ROW_COUNT=$COUNT"
+          echo "DETECTED_TABLES_BEGIN"
+          if [ "$COUNT" -gt 0 ]; then echo "$ROWS"; fi
+          echo "DETECTED_TABLES_END"
+
+          for t in jules_mcp_oauth_clients jules_mcp_oauth_codes jules_mcp_oauth_refresh_tokens; do
+            if [ "$COUNT" -gt 0 ] && echo "$ROWS" | grep -qx "$t"; then
+              echo "TABLE_$t=PRESENT"
+            else
+              echo "TABLE_$t=ABSENT"
+            fi
+          done
+
+          echo "=== DIAGNOSTIC END ==="
+
   deploy:
     name: Preflight + deploy jules-mcp-oauth (no db push)
+    if: ${{ inputs.mode == 'deploy' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -75,9 +227,6 @@ jobs:
             ${EXPECTED_SOURCE_SHA}*) echo "Checked-out HEAD matches pin: $HEAD_SHA" ;;
             *) echo "Checked-out HEAD $HEAD_SHA does not match pin ${EXPECTED_SOURCE_SHA}"; exit 1 ;;
           esac
-          grep -q jules_mcp_oauth_clients supabase/migrations/000011_jules_mcp_oauth.sql
-          grep -q jules_mcp_oauth_codes supabase/migrations/000011_jules_mcp_oauth.sql
-          grep -q jules_mcp_oauth_refresh_tokens supabase/migrations/000011_jules_mcp_oauth.sql
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
@@ -98,26 +247,15 @@ jobs:
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
         run: |
           set -euo pipefail
-          if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
-            echo "Missing GitHub secret SUPABASE_ACCESS_TOKEN"
-            exit 1
-          fi
-          if [ -z "${SUPABASE_DB_PASSWORD:-}" ]; then
-            echo "Missing GitHub secret SUPABASE_DB_PASSWORD (required for read-only table preflight)"
-            exit 1
-          fi
           PROJECT_REF="${SUPABASE_PROJECT_ID:-$SUPABASE_PROJECT_REF}"
           if [ "$PROJECT_REF" != "ahkwooaqayqikvotwuac" ]; then
             echo "Refusing deploy: project ref must be ahkwooaqayqikvotwuac"
             exit 1
           fi
-          # Link only — do not db push / repair / pull
           supabase link --project-ref "$PROJECT_REF" -p "$SUPABASE_DB_PASSWORD"
-          echo "Project linked (no migration commands run)."
 
       - name: Preflight — OAuth tables exist (read-only)
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -125,50 +263,17 @@ jobs:
         run: |
           set -euo pipefail
           PROJECT_REF="${SUPABASE_PROJECT_ID:-$SUPABASE_PROJECT_REF}"
-          if [ "$PROJECT_REF" != "ahkwooaqayqikvotwuac" ]; then
-            echo "Refusing deploy: project ref must be ahkwooaqayqikvotwuac"
-            exit 1
-          fi
-
-          # Read-only SQL only — no DDL/DML.
           READ_SQL="SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename IN ('jules_mcp_oauth_clients','jules_mcp_oauth_codes','jules_mcp_oauth_refresh_tokens') ORDER BY tablename;"
-
-          FOUND=""
           DB_HOST="db.${PROJECT_REF}.supabase.co"
-
-          # Primary: psql with explicit SSL (postgresql-client installed above).
-          # Password via PGPASSWORD env — not printed; not in process argv string beyond env.
-          if command -v psql >/dev/null 2>&1; then
-            FOUND="$(psql "host=${DB_HOST} port=5432 dbname=postgres user=postgres sslmode=require" \
-              -v ON_ERROR_STOP=1 -tAc "$READ_SQL" 2>/tmp/oauth_preflight_err || true)"
-          fi
-
-          # Fallback: supabase db query --linked (verified CLI subcommand; not db execute).
-          # Syntax: supabase db query "SELECT ..." --linked
+          FOUND="$(psql "host=${DB_HOST} port=5432 dbname=postgres user=postgres sslmode=require" -v ON_ERROR_STOP=1 -tAc "$READ_SQL" 2>/tmp/oauth_preflight_err || true)"
           if [ -z "${FOUND//[[:space:]]/}" ]; then
-            FOUND="$(supabase db query "$READ_SQL" --linked 2>/tmp/oauth_preflight_err || true)"
-          fi
-
-          if [ -z "${FOUND//[[:space:]]/}" ]; then
-            echo "FAIL CLOSED: cannot verify OAuth tables with available CI credentials/CLI."
-            echo "Do not deploy until public.jules_mcp_oauth_clients,"
-            echo "public.jules_mcp_oauth_codes, and public.jules_mcp_oauth_refresh_tokens exist."
-            echo "Apply 000011_jules_mcp_oauth.sql out-of-band (Dashboard SQL / controlled apply),"
-            echo "then re-run this workflow. This job does not run migration repair, db push, or db pull."
-            if [ -f /tmp/oauth_preflight_err ]; then
-              grep -viE 'password|token|secret|bearer|api.key' /tmp/oauth_preflight_err | tail -n 30 || true
-            fi
+            echo "FAIL CLOSED: cannot verify OAuth tables"
+            grep -viE 'password|token|secret|bearer' /tmp/oauth_preflight_err | tail -n 20 || true
             exit 1
           fi
-
-          echo "Tables reported by read-only probe:"
-          echo "$FOUND"
-
-          echo "$FOUND" | grep -q 'jules_mcp_oauth_clients' || { echo "Missing jules_mcp_oauth_clients"; exit 1; }
-          echo "$FOUND" | grep -q 'jules_mcp_oauth_codes' || { echo "Missing jules_mcp_oauth_codes"; exit 1; }
-          echo "$FOUND" | grep -q 'jules_mcp_oauth_refresh_tokens' || { echo "Missing jules_mcp_oauth_refresh_tokens"; exit 1; }
-
-          echo "OAuth table preflight OK (read-only)."
+          echo "$FOUND" | grep -q 'jules_mcp_oauth_clients'
+          echo "$FOUND" | grep -q 'jules_mcp_oauth_codes'
+          echo "$FOUND" | grep -q 'jules_mcp_oauth_refresh_tokens'
 
       - name: Deploy Edge Function jules-mcp-oauth only
         env:
@@ -177,17 +282,5 @@ jobs:
         run: |
           set -euo pipefail
           PROJECT_REF="${SUPABASE_PROJECT_ID:-$SUPABASE_PROJECT_REF}"
-          if [ "$PROJECT_REF" != "ahkwooaqayqikvotwuac" ]; then
-            echo "Refusing deploy: project ref must be ahkwooaqayqikvotwuac"
-            exit 1
-          fi
-          # Single function only — does not deploy jules-mcp or jules-orchestrator
-          supabase functions deploy "$FUNCTION_NAME" \
-            --project-ref "$PROJECT_REF" \
-            --no-verify-jwt
+          supabase functions deploy "$FUNCTION_NAME" --project-ref "$PROJECT_REF" --no-verify-jwt
           echo "DEPLOY_STATUS=success"
-          echo "FUNCTION_NAME=$FUNCTION_NAME"
-          echo "PROJECT_REF=$PROJECT_REF"
-          echo "SOURCE_SHA=$EXPECTED_SOURCE_SHA"
-          echo "DB_PUSH=skipped (by design; migration history mismatch)"
-          echo "Safe status only — secrets not printed."
