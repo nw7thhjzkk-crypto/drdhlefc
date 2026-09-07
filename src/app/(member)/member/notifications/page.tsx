@@ -38,8 +38,11 @@ export default async function MemberNotificationsPage() {
       </div>
 
       {(!notifications || notifications.length === 0) ? (
-        <div style={{ ...cardStyle, textAlign: "center", padding: "2rem 1rem" }}>
-          <p style={{ fontSize: "0.875rem", color: "var(--color-silver)" }}>No notifications</p>
+        <div className="p-8 text-center flex flex-col items-center gap-4 bg-zinc-900 rounded-lg shadow-xl border border-zinc-800">
+          <span className="text-zinc-500">No notifications</span>
+          <span className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block">
+            All Caught Up!
+          </span>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column" }}>
