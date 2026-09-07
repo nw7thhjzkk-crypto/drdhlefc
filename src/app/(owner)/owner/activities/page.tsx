@@ -4,6 +4,7 @@ import {
   cancelActivity,
   updateActivity,
   cancelBookingOwner,
+  seedStarterGroupActivities,
 } from "./actions";
 
 function toDatetimeLocalValue(iso: string | null | undefined): string {
@@ -325,8 +326,18 @@ export default async function GroupActivitiesPage() {
                 </div>
               ))}
               {(!activities || activities.length === 0) && (
-                <div className="px-6 py-8 text-center text-zinc-500">
-                  No active group activities scheduled.
+                <div className="px-6 py-12 text-center flex flex-col items-center justify-center space-y-4">
+                  <div className="text-zinc-400">
+                    No active group activities scheduled.
+                  </div>
+                  <form action={seedStarterGroupActivities}>
+                    <button
+                      type="submit"
+                      className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded hover:bg-zinc-700 border border-zinc-700 transition-colors"
+                    >
+                      Seed Starter Activities
+                    </button>
+                  </form>
                 </div>
               )}
             </div>
