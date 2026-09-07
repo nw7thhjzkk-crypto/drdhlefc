@@ -91,3 +91,73 @@ export async function assignWorkoutPlan(formData: FormData) {
 
   revalidatePath("/owner/workout-plans");
 }
+
+export async function updateWorkoutPlan(id: string, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "owner") {
+    throw new Error("Unauthorized");
+  }
+
+  const { data: existingPlan, error: fetchError } = await supabase
+    .from("workout_plans")
+    .select("deleted_at")
+    .eq("id", id)
+    .single();
+
+  if (fetchError || !existingPlan) {
+    throw new Error(fetchError?.message || "Plan not found");
+  }
+  if (existingPlan.deleted_at !== null) {
+    throw new Error("Cannot edit a deleted plan");
+  }
+
+  const name = formData.get("name") as string;
+  const goal = formData.get("goal") as string;
+  const duration_days = parseInt(formData.get("duration_days") as string, 10);
+  const instructions = formData.get("instructions") as string;
+
+  const contentStr = formData.get("content") as string;
+  let content;
+  try {
+    content = contentStr ? JSON.parse(contentStr) : { exercises: [] };
+  } catch {
+    content = { exercises: [] };
+  }
+
+  const { error } = await supabase
+    .from("workout_plans")
+    .update({
+      name,
+      goal,
+      duration_days,
+      instructions,
+      content,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+
+  try {
+    await supabase.rpc("insert_audit_log", {
+      p_action: "UPDATE_WORKOUT_PLAN",
+      p_entity_type: "workout_plan",
+      p_entity_id: id,
+      p_member_id: null,
+      p_details: { name, goal, duration_days },
+    });
+  } catch (err) {
+    console.error("Audit log failed:", err);
+  }
+
+  revalidatePath("/owner/workout-plans");
+}

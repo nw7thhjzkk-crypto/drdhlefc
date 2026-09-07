@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
-import { createWorkoutPlan, softDeleteWorkoutPlan } from "./actions";
+import { createWorkoutPlan, softDeleteWorkoutPlan, updateWorkoutPlan } from "./actions";
 import AssignPlanForm from "./components/AssignPlanForm";
 
 export default async function WorkoutPlansPage() {
@@ -80,6 +80,50 @@ export default async function WorkoutPlansPage() {
                         </div>
 
                         <AssignPlanForm members={members || []} workout_plan_id={plan.id} />
+
+                        <details className="mt-4 group">
+                          <summary className="cursor-pointer text-xs text-zinc-400 hover:text-yellow-500 list-none text-right">
+                            Edit plan
+                          </summary>
+                          <form
+                            action={async (formData) => {
+                              "use server";
+                              await updateWorkoutPlan(plan.id, formData);
+                            }}
+                            className="mt-3 space-y-3 border-t border-zinc-800 pt-3"
+                          >
+                            <div>
+                              <label className="block text-xs text-zinc-500">Name</label>
+                              <input name="name" defaultValue={plan.name} required className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200 text-sm" />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-zinc-500">Goal Category</label>
+                              <select name="goal" defaultValue={plan.goal} className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200 text-sm">
+                                <option value="Weight Loss">Weight Loss</option>
+                                <option value="Muscle Gain">Muscle Gain</option>
+                                <option value="Strength">Strength</option>
+                                <option value="Fitness">Fitness</option>
+                                <option value="General Health">General Health</option>
+                                <option value="Custom">Custom</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-zinc-500">Duration (Days)</label>
+                              <input name="duration_days" type="number" defaultValue={plan.duration_days} required className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200 text-sm" />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-zinc-500">Content JSON (Exercises)</label>
+                              <textarea name="content" rows={3} defaultValue={JSON.stringify(plan.content)} className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200 font-mono text-xs"></textarea>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-zinc-500">Instructions / Notes</label>
+                              <textarea name="instructions" rows={2} defaultValue={plan.instructions || ""} className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200 text-sm"></textarea>
+                            </div>
+                            <button type="submit" className="w-full bg-zinc-800 text-yellow-500 font-bold px-3 py-2 rounded hover:bg-zinc-700 text-xs border border-zinc-700">
+                              Save Changes
+                            </button>
+                          </form>
+                        </details>
                     </div>
                 ))}
             </div>

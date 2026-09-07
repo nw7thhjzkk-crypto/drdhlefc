@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
-import { createDietPlan, softDeleteDietPlan } from "./actions";
+import { createDietPlan, softDeleteDietPlan, updateDietPlan } from "./actions";
 import AssignPlanForm from "./components/AssignPlanForm";
 
 export default async function DietPlansPage() {
@@ -103,6 +103,70 @@ export default async function DietPlansPage() {
                         </div>
 
                         <AssignPlanForm members={members || []} diet_plan_id={plan.id} />
+
+                        <details className="mt-4 group">
+                          <summary className="cursor-pointer text-xs text-zinc-400 hover:text-yellow-500 list-none text-right">
+                            Edit plan
+                          </summary>
+                          <form
+                            action={async (formData) => {
+                              "use server";
+                              await updateDietPlan(plan.id, formData);
+                            }}
+                            className="mt-3 space-y-3 border-t border-zinc-800 pt-3"
+                          >
+                            <div>
+                              <label className="block text-xs text-zinc-500">Name</label>
+                              <input name="name" defaultValue={plan.name} required className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200 text-sm" />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-zinc-500">Goal Category</label>
+                              <select name="goal" defaultValue={plan.goal} className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200 text-sm">
+                                <option value="Weight Loss">Weight Loss</option>
+                                <option value="Weight Gain">Weight Gain</option>
+                                <option value="Muscle Gain">Muscle Gain</option>
+                                <option value="Fitness">Fitness</option>
+                                <option value="General Health">General Health</option>
+                                <option value="Custom">Custom</option>
+                              </select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs text-zinc-500">Target Calories</label>
+                                <input name="target_calories" type="number" defaultValue={plan.target_calories} required className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200 text-sm" />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-zinc-500">Duration (Days)</label>
+                                <input name="duration_days" type="number" defaultValue={plan.duration_days} required className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200 text-sm" />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <label className="block text-xs text-zinc-500">Protein (g)</label>
+                                <input name="protein_g" type="number" defaultValue={plan.protein_g} required className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200 text-sm" />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-zinc-500">Carbs (g)</label>
+                                <input name="carbs_g" type="number" defaultValue={plan.carbs_g} required className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200 text-sm" />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-zinc-500">Fat (g)</label>
+                                <input name="fat_g" type="number" defaultValue={plan.fat_g} required className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200 text-sm" />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-zinc-500">Content JSON</label>
+                              <textarea name="content" rows={3} defaultValue={JSON.stringify(plan.content)} className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200 font-mono text-xs"></textarea>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-zinc-500">Instructions / Notes</label>
+                              <textarea name="instructions" rows={2} defaultValue={plan.instructions || ""} className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200 text-sm"></textarea>
+                            </div>
+                            <button type="submit" className="w-full bg-zinc-800 text-yellow-500 font-bold px-3 py-2 rounded hover:bg-zinc-700 text-xs border border-zinc-700">
+                              Save Changes
+                            </button>
+                          </form>
+                        </details>
                     </div>
                 ))}
             </div>
