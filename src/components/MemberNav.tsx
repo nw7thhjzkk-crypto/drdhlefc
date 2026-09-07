@@ -7,7 +7,7 @@ const MEMBER_NAV = [
   { href: "/member/home",       label: "Home",       icon: "🏠" },
   { href: "/member/diet",       label: "Diet",       icon: "🥗" },
   { href: "/member/workout",    label: "Workout",    icon: "💪" },
-  { href: "/member/plans",      label: "Membership", icon: "🎫" },
+  { href: "/member/payments",   label: "Payments",   icon: "💳" },
 ];
 
 export default function MemberNav() {
