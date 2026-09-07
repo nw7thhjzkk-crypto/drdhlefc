@@ -53,13 +53,14 @@ export async function saveGymSettings(formData: FormData) {
     throw new Error("Failed to update settings");
   }
 
-  // Soft-fail audit logging
+  // Soft-fail audit logging — match live insert_audit_log(p_action, p_entity_type, p_entity_id, p_member_id, p_details)
   try {
     await supabase.rpc("insert_audit_log", {
-      action_type: "update",
-      table_name: "gym_settings",
-      record_id: "00000000-0000-0000-0000-000000000000",
-      new_data: {
+      p_action: "UPDATE_GYM_SETTINGS",
+      p_entity_type: "gym_settings",
+      p_entity_id: "00000000-0000-0000-0000-000000000000",
+      p_member_id: null,
+      p_details: {
         club_name,
         support_email,
         club_address,
