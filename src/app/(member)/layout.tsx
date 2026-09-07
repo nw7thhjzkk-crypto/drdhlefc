@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
+import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 
 export const metadata: Metadata = {
   title: { default: "My Fitness", template: "%s | DR DHL Fitness" },
@@ -49,6 +50,7 @@ export default async function MemberLayout({
 
       {/* Bottom nav */}
       <MemberNav />
+      <PwaInstallPrompt />
     </div>
   );
 }
