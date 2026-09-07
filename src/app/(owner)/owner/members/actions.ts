@@ -97,6 +97,16 @@ export async function createMember(formData: FormData) {
   if (authError) return { error: authError.message };
 
   const profile_id   = authData.user.id;
+
+  const { error: roleError } = await supabase
+    .from("profiles")
+    .update({ role: "member", full_name: name })
+    .eq("id", profile_id);
+
+  if (roleError) {
+    return { error: `Auth user created but profile sync failed: ${roleError.message}` };
+  }
+
   const member_code  = `DHL-${Math.floor(1000 + Math.random() * 9000)}`;
 
   const { data: memberData, error: memberError } = await supabase
@@ -128,13 +138,17 @@ export async function createMember(formData: FormData) {
 
   // Audit via SECURITY DEFINER RPC — actor_profile_id = auth.uid() is set
   // inside the function; callers cannot supply a different identity.
-  await supabase.rpc("insert_audit_log", {
-    p_action:      "CREATE_MEMBER",
-    p_entity_type: "member",
-    p_entity_id:   memberData.id,
-    p_member_id:   memberData.id,
-    p_details:     { name, email, member_code },
-  });
+  try {
+    await supabase.rpc("insert_audit_log", {
+      p_action:      "CREATE_MEMBER",
+      p_entity_type: "member",
+      p_entity_id:   memberData.id,
+      p_member_id:   memberData.id,
+      p_details:     { name, email, member_code },
+    });
+  } catch (err) {
+    console.error("Audit log failed:", err);
+  }
 
   revalidatePath("/owner/members");
   return { success: true, memberId: memberData.id };
@@ -188,13 +202,17 @@ export async function updateMember(id: string, formData: FormData) {
   const { error } = await supabase.from("members").update(updates).eq("id", id);
   if (error) return { error: error.message };
 
-  await supabase.rpc("insert_audit_log", {
-    p_action:      "UPDATE_MEMBER",
-    p_entity_type: "member",
-    p_entity_id:   id,
-    p_member_id:   id,
-    p_details:     updates,
-  });
+  try {
+    await supabase.rpc("insert_audit_log", {
+      p_action:      "UPDATE_MEMBER",
+      p_entity_type: "member",
+      p_entity_id:   id,
+      p_member_id:   id,
+      p_details:     updates,
+    });
+  } catch (err) {
+    console.error("Audit log failed:", err);
+  }
 
   revalidatePath(`/owner/members/${id}`);
   revalidatePath("/owner/members");
@@ -217,13 +235,17 @@ export async function archiveMember(id: string) {
 
   if (error) return { error: error.message };
 
-  await supabase.rpc("insert_audit_log", {
-    p_action:      "ARCHIVE_MEMBER",
-    p_entity_type: "member",
-    p_entity_id:   id,
-    p_member_id:   id,
-    p_details:     { status: "inactive" },
-  });
+  try {
+    await supabase.rpc("insert_audit_log", {
+      p_action:      "ARCHIVE_MEMBER",
+      p_entity_type: "member",
+      p_entity_id:   id,
+      p_member_id:   id,
+      p_details:     { status: "inactive" },
+    });
+  } catch (err) {
+    console.error("Audit log failed:", err);
+  }
 
   revalidatePath(`/owner/members/${id}`);
   revalidatePath("/owner/members");
@@ -267,13 +289,17 @@ export async function addAssessment(memberId: string, formData: FormData) {
 
   if (error) return { error: error.message };
 
-  await supabase.rpc("insert_audit_log", {
-    p_action:      "ADD_ASSESSMENT",
-    p_entity_type: "assessment",
-    p_entity_id:   data.id,
-    p_member_id:   memberId,
-    p_details:     { height_cm, weight_kg, bmi, body_fat_pct },
-  });
+  try {
+    await supabase.rpc("insert_audit_log", {
+      p_action:      "ADD_ASSESSMENT",
+      p_entity_type: "assessment",
+      p_entity_id:   data.id,
+      p_member_id:   memberId,
+      p_details:     { height_cm, weight_kg, bmi, body_fat_pct },
+    });
+  } catch (err) {
+    console.error("Audit log failed:", err);
+  }
 
   revalidatePath(`/owner/members/${memberId}`);
   return { success: true };
@@ -341,13 +367,17 @@ export async function assignTrainer(memberId: string, trainerId: string) {
 
   if (error) return { error: error.message };
 
-  await supabase.rpc("insert_audit_log", {
-    p_action:      "ASSIGN_TRAINER",
-    p_entity_type: "member_trainer",
-    p_entity_id:   null,
-    p_member_id:   memberId,
-    p_details:     { trainer_id: trainerId },
-  });
+  try {
+    await supabase.rpc("insert_audit_log", {
+      p_action:      "ASSIGN_TRAINER",
+      p_entity_type: "member_trainer",
+      p_entity_id:   null,
+      p_member_id:   memberId,
+      p_details:     { trainer_id: trainerId },
+    });
+  } catch (err) {
+    console.error("Audit log failed:", err);
+  }
 
   revalidatePath(`/owner/members/${memberId}`);
   return { success: true };
