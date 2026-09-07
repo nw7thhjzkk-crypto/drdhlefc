@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { sendNotification } from "./actions";
+import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Send Notification" };
@@ -34,7 +35,25 @@ export default async function OwnerNotificationsPage() {
     .from("notifications")
     .select("id, title, body, channel, read_at, created_at, profiles!notifications_recipient_profile_id_fkey(email)")
     .order("created_at", { ascending: false })
-    .limit(10);
+    .limit(50);
+
+  // Group notifications that were sent at the same time with the same title
+  // This helps bundle "BROADCAST" notifications together into a single card.
+  type NotificationRecord = NonNullable<typeof recentNotifications>[0];
+  type GroupedNotification = NotificationRecord & { isBroadcast: boolean; count: number };
+
+  const groupedNotifications = Object.values(
+    (recentNotifications || []).reduce<Record<string, GroupedNotification>>((acc, notif) => {
+      const key = `${notif.created_at}-${notif.title}`;
+      if (!acc[key]) {
+        acc[key] = { ...notif, isBroadcast: false, count: 1 };
+      } else {
+        acc[key].isBroadcast = true;
+        acc[key].count++;
+      }
+      return acc;
+    }, {})
+  ).slice(0, 10);
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
@@ -49,19 +68,31 @@ export default async function OwnerNotificationsPage() {
           <form action={sendNotification} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-zinc-400 mb-1">Recipient</label>
-              <select
-                name="recipient_profile_id"
-                required
-                className="block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200 focus:border-yellow-500"
-              >
-                <option value="">Select an active member...</option>
-                <option value="BROADCAST" className="font-bold text-yellow-500">All Active Members (Broadcast)</option>
-                {members?.map((member) => (
-                  <option key={member.id} value={member.profile_id!}>
-                    {member.name}
-                  </option>
-                ))}
-              </select>
+              {(!members || members.length === 0) ? (
+                <div className="mt-1 bg-zinc-950 border border-zinc-800 rounded p-4 text-center">
+                  <p className="text-zinc-500 text-sm mb-3">No members found.</p>
+                  <Link
+                    href="/owner/members"
+                    className="inline-block bg-yellow-600 text-zinc-950 font-bold px-3 py-1.5 rounded hover:bg-yellow-500 transition-colors text-sm"
+                  >
+                    Add Members First
+                  </Link>
+                </div>
+              ) : (
+                <select
+                  name="recipient_profile_id"
+                  required
+                  className="block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200 focus:border-yellow-500"
+                >
+                  <option value="">Select an active member...</option>
+                  <option value="BROADCAST" className="font-bold text-yellow-500">All Active Members (Broadcast)</option>
+                  {members?.map((member) => (
+                    <option key={member.id} value={member.profile_id!}>
+                      {member.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div>
@@ -95,11 +126,11 @@ export default async function OwnerNotificationsPage() {
         {/* Recent Notifications Sent */}
         <div className="bg-zinc-900 p-6 rounded-lg shadow-xl border border-zinc-800">
           <h2 className="text-xl font-semibold mb-6 text-zinc-200">Recent Sent (Global)</h2>
-          {(!recentNotifications || recentNotifications.length === 0) ? (
+          {(!groupedNotifications || groupedNotifications.length === 0) ? (
             <p className="text-zinc-500 text-sm">No notifications have been sent yet.</p>
           ) : (
             <div className="space-y-4">
-              {recentNotifications.map((notif) => (
+              {groupedNotifications.map((notif) => (
                 <div key={notif.id} className="p-4 bg-zinc-950 border border-zinc-800 rounded">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-bold text-zinc-200 text-sm">{notif.title}</h3>
@@ -108,7 +139,7 @@ export default async function OwnerNotificationsPage() {
                     </span>
                   </div>
                   <p className="text-xs text-zinc-400 mb-2 truncate">
-                    To: {(notif.profiles as unknown as { email: string } | null)?.email || "Unknown"}
+                    To: {notif.isBroadcast ? `${notif.count} recipients (Broadcast)` : ((notif.profiles as unknown as { email: string } | null)?.email || "Unknown")}
                   </p>
                   <p className="text-sm text-zinc-300 line-clamp-2 mb-3">
                     {notif.body}
