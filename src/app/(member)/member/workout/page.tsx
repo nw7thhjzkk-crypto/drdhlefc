@@ -104,7 +104,14 @@ export default async function MemberWorkoutPage() {
                 ))}
             </div>
         ) : (
-            <div className="text-center py-8 text-zinc-500">No active workout plans in your routine.</div>
+            <div className="text-center py-8 my-4 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl">
+              <h3 className="text-lg font-bold text-yellow-500 mb-2">
+                No Active Workouts
+              </h3>
+              <p className="text-sm text-zinc-400">
+                No active workout plans in your routine.
+              </p>
+            </div>
         )}
       </div>
 
