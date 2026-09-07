@@ -83,7 +83,7 @@ export default async function OwnerDashboard() {
       .gte("created_at", firstDayOfMonth),
     supabase.from("membership_plans").select("*", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("products").select("*", { count: "exact", head: true }).neq("status", "inactive"),
-    supabase.from("exercises").select("*", { count: "exact", head: true }).is("deleted_at", null),
+    supabase.from("exercises").select("*", { count: "exact", head: true }),
     supabase.from("group_activities").select("*", { count: "exact", head: true }).neq("status", "cancelled"),
     supabase.from("diet_plans").select("*", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("workout_plans").select("*", { count: "exact", head: true }).eq("status", "active"),
