@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
-import { createActivity, cancelActivity } from "./actions";
+import { createActivity, cancelActivity, updateActivity } from "./actions";
 
 export default async function GroupActivitiesPage() {
   const supabase = await createClient();
@@ -93,10 +93,104 @@ export default async function GroupActivitiesPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
                       {activity.capacity} spots
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <form action={async () => { "use server"; await cancelActivity(activity.id); }}>
-                        <button type="submit" className="text-red-400 hover:text-red-300">Cancel</button>
-                      </form>
+                    <td className="px-6 py-4 text-sm font-medium relative">
+                      <div className="flex flex-col gap-2 items-start">
+                        <form action={async () => { "use server"; await cancelActivity(activity.id); }}>
+                          <button type="submit" className="text-red-400 hover:text-red-300">Cancel</button>
+                        </form>
+
+                        <details className="group mt-2">
+                          <summary className="cursor-pointer text-xs text-zinc-400 hover:text-yellow-500 list-none">
+                            Edit Activity
+                          </summary>
+                          <form
+                            action={async (formData) => {
+                              "use server";
+                              await updateActivity(activity.id, formData);
+                            }}
+                            className="mt-3 grid grid-cols-1 gap-3 text-sm min-w-[250px] p-4 bg-zinc-950 border border-zinc-800 rounded shadow-lg absolute right-0 z-10"
+                          >
+                            <div>
+                              <label className="block text-xs text-zinc-500">Name</label>
+                              <input
+                                name="name"
+                                defaultValue={activity.name}
+                                required
+                                className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-zinc-500">Trainer</label>
+                              <select
+                                name="trainer_id"
+                                defaultValue={activity.trainer_id || ""}
+                                className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200"
+                              >
+                                <option value="">No Instructor</option>
+                                {trainers?.map(t => (
+                                  <option key={t.id} value={t.id}>{t.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-zinc-500">Date & Time</label>
+                              <input
+                                name="start_at"
+                                type="datetime-local"
+                                defaultValue={new Date(new Date(activity.start_at).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0,16)}
+                                required
+                                className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200"
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-xs text-zinc-500">Duration (m)</label>
+                                <input
+                                  name="duration_minutes"
+                                  type="number"
+                                  defaultValue={activity.duration_minutes}
+                                  required
+                                  className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-zinc-500">Capacity</label>
+                                <input
+                                  name="capacity"
+                                  type="number"
+                                  defaultValue={activity.capacity}
+                                  required
+                                  className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-zinc-500">Location</label>
+                              <input
+                                name="location"
+                                defaultValue={activity.location}
+                                required
+                                className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-zinc-500">Description</label>
+                              <textarea
+                                name="description"
+                                rows={2}
+                                defaultValue={activity.description || ""}
+                                className="mt-1 block w-full bg-zinc-900 border border-zinc-800 rounded p-2 text-zinc-200"
+                              ></textarea>
+                            </div>
+                            <button
+                              type="submit"
+                              className="w-full bg-yellow-600 text-zinc-950 font-bold px-3 py-2 rounded hover:bg-yellow-500 text-sm mt-2"
+                            >
+                              Save Activity
+                            </button>
+                          </form>
+                        </details>
+                      </div>
                     </td>
                   </tr>
                 ))}
