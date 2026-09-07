@@ -81,6 +81,11 @@ const { data: notifications } = await supabase
                 </option>
               ))}
             </select>
+            {assignedMembers.length === 0 && (
+              <p className="mt-2 text-xs text-yellow-600 font-medium">
+                You currently have no members assigned to you.
+              </p>
+            )}
           </div>
 
           <div>
@@ -126,8 +131,11 @@ const { data: notifications } = await supabase
       </div>
 
       {(!notifications || notifications.length === 0) ? (
-        <div style={{ ...cardStyle, textAlign: "center", padding: "2rem 1rem" }}>
-          <p style={{ fontSize: "0.875rem", color: "var(--color-silver)" }}>No notifications</p>
+        <div className="py-12 text-center bg-zinc-900 border border-zinc-800 rounded-lg">
+          <p className="text-zinc-500 mb-4">No notifications yet.</p>
+          <span className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded border border-zinc-700 inline-block">
+            Inbox Empty
+          </span>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column" }}>
