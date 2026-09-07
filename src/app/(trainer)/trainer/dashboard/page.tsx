@@ -84,11 +84,11 @@ export default async function TrainerDashboardPage() {
       .limit(5),
 
     // Upcoming activities for this trainer
+    // Live group_activities has status (no deleted_at column).
     supabase
       .from("group_activities")
       .select("id, name, start_at, capacity")
       .eq("trainer_id", trainer.id)
-      .is("deleted_at", null)
       .gte("start_at", nowISO)
       .order("start_at", { ascending: true })
       .limit(4),
