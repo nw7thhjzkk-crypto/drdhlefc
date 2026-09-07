@@ -32,3 +32,52 @@ export async function addLead(formData: FormData) {
 
   revalidatePath("/owner/leads");
 }
+
+export async function updateLead(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  // Double check authorization on the server side
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "owner") {
+    throw new Error("Unauthorized");
+  }
+
+  const id = formData.get("id") as string;
+  const stage = formData.get("stage") as string;
+  const assigned_trainer = formData.get("assigned_trainer") as string || null;
+  const follow_up_at = formData.get("follow_up_at") as string || null;
+
+  if (!id) throw new Error("Lead ID is required");
+
+  const updatePayload: Record<string, string | null> = { stage };
+  if (assigned_trainer !== undefined) updatePayload.assigned_trainer = assigned_trainer;
+  if (follow_up_at !== undefined) updatePayload.follow_up_at = follow_up_at ? new Date(follow_up_at).toISOString() : null;
+
+  const { error } = await supabase
+    .from("leads")
+    .update(updatePayload)
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+
+  try {
+    await supabase.rpc("insert_audit_log", {
+      p_action: "UPDATE_LEAD",
+      p_entity_type: "lead",
+      p_entity_id: id,
+      p_member_id: null,
+      p_details: updatePayload,
+    });
+  } catch (err) {
+    console.error("Failed to insert audit log:", err);
+  }
+
+  revalidatePath("/owner/leads");
+}
