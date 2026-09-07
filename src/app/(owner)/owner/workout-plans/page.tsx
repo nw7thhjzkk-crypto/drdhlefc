@@ -22,6 +22,8 @@ export default async function WorkoutPlansPage() {
     .select("id, name")
     .order("name");
 
+  const directory = plans ?? [];
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex justify-between items-center">
@@ -72,8 +74,27 @@ export default async function WorkoutPlansPage() {
              <h2 className="text-lg font-semibold mb-4 border-b border-zinc-800 pb-2 text-zinc-100">
                 Plan Directory
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {plans?.map((plan) => (
+            {directory.length === 0 ? (
+              <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+                <h3 className="text-lg font-semibold text-yellow-500">
+                  No active workout plans
+                </h3>
+                <p className="max-w-md text-sm text-zinc-500">
+                  Create a plan on the left or seed starter templates to assign
+                  workouts to members.
+                </p>
+                <form action={seedWorkoutPlans}>
+                  <button
+                    type="submit"
+                    className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded hover:bg-zinc-700 transition-colors border border-zinc-700 inline-block"
+                  >
+                    Seed Starter Plans
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {directory.map((plan) => (
                     <div key={plan.id} className="bg-zinc-950 border border-zinc-800 p-4 rounded-lg">
                         <div className="flex justify-between items-start mb-2">
                             <div>
@@ -135,16 +156,6 @@ export default async function WorkoutPlansPage() {
                         </details>
                     </div>
                 ))}
-            </div>
-
-            {(!plans || plans.length === 0) && (
-              <div className="col-span-full py-12 text-center bg-zinc-900 border border-zinc-800 rounded-lg">
-                <p className="text-zinc-500 mb-4">No active workout plans found.</p>
-                <form action={seedWorkoutPlans}>
-                  <button type="submit" className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded hover:bg-zinc-700 transition-colors border border-zinc-700 inline-block">
-                    Seed Starter Plans
-                  </button>
-                </form>
               </div>
             )}
 
