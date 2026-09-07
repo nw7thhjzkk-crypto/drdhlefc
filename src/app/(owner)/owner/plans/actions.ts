@@ -91,27 +91,27 @@ export async function seedStarterMembershipPlans() {
 
   const starterPlans = [
     {
-      name: "Basic Access",
+      name: "Monthly Membership",
       duration_days: 30,
-      price: 29.99,
+      price: 1499,
       plan_type: "Monthly",
       description: "Standard gym access during regular hours.",
       status: "active",
     },
     {
-      name: "Premium Access",
-      duration_days: 30,
-      price: 49.99,
-      plan_type: "Monthly",
-      description: "24/7 gym access + free group classes.",
+      name: "Quarterly Membership",
+      duration_days: 90,
+      price: 3999,
+      plan_type: "Quarterly",
+      description: "Three months of gym access — best mid-term value.",
       status: "active",
     },
     {
       name: "Annual Membership",
       duration_days: 365,
-      price: 299.99,
+      price: 14999,
       plan_type: "Annual",
-      description: "Best value: Full year of premium access.",
+      description: "Best value: full year of premium access.",
       status: "active",
     },
   ];
@@ -128,7 +128,7 @@ export async function seedStarterMembershipPlans() {
       p_entity_type: "membership_plan",
       p_entity_id: null,
       p_member_id: null,
-      p_details: { count: starterPlans.length },
+      p_details: { count: starterPlans.length, currency: "INR" },
     });
   } catch (err) {
     console.error("Failed to insert audit log for seeding", err);
