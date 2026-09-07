@@ -55,6 +55,7 @@ export default async function OwnerNotificationsPage() {
                 className="block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200 focus:border-yellow-500"
               >
                 <option value="">Select an active member...</option>
+                <option value="BROADCAST" className="font-bold text-yellow-500">All Active Members (Broadcast)</option>
                 {members?.map((member) => (
                   <option key={member.id} value={member.profile_id!}>
                     {member.name}
