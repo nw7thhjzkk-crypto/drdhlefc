@@ -105,7 +105,6 @@ export default async function MemberHomePage() {
     supabase
       .from("group_activities")
       .select("id, name, start_at, duration_minutes, location, capacity, trainer_id")
-      .is("deleted_at", null)
       .eq("status", "active")
       .gte("start_at", nowISO)
       .order("start_at", { ascending: true })
