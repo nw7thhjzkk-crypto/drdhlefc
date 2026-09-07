@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { recordPayment } from "./actions";
+import Link from "next/link";
 
 interface MembershipPlan {
   name: string;
@@ -23,6 +24,25 @@ export default async function PaymentsPage({
 }) {
   const params = searchParams ? await searchParams : {};
   const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (!user || authError) {
+    redirect("/login");
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "owner") {
+    redirect("/login");
+  }
 
   const { data: payments } = await supabase
     .from("payments")
@@ -84,25 +104,35 @@ export default async function PaymentsPage({
               <label className="block text-sm font-medium text-zinc-400">
                 Membership
               </label>
-              <select
-                name="membership_id"
-                required
-                className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
-              >
-                <option value="">Select Membership...</option>
-                {membersWithMemberships?.map((m) =>
-                  m.memberships?.map((ms: Membership) => {
-                    const planName = Array.isArray(ms.membership_plans)
-                      ? ms.membership_plans[0]?.name
-                      : ms.membership_plans?.name;
-                    return (
-                      <option key={ms.id} value={ms.id}>
-                        {m.name} - {planName} (${ms.pending_amount} pending)
-                      </option>
-                    );
-                  })
-                )}
-              </select>
+              {(!membersWithMemberships ||
+                membersWithMemberships.every(
+                  (m) => !m.memberships || m.memberships.length === 0
+                )) ? (
+                <div className="mt-1 text-sm text-zinc-500 bg-zinc-950 border border-zinc-800 rounded p-2">
+                  No active memberships available. Please assign a membership
+                  plan to a member first.
+                </div>
+              ) : (
+                <select
+                  name="membership_id"
+                  required
+                  className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
+                >
+                  <option value="">Select Membership...</option>
+                  {membersWithMemberships?.map((m) =>
+                    m.memberships?.map((ms: Membership) => {
+                      const planName = Array.isArray(ms.membership_plans)
+                        ? ms.membership_plans[0]?.name
+                        : ms.membership_plans?.name;
+                      return (
+                        <option key={ms.id} value={ms.id}>
+                          {m.name} - {planName} (${ms.pending_amount} pending)
+                        </option>
+                      );
+                    })
+                  )}
+                </select>
+              )}
             </div>
 
             <div>
@@ -220,9 +250,25 @@ export default async function PaymentsPage({
                   <tr>
                     <td
                       colSpan={4}
-                      className="px-6 py-8 text-center text-zinc-500"
+                      className="px-6 py-12 text-center"
                     >
-                      No payments yet.
+                      <div className="flex flex-col items-center justify-center space-y-4">
+                        <p className="text-zinc-500">No payments have been recorded yet.</p>
+                        <div className="flex gap-4">
+                          <Link
+                            href="/owner/plans"
+                            className="bg-zinc-800 text-yellow-500 px-4 py-2 rounded hover:bg-zinc-700 transition-colors"
+                          >
+                            Manage Plans
+                          </Link>
+                          <Link
+                            href="/owner/members"
+                            className="bg-yellow-600 text-zinc-950 px-4 py-2 rounded hover:bg-yellow-500 font-medium transition-colors"
+                          >
+                            View Members
+                          </Link>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 )}
