@@ -47,6 +47,7 @@ export default async function TrainerDashboardPage() {
     { count: todayAttendance },
     { data: pendingPlans },
     { data: upcomingActivities },
+    { count: unreadCount },
   ] = await Promise.all([
     // Count active assignments
     supabase
@@ -91,6 +92,12 @@ export default async function TrainerDashboardPage() {
       .gte("start_at", nowISO)
       .order("start_at", { ascending: true })
       .limit(4),
+
+    supabase
+      .from("notifications")
+      .select("*", { count: "exact", head: true })
+      .eq("recipient_profile_id", user.id)
+      .is("read_at", null),
   ]);
 
   const cardStyle: React.CSSProperties = {
@@ -119,13 +126,53 @@ export default async function TrainerDashboardPage() {
   return (
     <div style={{ maxWidth: "640px", margin: "0 auto" }}>
       {/* Greeting */}
-      <div style={{ marginBottom: "1.25rem" }}>
-        <h1 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#fff" }}>
-          Welcome, {trainer.name}
-        </h1>
-        <p style={{ fontSize: "0.8125rem", color: "var(--color-silver-dark)", marginTop: "0.2rem" }}>
-          {today.toLocaleDateString("en-IN", { weekday: "long", month: "long", day: "numeric" })}
-        </p>
+      <div style={{ marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          <h1 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#fff" }}>
+            Welcome, {trainer.name}
+          </h1>
+          <p style={{ fontSize: "0.8125rem", color: "var(--color-silver-dark)", marginTop: "0.2rem" }}>
+            {today.toLocaleDateString("en-IN", { weekday: "long", month: "long", day: "numeric" })}
+          </p>
+        </div>
+        <Link
+          href="/trainer/notifications"
+          style={{
+            position: "relative",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "2.5rem",
+            height: "2.5rem",
+            background: "rgba(255,255,255,0.05)",
+            borderRadius: "50%",
+            textDecoration: "none",
+          }}
+        >
+          <span style={{ fontSize: "1.25rem" }}>🔔</span>
+          {(unreadCount ?? 0) > 0 && (
+            <span
+              style={{
+                position: "absolute",
+                top: "0",
+                right: "0",
+                background: "#EF4444",
+                color: "#fff",
+                fontSize: "0.625rem",
+                fontWeight: 700,
+                width: "1.125rem",
+                height: "1.125rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "50%",
+                border: "2px solid var(--color-bg)",
+              }}
+            >
+              {unreadCount}
+            </span>
+          )}
+        </Link>
       </div>
 
       {/* Stats row */}
