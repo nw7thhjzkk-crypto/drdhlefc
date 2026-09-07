@@ -122,7 +122,7 @@ export default async function OwnerAnalyticsPage() {
         totalMembers.value == null
           ? activeMembers.error ?? "unavailable"
           : `${totalMembers.value} total`,
-      accent: "#3B82F6",
+      accent: "border-l-blue-500",
       empty: activeMembers.value === 0,
     },
     {
@@ -132,21 +132,21 @@ export default async function OwnerAnalyticsPage() {
         paymentsMonthRes.count == null
           ? paymentsMonthRes.error ?? "unavailable"
           : `${paymentsMonthRes.count} payment${paymentsMonthRes.count === 1 ? "" : "s"}`,
-      accent: "#22C55E",
+      accent: "border-l-emerald-500",
       empty: paymentsMonthRes.count === 0,
     },
     {
       label: "Attendance (7 days)",
       value: attendance7d.value == null ? "—" : String(attendance7d.value),
       sub: attendance7d.error ?? "check-ins",
-      accent: "#8B5CF6",
+      accent: "border-l-violet-500",
       empty: attendance7d.value === 0,
     },
     {
       label: "Open activity bookings",
       value: openBookings.value == null ? "—" : String(openBookings.value),
       sub: openBookings.error ?? "booked / confirmed / pending",
-      accent: "#F97316",
+      accent: "border-l-orange-500",
       empty: openBookings.value === 0,
     },
   ];
@@ -154,15 +154,18 @@ export default async function OwnerAnalyticsPage() {
   const isAllEmpty = kpis.every((k) => k.empty) && stageEntries.length === 0;
 
   return (
-    <div>
-      <div className="page-header">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="page-title">Analytics</h1>
-          <p className="page-subtitle">
+          <h1 className="text-2xl font-bold text-yellow-500">Analytics</h1>
+          <p className="text-zinc-400 mt-1">
             Live KPIs from members, leads, payments, attendance, and bookings
           </p>
         </div>
-        <Link href="/owner/dashboard" className="btn btn-ghost btn-sm">
+        <Link
+          href="/owner/dashboard"
+          className="inline-flex items-center justify-center bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded hover:bg-zinc-700 transition-colors text-sm"
+        >
           ← Dashboard
         </Link>
       </div>
@@ -190,68 +193,55 @@ export default async function OwnerAnalyticsPage() {
         </div>
       ) : (
         <>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "1rem",
-              marginBottom: "1.5rem",
-            }}
-          >
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {kpis.map((k) => (
               <div
                 key={k.label}
-                className="stat-card"
-                style={{ borderLeft: `4px solid ${k.accent}` }}
+                className={`bg-zinc-900 border border-zinc-800 rounded-lg p-4 shadow-xl border-l-4 ${k.accent}`}
               >
-                <div className="stat-card-label">{k.label}</div>
-                <div className="stat-card-value" style={{ color: "#111827" }}>
-                  {k.value}
+                <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  {k.label}
                 </div>
-                {k.sub && <div className="stat-card-sub">{k.sub}</div>}
+                <div className="mt-2 text-2xl font-bold text-yellow-500">{k.value}</div>
+                {k.sub && <div className="mt-1 text-sm text-zinc-400">{k.sub}</div>}
               </div>
             ))}
           </div>
 
-          <div className="card" style={{ marginBottom: "1.5rem" }}>
-            <div className="card-header">
-              <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>
-                Leads by stage
-              </h2>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-zinc-800">
+              <h2 className="text-base font-bold text-yellow-500">Leads by stage</h2>
             </div>
-            <div className="card-body">
+            <div className="p-5">
               {leadsRowsRes.error ? (
-                <div className="empty-state" style={{ padding: "1.5rem" }}>
-                  <div className="empty-state-title">Could not load leads</div>
-                  <div className="empty-state-body">{leadsRowsRes.error}</div>
+                <div className="text-center py-6">
+                  <div className="font-bold text-yellow-500">Could not load leads</div>
+                  <div className="text-zinc-400 mt-1 text-sm">{leadsRowsRes.error}</div>
                 </div>
               ) : stageEntries.length === 0 ? (
-                <div className="empty-state" style={{ padding: "1.5rem" }}>
-                  <div className="empty-state-title">No leads yet</div>
-                  <div className="empty-state-body">
+                <div className="text-center py-6">
+                  <div className="font-bold text-yellow-500">No leads yet</div>
+                  <div className="text-zinc-400 mt-1 text-sm">
                     Stage breakdown will appear once CRM has data.{" "}
-                    <Link href="/owner/leads" style={{ fontWeight: 700, textDecoration: "underline" }}>
+                    <Link
+                      href="/owner/leads"
+                      className="font-bold text-yellow-500 underline hover:text-yellow-400"
+                    >
                       Open CRM →
                     </Link>
                   </div>
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <div className="flex flex-col gap-2">
                   {stageEntries.map(([stage, count]) => (
                     <div
                       key={stage}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "0.6rem 0.75rem",
-                        borderRadius: "var(--radius-md)",
-                        border: "1px solid var(--color-surface-border)",
-                        fontSize: "0.875rem",
-                      }}
+                      className="flex justify-between items-center px-3 py-2.5 rounded-md border border-zinc-800 bg-zinc-950/60 text-sm"
                     >
-                      <span style={{ fontWeight: 600, textTransform: "capitalize" }}>{stage}</span>
-                      <span className="badge badge-warning">{count}</span>
+                      <span className="font-semibold capitalize text-zinc-200">{stage}</span>
+                      <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-bold bg-yellow-500/15 text-yellow-500 border border-yellow-500/30">
+                        {count}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -259,16 +249,11 @@ export default async function OwnerAnalyticsPage() {
             </div>
           </div>
 
-          <div className="card">
-            <div className="card-header">
-              <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>
-                Quick links
-              </h2>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-zinc-800">
+              <h2 className="text-base font-bold text-yellow-500">Quick links</h2>
             </div>
-            <div
-              className="card-body"
-              style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}
-            >
+            <div className="p-5 flex flex-wrap gap-2">
               {[
                 { href: "/owner/members", label: "Members" },
                 { href: "/owner/payments", label: "Payments" },
@@ -276,7 +261,11 @@ export default async function OwnerAnalyticsPage() {
                 { href: "/owner/leads", label: "CRM" },
                 { href: "/owner/activities", label: "Activities" },
               ].map((item) => (
-                <Link key={item.href} href={item.href} className="btn btn-ghost btn-sm">
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="inline-flex items-center justify-center bg-zinc-800 text-yellow-500 font-bold px-3 py-1.5 rounded text-sm hover:bg-zinc-700 transition-colors"
+                >
                   {item.label}
                 </Link>
               ))}
