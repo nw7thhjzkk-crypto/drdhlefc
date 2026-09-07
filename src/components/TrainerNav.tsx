@@ -4,10 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const TRAINER_NAV = [
-  { href: "/trainer/dashboard",  label: "Dashboard", icon: "📊" },
-  { href: "/trainer/members",    label: "Members",   icon: "👥" },
-  { href: "/trainer/attendance", label: "Attendance",icon: "✅" },
-  { href: "/trainer/plans",      label: "Plans",     icon: "📋" },
+  { href: "/trainer/dashboard",   label: "Dashboard",   icon: "📊" },
+  { href: "/trainer/members",     label: "Members",     icon: "👥" },
+  { href: "/trainer/attendance",  label: "Attendance",  icon: "✅" },
+  { href: "/trainer/assessments", label: "Assessments", icon: "📏" },
+  { href: "/trainer/plans",       label: "Plans",       icon: "📋" },
 ];
 
 export default function TrainerNav() {
