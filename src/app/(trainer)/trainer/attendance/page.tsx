@@ -48,6 +48,8 @@ export default async function TrainerAttendancePage() {
     .gte("occurred_at", today.toISOString())
     .order("occurred_at", { ascending: false });
 
+  const rows = recentAttendance ?? [];
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex justify-between items-center">
@@ -97,35 +99,39 @@ export default async function TrainerAttendancePage() {
              <div className="px-6 py-4 border-b border-zinc-800">
                 <h2 className="text-lg font-semibold text-zinc-100">Today&apos;s Check-Ins</h2>
             </div>
-            <table className="min-w-full divide-y divide-zinc-800">
-              <thead className="bg-zinc-950">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Time</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Member</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Method</th>
-                </tr>
-              </thead>
-              <tbody className="bg-zinc-900 divide-y divide-zinc-800">
-                {recentAttendance?.map((record) => (
-                  <tr key={record.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
-                      {new Date(record.occurred_at).toLocaleTimeString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-zinc-200">
-                      {record.members?.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400 capitalize">
-                      {record.method}
-                    </td>
-                  </tr>
-                ))}
-                {(!recentAttendance || recentAttendance.length === 0) && (
+            {rows.length === 0 ? (
+              <div className="m-6 flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+                <h3 className="text-lg font-semibold text-zinc-100">No check-ins today</h3>
+                <p className="max-w-md text-sm text-zinc-500">
+                  Today&apos;s attendance list is empty. Log a manual check-in for an assigned member to get started.
+                </p>
+              </div>
+            ) : (
+              <table className="min-w-full divide-y divide-zinc-800">
+                <thead className="bg-zinc-950">
                   <tr>
-                    <td colSpan={3} className="px-6 py-8 text-center text-zinc-500">No attendance logged today.</td>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Time</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Member</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Method</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-zinc-900 divide-y divide-zinc-800">
+                  {rows.map((record) => (
+                    <tr key={record.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
+                        {new Date(record.occurred_at).toLocaleTimeString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-zinc-200">
+                        {record.members?.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400 capitalize">
+                        {record.method}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
