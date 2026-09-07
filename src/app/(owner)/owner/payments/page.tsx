@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { redirect } from "next/navigation";
 import { recordPayment } from "./actions";
 
 interface MembershipPlan {
@@ -15,7 +16,12 @@ interface Member {
   name: string;
 }
 
-export default async function PaymentsPage() {
+export default async function PaymentsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ error?: string; success?: string }>;
+}) {
+  const params = searchParams ? await searchParams : {};
   const supabase = await createClient();
 
   const { data: payments } = await supabase
@@ -27,7 +33,6 @@ export default async function PaymentsPage() {
     `)
     .order("paid_at", { ascending: false });
 
-  // Get active members for the payment form
   const { data: membersWithMemberships } = await supabase
     .from("members")
     .select(`
@@ -35,40 +40,65 @@ export default async function PaymentsPage() {
       name,
       memberships (id, status, pending_amount, membership_plans(name))
     `)
-    .eq("status", "active")
-    .eq("memberships.status", "active"); // simplified for now
+    .eq("status", "active");
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
+        <h1 className="text-2xl font-bold text-yellow-500">Payments</h1>
       </div>
 
+      {params.error && (
+        <div
+          className="rounded-lg border border-red-800 bg-red-950/60 px-4 py-3 text-sm text-red-300"
+          role="alert"
+        >
+          {params.error}
+        </div>
+      )}
+      {params.success && (
+        <div className="rounded-lg border border-green-800 bg-green-950/60 px-4 py-3 text-sm text-green-300">
+          Payment recorded.
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="md:col-span-1 bg-white p-6 rounded-lg shadow h-fit">
-          <h2 className="text-lg font-semibold mb-4 border-b pb-2">Record Payment</h2>
-          <form action={async (formData) => { "use server"; await recordPayment(formData); }} className="space-y-4">
+        <div className="md:col-span-1 bg-zinc-900 p-6 rounded-lg shadow-xl border border-zinc-800 h-fit">
+          <h2 className="text-lg font-semibold text-zinc-100 mb-4 border-b border-zinc-800 pb-2">
+            Record Payment
+          </h2>
+          <form
+            action={async (formData) => {
+              "use server";
+              const result = await recordPayment(formData);
+              if (result?.error) {
+                redirect(
+                  `/owner/payments?error=${encodeURIComponent(result.error)}`
+                );
+              }
+              redirect("/owner/payments?success=1");
+            }}
+            className="space-y-4"
+          >
             <div>
-              <label className="block text-sm font-medium text-gray-700">Member</label>
-              <select name="member_id" required className="mt-1 block w-full border border-gray-300 rounded p-2">
-                <option value="">Select Member...</option>
-                {membersWithMemberships?.filter(m => m.memberships && m.memberships.length > 0).map(m => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
-            </div>
-            {/* Note: In a real app, membership_id would dynamically filter based on the selected member.
-                For this scaffolding, we assume the server action handles the mapping or the user selects it.
-                Here we'll fetch all active memberships for simplicity. */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Membership</label>
-              <select name="membership_id" required className="mt-1 block w-full border border-gray-300 rounded p-2">
+              <label className="block text-sm font-medium text-zinc-400">
+                Membership
+              </label>
+              <select
+                name="membership_id"
+                required
+                className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
+              >
                 <option value="">Select Membership...</option>
-                {membersWithMemberships?.map(m =>
+                {membersWithMemberships?.map((m) =>
                   m.memberships?.map((ms: Membership) => {
-                    const planName = Array.isArray(ms.membership_plans) ? ms.membership_plans[0]?.name : ms.membership_plans?.name;
+                    const planName = Array.isArray(ms.membership_plans)
+                      ? ms.membership_plans[0]?.name
+                      : ms.membership_plans?.name;
                     return (
-                      <option key={ms.id} value={ms.id}>{m.name} - {planName} (${ms.pending_amount} pending)</option>
+                      <option key={ms.id} value={ms.id}>
+                        {m.name} - {planName} (${ms.pending_amount} pending)
+                      </option>
                     );
                   })
                 )}
@@ -76,65 +106,126 @@ export default async function PaymentsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Amount</label>
-              <input name="amount" type="number" step="0.01" required className="mt-1 block w-full border border-gray-300 rounded p-2" />
+              <label className="block text-sm font-medium text-zinc-400">
+                Amount
+              </label>
+              <input
+                name="amount"
+                type="number"
+                step="0.01"
+                required
+                className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Method</label>
-              <select name="method" required className="mt-1 block w-full border border-gray-300 rounded p-2">
+              <label className="block text-sm font-medium text-zinc-400">
+                Method
+              </label>
+              <select
+                name="method"
+                required
+                className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
+              >
                 <option value="Cash">Cash</option>
                 <option value="Card">Card</option>
                 <option value="Bank Transfer">Bank Transfer</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Reference / Txn ID</label>
-              <input name="reference" type="text" className="mt-1 block w-full border border-gray-300 rounded p-2" />
+              <label className="block text-sm font-medium text-zinc-400">
+                Reference / Txn ID
+              </label>
+              <input
+                name="reference"
+                type="text"
+                className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Notes</label>
-              <textarea name="notes" rows={2} className="mt-1 block w-full border border-gray-300 rounded p-2"></textarea>
+              <label className="block text-sm font-medium text-zinc-400">
+                Notes
+              </label>
+              <textarea
+                name="notes"
+                rows={2}
+                className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
+              ></textarea>
             </div>
-            <button type="submit" className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            <button
+              type="submit"
+              className="w-full bg-yellow-600 text-zinc-950 font-bold px-4 py-2 rounded hover:bg-yellow-500 transition-colors"
+            >
               Record Payment
             </button>
           </form>
         </div>
 
         <div className="md:col-span-2">
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="bg-zinc-900 rounded-lg shadow-xl border border-zinc-800 overflow-hidden">
+            <table className="min-w-full divide-y divide-zinc-800">
+              <thead className="bg-zinc-950">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Member</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                    Member
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                    Amount
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                    Method
+                  </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-zinc-900 divide-y divide-zinc-800">
                 {payments?.map((payment) => (
                   <tr key={payment.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
                       {new Date(payment.paid_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{(payment.members as Member)?.name}</div>
-                      <div className="text-sm text-gray-500">
-                        {Array.isArray((payment.memberships as Membership)?.membership_plans)
-                          ? ((payment.memberships as Membership)?.membership_plans as MembershipPlan[])[0]?.name
-                          : ((payment.memberships as Membership)?.membership_plans as MembershipPlan)?.name}
+                      <div className="text-sm font-medium text-zinc-200">
+                        {(payment.members as Member)?.name}
+                      </div>
+                      <div className="text-sm text-zinc-500">
+                        {Array.isArray(
+                          (payment.memberships as Membership)?.membership_plans
+                        )
+                          ? (
+                              (payment.memberships as Membership)
+                                ?.membership_plans as MembershipPlan[]
+                            )[0]?.name
+                          : (
+                              (payment.memberships as Membership)
+                                ?.membership_plans as MembershipPlan
+                            )?.name}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-400">
                       ${payment.amount}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
                       {payment.method}
-                      {payment.reference && <span className="block text-xs text-gray-400">Ref: {payment.reference}</span>}
+                      {payment.reference && (
+                        <span className="block text-xs text-zinc-500">
+                          Ref: {payment.reference}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
+                {(!payments || payments.length === 0) && (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-6 py-8 text-center text-zinc-500"
+                    >
+                      No payments yet.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
