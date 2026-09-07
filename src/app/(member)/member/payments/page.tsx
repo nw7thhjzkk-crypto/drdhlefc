@@ -68,7 +68,7 @@ export default async function MemberPaymentsPage() {
     supabase
       .from("memberships")
       .select(
-        "id, start_date, end_date, status, total_amount, paid_amount, pending_amount, membership_plans(name)"
+        "id, start_date, end_date, status, total_amount, paid_amount, pending_amount, membership_plans(name)",
       )
       .eq("member_id", member.id)
       .in("status", ["active", "pending_payment", "expired"])
@@ -94,7 +94,7 @@ export default async function MemberPaymentsPage() {
     const [ey, em, ed] = endKey.split("-").map(Number);
     const [ty, tm, td] = todayKey.split("-").map(Number);
     daysLeft = Math.round(
-      (Date.UTC(ey, em - 1, ed) - Date.UTC(ty, tm - 1, td)) / 86400000
+      (Date.UTC(ey, em - 1, ed) - Date.UTC(ty, tm - 1, td)) / 86400000,
     );
   }
 
@@ -126,9 +126,7 @@ export default async function MemberPaymentsPage() {
       <div
         style={{
           ...card,
-          borderLeft: m
-            ? "3px solid var(--color-gold)"
-            : "3px solid #EF4444",
+          borderLeft: m ? "3px solid var(--color-gold)" : "3px solid #EF4444",
         }}
       >
         <div
@@ -219,7 +217,11 @@ export default async function MemberPaymentsPage() {
         </h2>
         {paymentRows.length > 0 ? (
           <div
-            style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.625rem",
+            }}
           >
             {paymentRows.map((p) => (
               <div
@@ -285,16 +287,14 @@ export default async function MemberPaymentsPage() {
             ))}
           </div>
         ) : (
-          <p
-            style={{
-              fontSize: "0.875rem",
-              color: "var(--color-silver-dark)",
-              textAlign: "center",
-              padding: "0.75rem 0",
-            }}
-          >
-            No payments recorded yet.
-          </p>
+          <div className="text-center py-8 my-4 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl">
+            <h3 className="text-lg font-bold text-yellow-500 mb-2">
+              No Payments Yet
+            </h3>
+            <p className="text-sm text-zinc-400">
+              No payments have been recorded for your account.
+            </p>
+          </div>
         )}
       </div>
 
