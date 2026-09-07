@@ -364,18 +364,22 @@ export async function unassignTrainer(assignmentId: string, memberId: string) {
 
   const { error } = await supabase
     .from("member_trainers")
-    .delete()
+    .update({ unassigned_at: new Date().toISOString() })
     .eq("id", assignmentId);
 
   if (error) return { error: error.message };
 
-  await supabase.rpc("insert_audit_log", {
-    p_action:      "UNASSIGN_TRAINER",
-    p_entity_type: "member_trainer",
-    p_entity_id:   null,
-    p_member_id:   memberId,
-    p_details:     { assignment_id: assignmentId },
-  });
+  try {
+    await supabase.rpc("insert_audit_log", {
+      p_action:      "UNASSIGN_TRAINER",
+      p_entity_type: "member_trainer",
+      p_entity_id:   null,
+      p_member_id:   memberId,
+      p_details:     { assignment_id: assignmentId },
+    });
+  } catch (err) {
+    console.error("Audit log failed:", err);
+  }
 
   revalidatePath(`/owner/members/${memberId}`);
   return { success: true };
