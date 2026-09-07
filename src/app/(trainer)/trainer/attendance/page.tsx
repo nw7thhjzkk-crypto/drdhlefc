@@ -29,7 +29,8 @@ export default async function TrainerAttendancePage() {
   const { data: assignments } = await supabase
     .from("member_trainers")
     .select("members(id, name, member_code)")
-    .eq("trainer_id", trainer.id);
+    .eq("trainer_id", trainer.id)
+    .is("unassigned_at", null);
 
   const members: AttendanceMember[] = ((assignments as AttendanceAssignment[] | null) ?? []).flatMap((a) => {
     const m = a.members;
