@@ -243,6 +243,9 @@ export default async function MemberHomePage() {
       <div style={card}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
           <h2 style={{ fontSize: "0.875rem", fontWeight: 700, color: "#fff" }}>Upcoming Activities</h2>
+          <Link href="/member/activities" style={{ fontSize: "0.75rem", color: "var(--color-gold)", fontWeight: 600 }}>
+            View all →
+          </Link>
         </div>
         {upcomingActivities && upcomingActivities.length > 0 ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
