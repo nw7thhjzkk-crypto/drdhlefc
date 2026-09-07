@@ -92,6 +92,29 @@ export async function createActivity(formData: FormData) {
   revalidatePath("/owner/activities");
 }
 
+export async function cancelBookingOwner(bookingId: string) {
+  const { supabase } = await requireOwner();
+
+  if (!bookingId) throw new Error("bookingId is required");
+
+  // Call the SECURITY DEFINER RPC to cancel the booking safely.
+  const { error } = await supabase.rpc("cancel_activity_booking", {
+    p_booking_id: bookingId,
+  });
+
+  if (error) throw new Error(error.message);
+
+  await softFailAudit(supabase, {
+    p_action: "CANCEL_ACTIVITY_BOOKING",
+    p_entity_type: "activity_booking",
+    p_entity_id: bookingId,
+    p_member_id: null,
+    p_details: null,
+  });
+
+  revalidatePath("/owner/activities");
+}
+
 /**
  * Edit an active scheduled group activity.
  * Live schema has no deleted_at — cancelled rows are status='cancelled'.
