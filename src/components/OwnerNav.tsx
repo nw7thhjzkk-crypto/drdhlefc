@@ -9,6 +9,7 @@ const NAV_SECTIONS = [
     label: "Overview",
     items: [
       { href: "/owner/dashboard", label: "Dashboard", icon: "📊" },
+      { href: "/owner/analytics", label: "Analytics", icon: "📈" },
     ],
   },
   {
