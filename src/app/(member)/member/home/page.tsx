@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { bookActivity, cancelBooking } from "./actions";
+import { bookActivity, cancelBooking, claimFirstOwner } from "./actions";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Home" };
@@ -11,6 +11,10 @@ export default async function MemberHomePage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // SECURITY DEFINER helper — members cannot count other profiles under RLS
+  const { data: ownerExists } = await supabase.rpc("owner_exists");
+  const canClaimOwner = ownerExists === false;
+
   // Derive member from auth.uid() — never trust client-supplied member_id
   const { data: member } = await supabase
     .from("members")
@@ -18,12 +22,51 @@ export default async function MemberHomePage() {
     .eq("profile_id", user.id)
     .single();
 
+  const claimBanner = canClaimOwner ? (
+    <div
+      style={{
+        background: "rgba(201,168,76,0.12)",
+        border: "1px solid rgba(201,168,76,0.45)",
+        borderRadius: "var(--radius-lg)",
+        padding: "1rem 1.125rem",
+        marginBottom: "0.875rem",
+      }}
+    >
+      <div style={{ fontWeight: 700, color: "var(--color-gold)", marginBottom: "0.35rem" }}>
+        Claim gym owner role
+      </div>
+      <p style={{ fontSize: "0.8125rem", color: "var(--color-silver)", marginBottom: "0.75rem" }}>
+        No owner is configured yet. As the first authenticated user you can claim the owner role (one-time).
+      </p>
+      <form action={claimFirstOwner}>
+        <button
+          type="submit"
+          style={{
+            fontSize: "0.8125rem",
+            fontWeight: 700,
+            padding: "0.45rem 0.9rem",
+            borderRadius: "var(--radius-sm)",
+            border: "none",
+            background: "var(--color-gold)",
+            color: "#111",
+            cursor: "pointer",
+          }}
+        >
+          Become owner
+        </button>
+      </form>
+    </div>
+  ) : null;
+
   if (!member) {
     return (
-      <div className="empty-state">
-        <div className="empty-state-icon">⚠️</div>
-        <div className="empty-state-title">Member profile not found</div>
-        <div className="empty-state-body">Contact the gym front desk to set up your account.</div>
+      <div style={{ maxWidth: "480px", margin: "0 auto" }}>
+        {claimBanner}
+        <div className="empty-state">
+          <div className="empty-state-icon">⚠️</div>
+          <div className="empty-state-title">Member profile not found</div>
+          <div className="empty-state-body">Contact the gym front desk to set up your account.</div>
+        </div>
       </div>
     );
   }
@@ -117,6 +160,8 @@ export default async function MemberHomePage() {
 
   return (
     <div style={{ maxWidth: "480px", margin: "0 auto" }}>
+
+      {claimBanner}
 
       {/* Greeting */}
       <div style={{ marginBottom: "1.25rem" }}>

@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 /**
  * Book an activity for the currently authenticated member.
@@ -55,4 +56,21 @@ export async function cancelBooking(booking_id: string) {
   }
 
   revalidatePath("/member/home");
+}
+
+/**
+ * One-time first-owner claim via SECURITY DEFINER RPC bootstrap_first_owner.
+ * Fails if an owner already exists or the caller has no profile.
+ */
+export async function claimFirstOwner() {
+  const supabase = await createClient();
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (!user || authError) throw new Error("Not authenticated");
+
+  const { error } = await supabase.rpc("bootstrap_first_owner");
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/member/home");
+  redirect("/owner/dashboard");
 }
