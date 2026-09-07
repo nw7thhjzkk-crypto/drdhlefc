@@ -199,9 +199,9 @@ export default async function PaymentsPage({
             </div>
             {paymentRows.length === 0 ? (
               <div className="m-6 flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
-                <h3 className="text-lg font-semibold text-zinc-100">No payments yet</h3>
+                <h3 className="text-lg font-semibold text-yellow-500">No payments yet</h3>
                 <p className="max-w-md text-sm text-zinc-500">
-                  Payment history is empty. Record a payment once a member has an active membership, or open plans and members to get started.
+                  Payment history is empty. Use Record Payment when a member has an active membership, or open plans and members to get started.
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   <Link
