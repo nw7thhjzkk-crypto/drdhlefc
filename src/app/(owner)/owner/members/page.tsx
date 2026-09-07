@@ -87,70 +87,84 @@ export default async function MembersPage({
         </form>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Member</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status & Goal</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trainer</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Membership</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {members?.map((member) => (
-              <tr key={member.id}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10 relative bg-gray-200 rounded-full overflow-hidden">
-                      {member.photo_url ? (
-                        <Image src={member.photo_url} alt={member.name} fill className="object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex justify-center items-center text-gray-500">?</div>
-                      )}
-                    </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">{member.name}</div>
-                      <div className="text-sm text-gray-500">{member.member_code}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{member.phone}</div>
-                  <div className="text-sm text-gray-500">{member.email}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${member.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                    {member.status}
-                  </span>
-                  <div className="text-sm text-gray-500 mt-1">{member.primary_goal || 'None'}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {member.member_trainers?.find((t: { unassigned_at: string | null }) => t.unassigned_at === null)?.trainers?.name || "Unassigned"}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {member.memberships?.[0]?.status || "None"}
-                  {member.memberships?.[0]?.end_date && ` (exp: ${member.memberships[0].end_date})`}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <Link href={`/owner/members/${member.id}`} className="text-blue-600 hover:text-blue-900">
-                    View
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-6">
-          {page > 1 && <Link href={`/owner/members?page=${page - 1}&q=${q}&status=${status}&goal=${goal}`} className="px-3 py-1 bg-white border rounded">Prev</Link>}
-          <span className="px-3 py-1">Page {page} of {totalPages}</span>
-          {page < totalPages && <Link href={`/owner/members?page=${page + 1}&q=${q}&status=${status}&goal=${goal}`} className="px-3 py-1 bg-white border rounded">Next</Link>}
+      {(!members || members.length === 0) ? (
+        <div className="text-center py-8">
+          <p className="text-zinc-500 mb-4">No members found.</p>
+          <Link
+            href="/owner/members/new"
+            className="bg-zinc-800 text-yellow-500 font-bold px-4 py-2 rounded hover:bg-zinc-700 transition-colors border border-zinc-700 inline-block"
+          >
+            Add New Member
+          </Link>
         </div>
+      ) : (
+        <>
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Member</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status & Goal</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trainer</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Membership</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {members.map((member) => (
+                  <tr key={member.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10 relative bg-gray-200 rounded-full overflow-hidden">
+                          {member.photo_url ? (
+                            <Image src={member.photo_url} alt={member.name} fill className="object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex justify-center items-center text-gray-500">?</div>
+                          )}
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{member.name}</div>
+                          <div className="text-sm text-gray-500">{member.member_code}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{member.phone}</div>
+                      <div className="text-sm text-gray-500">{member.email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${member.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {member.status}
+                      </span>
+                      <div className="text-sm text-gray-500 mt-1">{member.primary_goal || 'None'}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {member.member_trainers?.find((t: { unassigned_at: string | null }) => t.unassigned_at === null)?.trainers?.name || "Unassigned"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {member.memberships?.[0]?.status || "None"}
+                      {member.memberships?.[0]?.end_date && ` (exp: ${member.memberships[0].end_date})`}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <Link href={`/owner/members/${member.id}`} className="text-blue-600 hover:text-blue-900">
+                        View
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex justify-center gap-2 mt-6">
+              {page > 1 && <Link href={`/owner/members?page=${page - 1}&q=${q}&status=${status}&goal=${goal}`} className="px-3 py-1 bg-white border rounded">Prev</Link>}
+              <span className="px-3 py-1">Page {page} of {totalPages}</span>
+              {page < totalPages && <Link href={`/owner/members?page=${page + 1}&q=${q}&status=${status}&goal=${goal}`} className="px-3 py-1 bg-white border rounded">Next</Link>}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
