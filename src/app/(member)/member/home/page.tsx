@@ -323,9 +323,12 @@ export default async function MemberHomePage() {
       {/* Recent attendance */}
       {myAttendance && myAttendance.length > 0 && (
         <div style={card}>
-          <h2 style={{ fontSize: "0.875rem", fontWeight: 700, color: "#fff", marginBottom: "0.625rem" }}>
-            Recent Check-ins
-          </h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.625rem" }}>
+            <h2 style={{ fontSize: "0.875rem", fontWeight: 700, color: "#fff" }}>
+              Recent Check-ins
+            </h2>
+            <Link href="/member/attendance" style={{ fontSize: "0.6875rem", color: "var(--color-gold)", textDecoration: "none" }}>History →</Link>
+          </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
             {(myAttendance as Attendance[]).map((a, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8125rem" }}>
