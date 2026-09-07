@@ -37,9 +37,9 @@ export default async function ExercisesPage() {
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
           {exercises?.length === 0 ? (
-            <div className="erp-card text-center py-12">
-              <h3 className="text-xl font-semibold text-zinc-200 mb-2">No exercises found</h3>
-              <p className="text-zinc-400 mb-6">Your exercise library is empty. Get started quickly by seeding standard exercises.</p>
+            <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+              <h3 className="text-lg font-semibold text-yellow-500">No exercises found</h3>
+              <p className="max-w-md text-sm text-zinc-500">Your exercise library is empty. Get started quickly by seeding standard exercises.</p>
               <form action={seedStarterExercises}>
                 <button type="submit" className="bg-yellow-600 text-zinc-900 font-bold px-6 py-2 rounded hover:bg-yellow-500 transition-colors">
                   Seed Starter Exercises
