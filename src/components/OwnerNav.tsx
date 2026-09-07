@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { logout } from "@/app/auth/logout/actions";
 
 const NAV_SECTIONS = [
   {
@@ -84,7 +85,7 @@ export default function OwnerNav() {
 
       {/* Bottom: logout */}
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "0.75rem 0" }}>
-        <form action="/auth/logout" method="post">
+        <form action={logout}>
           <button
             type="submit"
             className="erp-nav-item"
