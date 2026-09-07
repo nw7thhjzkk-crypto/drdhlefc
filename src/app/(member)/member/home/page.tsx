@@ -63,10 +63,14 @@ export default async function MemberHomePage() {
     return (
       <div style={{ maxWidth: "480px", margin: "0 auto" }}>
         {claimBanner}
-        <div className="empty-state">
-          <div className="empty-state-icon">⚠️</div>
-          <div className="empty-state-title">Member profile not found</div>
-          <div className="empty-state-body">Contact the gym front desk to set up your account.</div>
+        <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
+          <h3 className="text-lg font-semibold text-yellow-500">
+            Member profile not found
+          </h3>
+          <p className="max-w-md text-sm text-zinc-500">
+            Contact the gym front desk to set up your account, then your
+            membership and check-ins will show here.
+          </p>
         </div>
       </div>
     );
@@ -371,9 +375,15 @@ export default async function MemberHomePage() {
             })}
           </div>
         ) : (
-          <p style={{ fontSize: "0.875rem", color: "var(--color-silver-dark)", textAlign: "center", padding: "0.75rem 0" }}>
-            No upcoming activities scheduled.
-          </p>
+          <div className="flex flex-col items-center justify-center space-y-3 rounded-lg border border-zinc-800 bg-zinc-950/60 p-8 text-center">
+            <h3 className="text-lg font-semibold text-yellow-500">
+              No upcoming activities
+            </h3>
+            <p className="max-w-md text-sm text-zinc-500">
+              When the gym schedules group activities, they will show up here
+              so you can book a spot.
+            </p>
+          </div>
         )}
       </div>
 
@@ -397,9 +407,15 @@ export default async function MemberHomePage() {
               ))}
             </div>
           ) : (
-            <p style={{ fontSize: "0.875rem", color: "var(--color-silver-dark)", textAlign: "center", padding: "0.75rem 0" }}>
-              No recent check-ins.
-            </p>
+            <div className="flex flex-col items-center justify-center space-y-3 rounded-lg border border-zinc-800 bg-zinc-950/60 p-8 text-center">
+              <h3 className="text-lg font-semibold text-yellow-500">
+                No recent check-ins
+              </h3>
+              <p className="max-w-md text-sm text-zinc-500">
+                Check in when you arrive at the gym and your recent visits will
+                appear here.
+              </p>
+            </div>
           )}
 
           <CheckInButton hasCheckedInToday={hasCheckedInToday} />
