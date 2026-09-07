@@ -82,6 +82,7 @@ export default async function MemberHomePage() {
     { data: myAttendance },
     { data: pendingDiet },
     { data: pendingWorkout },
+    { count: unreadCount },
   ] = await Promise.all([
     supabase
       .from("assessments")
@@ -135,6 +136,12 @@ export default async function MemberHomePage() {
       .eq("member_id", member.id)
       .eq("status", "pending")
       .limit(3),
+
+    supabase
+      .from("notifications")
+      .select("*", { count: "exact", head: true })
+      .eq("recipient_profile_id", user.id)
+      .is("read_at", null),
   ]);
 
   const bookedActivityIds = new Set((myBookings ?? []).map((b: { activity_id: string }) => b.activity_id));
@@ -175,19 +182,40 @@ export default async function MemberHomePage() {
             </p>
           )}
         </div>
-        <Link
-          href="/member/profile"
-          style={{
-            fontSize: "0.75rem",
-            fontWeight: 600,
-            color: "var(--color-gold)",
-            textDecoration: "none",
-            whiteSpace: "nowrap",
-            paddingTop: "0.2rem",
-          }}
-        >
-          Profile →
-        </Link>
+        <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+          <Link
+            href="/member/notifications"
+            style={{
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              color: "var(--color-gold)",
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+              paddingTop: "0.2rem",
+              position: "relative",
+            }}
+          >
+            🔔
+            {unreadCount !== null && unreadCount > 0 && (
+              <span style={{ position: "absolute", top: 0, right: "-8px", background: "#EF4444", color: "white", fontSize: "0.6rem", padding: "0 4px", borderRadius: "8px", fontWeight: "bold" }}>
+                {unreadCount}
+              </span>
+            )}
+          </Link>
+          <Link
+            href="/member/profile"
+            style={{
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              color: "var(--color-gold)",
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+              paddingTop: "0.2rem",
+            }}
+          >
+            Profile →
+          </Link>
+        </div>
       </div>
 
       {/* Membership status */}
