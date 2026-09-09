@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Cormorant_Garamond } from "next/font/google";
+import { site, siteOrigin } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,40 +15,73 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
+const display = Cormorant_Garamond({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  viewportFit: "cover",          // iOS safe-area support
+  viewportFit: "cover",
   themeColor: "#0A0A0A",
 };
 
+const origin = siteOrigin();
+
 export const metadata: Metadata = {
+  metadataBase: new URL(origin),
   title: {
-    default: "DR DHL Elite Fitness Club",
-    template: "%s | DR DHL Elite Fitness Club",
+    default: `${site.name} | Premium Fitness in Bhuj`,
+    template: `%s | ${site.name}`,
   },
   description:
-    "DR DHL Elite Fitness Club — Premium gym management platform for members, trainers, and owners.",
-  applicationName: "DR DHL Elite Fitness Club",
+    "Dr DHL Elite Fitness Club — premium fitness in Bhuj, Gujarat. Coming soon. Register your interest for early access.",
+  applicationName: site.name,
+  keywords: [
+    "Dr DHL Elite Fitness Club",
+    "gym in Bhuj",
+    "fitness centre in Bhuj",
+    "premium fitness club in Bhuj",
+    "personal training in Bhuj",
+  ],
+  authors: [{ name: site.name }],
+  creator: site.name,
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_IN",
+    siteName: site.name,
+    title: `${site.name} | Premium Fitness in Bhuj`,
+    description:
+      "A premium fitness club in Bhuj. Coming soon. Get early access.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${site.name} | Premium Fitness in Bhuj`,
+    description:
+      "A premium fitness club in Bhuj. Coming soon. Get early access.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "DR DHL Fitness",
+    title: "Dr DHL",
   },
   formatDetection: {
     telephone: false,
   },
   icons: {
-    icon: [
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: [
-      { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
-    ],
+    icon: [{ url: "/brand/dr-dhl-monogram.png", type: "image/png" }],
+    apple: [{ url: "/brand/dr-dhl-monogram.png", type: "image/png" }],
   },
 };
 
@@ -58,24 +92,10 @@ export default function RootLayout({
 }) {
   return (
     <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full`}
+      lang="en-IN"
+      className={`${geistSans.variable} ${geistMono.variable} ${display.variable} h-full`}
     >
-      <head>
-        {/* PWA manifest */}
-        <link rel="manifest" href="/manifest.json" />
-        {/* iOS standalone */}
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="DR DHL Fitness" />
-        {/* MS tiles */}
-        <meta name="msapplication-TileColor" content="#0A0A0A" />
-        <meta name="msapplication-tap-highlight" content="no" />
-      </head>
-      <body className="min-h-full antialiased">
-        {children}
-      </body>
+      <body className="min-h-full antialiased">{children}</body>
     </html>
   );
 }
