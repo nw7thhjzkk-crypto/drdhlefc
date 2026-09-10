@@ -1,11 +1,20 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
+import { useRef, useState, useTransition, type FormEvent } from "react";
 import { submitWebsiteLead } from "@/app/actions/submit-website-lead";
 import { FITNESS_GOALS, INTERESTS, site } from "@/lib/site";
 import type { FieldErrors } from "@/lib/website-lead";
 
+const FIELD_ORDER: Array<keyof FieldErrors> = [
+  "name",
+  "phone",
+  "email",
+  "goal",
+  "interest",
+];
+
 export function LeadForm() {
+  const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +46,16 @@ export function LeadForm() {
 
       setError(result.error);
       setFieldErrors(result.fieldErrors ?? {});
+
+      // Move focus to the first invalid field so the error is announced.
+      requestAnimationFrame(() => {
+        const field = FIELD_ORDER.find((key) => result.fieldErrors?.[key]);
+        if (field) {
+          formRef.current?.querySelector<HTMLElement>(
+            `[name="${field}"]`
+          )?.focus();
+        }
+      });
     });
   }
 
@@ -61,7 +80,13 @@ export function LeadForm() {
   }
 
   return (
-    <form className="pub-form" onSubmit={onSubmit} noValidate aria-busy={pending}>
+    <form
+      ref={formRef}
+      className="pub-form"
+      onSubmit={onSubmit}
+      noValidate
+      aria-busy={pending}
+    >
       <div className="pub-field">
         <label htmlFor="lead-name">Name</label>
         <input

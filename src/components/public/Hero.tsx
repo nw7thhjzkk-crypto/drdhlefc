@@ -6,7 +6,7 @@ export function Hero() {
     <section className="pub-hero" aria-labelledby="pub-hero-title">
       <div className="pub-hero-glow" aria-hidden="true" />
       <div className="pub-hero-inner">
-        <BrandMark size={168} priority className="pub-hero-mark" />
+        <BrandMark size={160} priority className="pub-hero-mark" />
         <p className="pub-kicker">{site.launchText}</p>
         <h1 id="pub-hero-title" className="pub-display">
           <span className="pub-display-top">Dr DHL</span>
@@ -26,6 +26,21 @@ export function Hero() {
           </a>
         </div>
       </div>
+      <a href="#club" className="pub-hero-scroll" aria-label="Scroll to the club">
+        <svg
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14M6 13l6 6 6-6" />
+        </svg>
+      </a>
     </section>
   );
 }

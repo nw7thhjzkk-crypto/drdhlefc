@@ -5,10 +5,10 @@ import { SectionHeader } from "./SectionHeader";
 
 export function Gallery() {
   return (
-    <section id="gallery" className="pub-section">
+    <section id="gallery" className="pub-section pub-gallery-section">
       <div className="pub-wrap">
         <SectionHeader
-          index="07"
+          index="09"
           eyebrow="Gallery"
           title="Photography is being prepared."
           body="We will not fill this page with generic gym images and present them as Dr DHL. When club photography is ready, it will live here."
@@ -25,12 +25,19 @@ export function Gallery() {
                   className="pub-gallery-photo"
                 />
               ) : (
-                <BrandMark size={72} />
+                <>
+                  <BrandMark size={64} />
+                  <figcaption>
+                    <span>{slot.label}</span>
+                    <span className="pub-gallery-status">Coming soon</span>
+                  </figcaption>
+                </>
               )}
-              <figcaption>
-                <span>{slot.label}</span>
-                {slot.src ? null : <span>Coming soon</span>}
-              </figcaption>
+              {slot.src ? (
+                <figcaption>
+                  <span>{slot.label}</span>
+                </figcaption>
+              ) : null}
             </figure>
           ))}
         </div>

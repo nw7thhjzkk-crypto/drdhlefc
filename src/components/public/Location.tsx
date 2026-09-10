@@ -6,7 +6,7 @@ export function Location() {
     <section id="visit" className="pub-section pub-location">
       <div className="pub-wrap pub-location-grid">
         <SectionHeader
-          index="09"
+          index="11"
           eyebrow="Location"
           title="Find us in Bhuj."
           body="Bhagwati Heritage, near Sanskar Nagar. Come when the club is open — until then, the address is here so you know exactly where we are."
