@@ -28,15 +28,23 @@ export function LeadForm() {
     setFieldErrors({});
 
     startTransition(async () => {
-      const result = await submitWebsiteLead({
-        name: String(data.get("name") ?? ""),
-        phone: String(data.get("phone") ?? ""),
-        email: String(data.get("email") ?? ""),
-        goal: String(data.get("goal") ?? ""),
-        interest: String(data.get("interest") ?? ""),
-        message: String(data.get("message") ?? ""),
-        company: String(data.get("company") ?? ""),
-      });
+      let result: Awaited<ReturnType<typeof submitWebsiteLead>>;
+      try {
+        result = await submitWebsiteLead({
+          name: String(data.get("name") ?? ""),
+          phone: String(data.get("phone") ?? ""),
+          email: String(data.get("email") ?? ""),
+          goal: String(data.get("goal") ?? ""),
+          interest: String(data.get("interest") ?? ""),
+          message: String(data.get("message") ?? ""),
+          company: String(data.get("company") ?? ""),
+        });
+      } catch {
+        setError(
+          "We could not receive your enquiry. Please try again, or email us."
+        );
+        return;
+      }
 
       if (result.ok) {
         setSuccess(true);

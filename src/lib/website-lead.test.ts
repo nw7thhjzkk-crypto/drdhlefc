@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   formatLeadNotes,
+  mapSubmitLeadError,
   normalizeIndianMobile,
   validateWebsiteLead,
 } from "./website-lead";
@@ -90,5 +91,43 @@ describe("formatLeadNotes", () => {
     expect(notes).toContain("Goal: Strength");
     expect(notes).toContain("Interest: Early Access");
     expect(notes).toContain("Please call in the evening.");
+  });
+});
+
+describe("mapSubmitLeadError", () => {
+  it("maps rate limiting", () => {
+    const result = mapSubmitLeadError("rate_limited");
+    expect(result.kind).toBe("error");
+    if (result.kind === "error") {
+      expect(result.error).toContain("few minutes");
+    }
+  });
+
+  it("maps invalid phone to a field error", () => {
+    const result = mapSubmitLeadError("invalid_phone");
+    expect(result.kind).toBe("error");
+    if (result.kind === "error") {
+      expect(result.fieldErrors?.phone).toBeTruthy();
+    }
+  });
+
+  it("maps invalid name / email / goal / interest", () => {
+    for (const msg of ["invalid_name", "invalid_email", "invalid_goal", "invalid_interest"]) {
+      const result = mapSubmitLeadError(msg);
+      expect(result.kind).toBe("error");
+    }
+  });
+
+  it("signals the authenticated fallback when the RPC is missing", () => {
+    expect(mapSubmitLeadError("Could not find the function").kind).toBe("fallback");
+    expect(mapSubmitLeadError("schema cache").kind).toBe("fallback");
+  });
+
+  it("falls back to a generic error for unknown failures", () => {
+    const result = mapSubmitLeadError("Failed to fetch");
+    expect(result.kind).toBe("error");
+    if (result.kind === "error") {
+      expect(result.error).toContain("could not receive");
+    }
   });
 });
