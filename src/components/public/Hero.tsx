@@ -4,10 +4,13 @@ import { site } from "@/lib/site";
 export function Hero() {
   return (
     <section className="pub-hero" aria-labelledby="pub-hero-title">
-      <div className="pub-hero-glow" aria-hidden="true" />
       <div className="pub-hero-inner">
-        <BrandMark size={160} priority className="pub-hero-mark" />
-        <p className="pub-kicker">{site.launchText}</p>
+        <BrandMark size={150} priority className="pub-hero-mark" />
+        <p className="pub-hero-eyebrow">
+          <span className="pub-hero-rule" aria-hidden="true" />
+          {site.launchText}
+          <span className="pub-hero-rule" aria-hidden="true" />
+        </p>
         <h1 id="pub-hero-title" className="pub-display">
           <span className="pub-display-top">Dr DHL</span>
           <span className="pub-display-sub">Elite Fitness Club</span>

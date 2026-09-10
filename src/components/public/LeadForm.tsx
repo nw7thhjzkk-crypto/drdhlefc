@@ -87,43 +87,45 @@ export function LeadForm() {
       noValidate
       aria-busy={pending}
     >
-      <div className="pub-field">
-        <label htmlFor="lead-name">Name</label>
-        <input
-          id="lead-name"
-          name="name"
-          type="text"
-          autoComplete="name"
-          required
-          maxLength={80}
-          aria-invalid={Boolean(fieldErrors.name)}
-          aria-describedby={fieldErrors.name ? "lead-name-error" : undefined}
-        />
-        {fieldErrors.name ? (
-          <p id="lead-name-error" className="pub-field-error">
-            {fieldErrors.name}
-          </p>
-        ) : null}
-      </div>
+      <div className="pub-field-row">
+        <div className="pub-field">
+          <label htmlFor="lead-name">Name</label>
+          <input
+            id="lead-name"
+            name="name"
+            type="text"
+            autoComplete="name"
+            required
+            maxLength={80}
+            aria-invalid={Boolean(fieldErrors.name)}
+            aria-describedby={fieldErrors.name ? "lead-name-error" : undefined}
+          />
+          {fieldErrors.name ? (
+            <p id="lead-name-error" className="pub-field-error">
+              {fieldErrors.name}
+            </p>
+          ) : null}
+        </div>
 
-      <div className="pub-field">
-        <label htmlFor="lead-phone">Mobile number</label>
-        <input
-          id="lead-phone"
-          name="phone"
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel"
-          required
-          placeholder="10-digit Indian mobile"
-          aria-invalid={Boolean(fieldErrors.phone)}
-          aria-describedby={fieldErrors.phone ? "lead-phone-error" : undefined}
-        />
-        {fieldErrors.phone ? (
-          <p id="lead-phone-error" className="pub-field-error">
-            {fieldErrors.phone}
-          </p>
-        ) : null}
+        <div className="pub-field">
+          <label htmlFor="lead-phone">Mobile number</label>
+          <input
+            id="lead-phone"
+            name="phone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            required
+            placeholder="10-digit mobile"
+            aria-invalid={Boolean(fieldErrors.phone)}
+            aria-describedby={fieldErrors.phone ? "lead-phone-error" : undefined}
+          />
+          {fieldErrors.phone ? (
+            <p id="lead-phone-error" className="pub-field-error">
+              {fieldErrors.phone}
+            </p>
+          ) : null}
+        </div>
       </div>
 
       <div className="pub-field">

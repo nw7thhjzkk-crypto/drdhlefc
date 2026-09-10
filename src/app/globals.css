@@ -719,6 +719,7 @@ html, body {
 .public-site {
   --pub-max: 1120px;
   --pub-pad: clamp(1.25rem, 4vw, 2rem);
+  --pub-radius: 2px;
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
   min-height: 100dvh;
@@ -781,10 +782,24 @@ html:has(.public-site) {
   color: var(--color-gold);
 }
 
+.pub-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pub-rule {
+  height: 1px;
+  width: 2rem;
+  background: rgba(201, 168, 76, 0.55);
+  flex: none;
+}
+
 .pub-index {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.625rem;
   color: var(--color-silver-dark);
-  margin-right: 0.75rem;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.1em;
 }
 
 .pub-display {
@@ -798,6 +813,7 @@ html:has(.public-site) {
 .pub-display-top {
   display: block;
   font-size: clamp(3.4rem, 12vw, 7.5rem);
+  font-weight: 600;
 }
 .pub-display-sub {
   display: block;
@@ -855,6 +871,9 @@ html:has(.public-site) {
 .pub-section-header.is-center {
   text-align: center;
 }
+.pub-section-header.is-center .pub-eyebrow {
+  justify-content: center;
+}
 .pub-section-header.is-center .pub-lede {
   margin-inline: auto;
 }
@@ -863,27 +882,27 @@ html:has(.public-site) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 0.75rem 1.35rem;
-  border-radius: 999px;
+  min-height: 48px;
+  padding: 0.8rem 1.5rem;
+  border-radius: var(--pub-radius);
   font-size: 0.8125rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   border: 1px solid transparent;
   transition: background var(--transition-fast), color var(--transition-fast),
-    border-color var(--transition-fast), transform var(--transition-fast);
+    border-color var(--transition-fast), opacity var(--transition-fast);
   cursor: pointer;
   background: none;
   color: inherit;
 }
 .pub-btn-lg {
-  min-height: 52px;
-  padding: 0.9rem 1.7rem;
+  min-height: 54px;
+  padding: 0.95rem 1.9rem;
 }
 .pub-btn-sm {
-  min-height: 40px;
-  padding: 0.45rem 0.95rem;
+  min-height: 44px;
+  padding: 0.5rem 1.1rem;
   font-size: 0.75rem;
 }
 .pub-btn-full { width: 100%; }
@@ -975,7 +994,7 @@ html:has(.public-site) {
   background: none;
   border: 1px solid rgba(201, 168, 76, 0.35);
   color: var(--color-gold);
-  border-radius: 999px;
+  border-radius: var(--pub-radius);
   cursor: pointer;
 }
 /* On small phones, keep the top bar to brand + login + menu toggle. */
@@ -1030,15 +1049,11 @@ html:has(.public-site) {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 3rem var(--pub-pad) 5rem;
+  padding: 4rem var(--pub-pad) 6rem;
   overflow: hidden;
-}
-.pub-hero-glow {
-  position: absolute;
-  inset: auto 0 20% 0;
-  height: 50%;
-  background: radial-gradient(ellipse at 50% 0%, rgba(201, 168, 76, 0.12), transparent 65%);
-  pointer-events: none;
+  background:
+    radial-gradient(120% 55% at 50% 0%, rgba(201, 168, 76, 0.055), transparent 62%),
+    var(--color-bg-primary);
 }
 .pub-hero-inner {
   position: relative;
@@ -1047,7 +1062,26 @@ html:has(.public-site) {
   align-items: center;
   max-width: 44rem;
 }
-.pub-hero-mark { margin-bottom: 1.5rem; }
+.pub-hero-mark { margin-bottom: 1.75rem; }
+.pub-hero-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--color-gold);
+}
+.pub-hero-rule {
+  height: 1px;
+  width: clamp(1.75rem, 6vw, 3.5rem);
+  background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.75));
+  flex: none;
+}
+.pub-hero-rule:last-child {
+  background: linear-gradient(90deg, rgba(201, 168, 76, 0.75), transparent);
+}
 .pub-hero-tag {
   margin-top: 1.1rem;
   font-size: 0.8rem;
@@ -1080,6 +1114,9 @@ html:has(.public-site) {
 .pub-hero-scroll:hover {
   color: var(--color-gold);
   border-color: rgba(201, 168, 76, 0.45);
+}
+@media (max-height: 700px) {
+  .pub-hero-scroll { display: none; }
 }
 
 /* About */
@@ -1127,6 +1164,7 @@ html:has(.public-site) {
 }
 
 /* Training */
+.pub-training { background: var(--color-bg-secondary); }
 .pub-pillars {
   display: grid;
   gap: 1px;
@@ -1153,7 +1191,6 @@ html:has(.public-site) {
 }
 
 /* Expect */
-.pub-expect { background: var(--color-bg-secondary); }
 .pub-expect-grid {
   display: grid;
   gap: 1.25rem;
@@ -1162,6 +1199,7 @@ html:has(.public-site) {
 .pub-expect-card {
   border: 1px solid rgba(201, 168, 76, 0.14);
   background: var(--color-bg-card);
+  border-radius: var(--pub-radius);
   padding: 1.75rem 1.5rem;
 }
 .pub-expect-grid p { color: var(--color-silver); margin: 0; line-height: 1.65; }
@@ -1170,6 +1208,7 @@ html:has(.public-site) {
 }
 
 /* Membership */
+.pub-membership { background: var(--color-bg-secondary); }
 .pub-membership-grid {
   display: grid;
   gap: 3rem;
@@ -1213,7 +1252,8 @@ html:has(.public-site) {
 .pub-membership-panel {
   background: var(--color-bg-card);
   border: 1px solid rgba(201, 168, 76, 0.22);
-  padding: 2rem 1.75rem;
+  border-radius: var(--pub-radius);
+  padding: 2.25rem 1.75rem;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -1249,6 +1289,7 @@ html:has(.public-site) {
 .pub-location-card {
   background: var(--color-bg-card);
   border: 1px solid rgba(201, 168, 76, 0.16);
+  border-radius: var(--pub-radius);
   padding: 2rem;
 }
 .pub-facility-address,
@@ -1260,8 +1301,20 @@ html:has(.public-site) {
   color: #fff;
   margin: 0.6rem 0 1.25rem;
 }
-.pub-location-card .pub-label { margin-top: 1.15rem; }
+.pub-location-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+.pub-location-row dd {
+  margin: 0;
+}
+.pub-location-row dt {
+  margin-bottom: 0.2rem;
+}
 .pub-location-card a { color: var(--color-gold); }
+.pub-location-card a:hover { color: var(--color-gold-light); }
 .pub-location-card .pub-btn { margin-top: 1.5rem; }
 .pub-plain { color: var(--color-silver); margin: 0.35rem 0 0; }
 
@@ -1273,16 +1326,21 @@ html:has(.public-site) {
 }
 .pub-gallery-frame {
   position: relative;
-  min-height: 220px;
+  min-height: 260px;
   margin: 0;
-  background: #111;
+  background: var(--color-bg-card);
   border: 1px solid rgba(201, 168, 76, 0.16);
+  border-radius: var(--pub-radius);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 1rem;
   overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+@media (min-width: 800px) {
+  .pub-gallery-frame { aspect-ratio: 4 / 3; min-height: 0; }
 }
 .pub-gallery-photo {
   object-fit: cover;
@@ -1310,13 +1368,18 @@ html:has(.public-site) {
 /* ------------------------------------------------------------
    Content-ready sections (coaching, group training)
    ------------------------------------------------------------ */
+.pub-trainers,
+.pub-gallery-section,
+.pub-location,
+.pub-instagram {
+  background: var(--color-bg-secondary);
+}
 .pub-coming-panel {
   margin-top: 2.5rem;
   margin-inline: auto;
   border: 1px solid rgba(201, 168, 76, 0.18);
-  background:
-    linear-gradient(180deg, rgba(201, 168, 76, 0.05), transparent 60%),
-    var(--color-bg-card);
+  background: var(--color-bg-card);
+  border-radius: var(--pub-radius);
   padding: 3rem 2rem;
   display: flex;
   flex-direction: column;
@@ -1349,6 +1412,7 @@ html:has(.public-site) {
 .pub-trainer-card {
   border: 1px solid rgba(201, 168, 76, 0.14);
   background: var(--color-bg-card);
+  border-radius: var(--pub-radius);
   overflow: hidden;
 }
 .pub-trainer-photo {
@@ -1389,6 +1453,7 @@ html:has(.public-site) {
 .pub-activity-card {
   border: 1px solid rgba(201, 168, 76, 0.14);
   background: var(--color-bg-card);
+  border-radius: var(--pub-radius);
   padding: 1.75rem 1.5rem;
 }
 .pub-activity-schedule {
@@ -1454,9 +1519,18 @@ html:has(.public-site) {
   opacity: 1;
 }
 .pub-faq-item.is-open .pub-faq-icon-v { opacity: 0; }
+.pub-faq-more {
+  margin: 1.5rem 0 0;
+  color: var(--color-silver);
+  font-size: 0.9375rem;
+}
+.pub-faq-more a {
+  color: var(--color-gold);
+  border-bottom: 1px solid rgba(201, 168, 76, 0.4);
+}
+.pub-faq-more a:hover { color: var(--color-gold-light); }
 
 /* Access / form */
-.pub-access { background: var(--color-bg-secondary); }
 .pub-form {
   position: relative;
   display: flex;
@@ -1464,7 +1538,8 @@ html:has(.public-site) {
   gap: 1rem;
   background: var(--color-bg-card);
   border: 1px solid rgba(201, 168, 76, 0.16);
-  padding: 1.5rem;
+  border-radius: var(--pub-radius);
+  padding: 1.75rem;
 }
 .pub-field { display: flex; flex-direction: column; gap: 0.4rem; }
 .pub-field-row {
@@ -1483,13 +1558,17 @@ html:has(.public-site) {
 .pub-field input,
 .pub-field select,
 .pub-field textarea {
-  min-height: 48px;
+  min-height: 50px;
   background: #0A0A0A;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: #fff;
-  padding: 0.7rem 0.85rem;
-  border-radius: 0.4rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--pub-radius);
   font: inherit;
+}
+.pub-field input::placeholder,
+.pub-field textarea::placeholder {
+  color: var(--color-silver-dark);
 }
 .pub-field textarea { min-height: 120px; resize: vertical; }
 .pub-field input:focus,
@@ -1516,6 +1595,7 @@ html:has(.public-site) {
 .pub-lead-success {
   background: var(--color-bg-card);
   border: 1px solid rgba(201, 168, 76, 0.28);
+  border-radius: var(--pub-radius);
   padding: 2rem 1.5rem;
   text-align: center;
 }
@@ -1530,7 +1610,10 @@ html:has(.public-site) {
   align-items: center;
   gap: 1rem;
 }
-.pub-final { background: #000; }
+.pub-final {
+  background: #000;
+  border-top: 1px solid rgba(201, 168, 76, 0.14);
+}
 
 /* Footer */
 .pub-footer {
@@ -1555,6 +1638,7 @@ html:has(.public-site) {
   font-style: normal;
   color: var(--color-silver);
 }
+.pub-footer a { transition: color var(--transition-fast); }
 .pub-footer a:hover { color: var(--color-gold); }
 .pub-footer-base {
   display: flex;
@@ -1589,7 +1673,7 @@ html:has(.public-site) {
 .pub-login-card {
   background: var(--color-bg-card);
   border: 1px solid rgba(201, 168, 76, 0.2);
-  border-radius: var(--radius-xl);
+  border-radius: var(--pub-radius);
   padding: 2.5rem 2rem;
 }
 .pub-login-brand { text-align: center; margin-bottom: 1.5rem; }

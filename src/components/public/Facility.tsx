@@ -11,7 +11,7 @@ export function Facility() {
             index="08"
             eyebrow="The space"
             title="A club you will want to walk into."
-            body="Photography of the finished floor will be published here. Until then, this is the address — not a catalogue of machines we have not confirmed."
+            body="Photography of the finished floor will be published here. Until then, this is where you will find us."
           />
           <div className="pub-facility-panel">
             <p className="pub-eyebrow">Bhuj, Gujarat</p>

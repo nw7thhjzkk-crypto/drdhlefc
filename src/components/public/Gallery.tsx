@@ -11,7 +11,7 @@ export function Gallery() {
           index="09"
           eyebrow="Gallery"
           title="Photography is being prepared."
-          body="We will not fill this page with generic gym images and present them as Dr DHL. When club photography is ready, it will live here."
+          body="The gallery opens with real photography of the club — the floor, the work, the people. When it is ready, it will live here."
         />
         <div className="pub-gallery">
           {GALLERY_SLOTS.map((slot) => (
@@ -29,7 +29,7 @@ export function Gallery() {
                   <BrandMark size={64} />
                   <figcaption>
                     <span>{slot.label}</span>
-                    <span className="pub-gallery-status">Coming soon</span>
+                    <span className="pub-gallery-status">To be published</span>
                   </figcaption>
                 </>
               )}

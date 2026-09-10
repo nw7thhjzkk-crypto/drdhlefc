@@ -9,7 +9,7 @@ export function Expect() {
           index="04"
           eyebrow="What you can expect"
           title="The tone of the club."
-          body="Until the doors open, this is the character we are committing to. Equipment lists, amenities, and floor plans will follow with real photography — we will not invent them here."
+          body="Until the doors open, this is the character we are committing to. Equipment lists, amenities, and floor plans will follow with the photography."
         />
         <div className="pub-expect-grid">
           {EXPECTATIONS.map((item) => (

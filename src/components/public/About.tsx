@@ -14,7 +14,7 @@ export function About() {
             index="01"
             eyebrow="The Club"
             title="Built for training that lasts."
-            body="Dr DHL Elite Fitness Club is a premium fitness club in Bhuj. We are preparing a serious, well-run space for strength, conditioning, and personal guidance — not a spectacle, and not a software pitch."
+            body="Dr DHL Elite Fitness Club is a premium fitness club in Bhuj — a serious, well-run space for strength, conditioning, and personal guidance."
           />
           <p className="pub-body">
             The club is {site.launchText.toLowerCase()}. Membership details will

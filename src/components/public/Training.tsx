@@ -3,7 +3,7 @@ import { SectionHeader } from "./SectionHeader";
 
 export function Training() {
   return (
-    <section id="training" className="pub-section">
+    <section id="training" className="pub-section pub-training">
       <div className="pub-wrap">
         <SectionHeader
           index="03"

@@ -1,6 +1,5 @@
 import { MEMBERSHIP_PILLARS } from "@/lib/public-content";
 import { SectionHeader } from "./SectionHeader";
-import { site } from "@/lib/site";
 
 export function Membership() {
   return (
@@ -11,7 +10,7 @@ export function Membership() {
             index="05"
             eyebrow="Memberships"
             title="Built around one clear commitment."
-            body="We will not publish prices, package names, or invented benefits before they are set. When memberships open, details will be shared here and with everyone who has registered interest."
+            body="Prices, package names, and benefits will be published together when they are set. When memberships open, details will be shared here — and first with everyone who has registered interest."
           />
           <ul className="pub-membership-pillars">
             {MEMBERSHIP_PILLARS.map((item) => (
@@ -24,7 +23,7 @@ export function Membership() {
         </div>
 
         <aside className="pub-membership-panel" aria-label="Membership pricing status">
-          <p className="pub-kicker">{site.launchText}</p>
+          <p className="pub-kicker">Pre-launch</p>
           <h3>Plans &amp; pricing</h3>
           <p>
             Packages and prices are still being finalised. Register your

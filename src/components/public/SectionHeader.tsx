@@ -21,6 +21,7 @@ export function SectionHeader({
     >
       {(index || eyebrow) && (
         <p className="pub-eyebrow">
+          <span className="pub-rule" aria-hidden="true" />
           {index ? <span className="pub-index">{index}</span> : null}
           {eyebrow}
         </p>

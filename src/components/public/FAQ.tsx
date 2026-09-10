@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 import { SectionHeader } from "./SectionHeader";
 import { FAQ_ITEMS } from "@/lib/public-content";
+import { site } from "@/lib/site";
 
 export function FAQ() {
   return (
@@ -17,6 +18,10 @@ export function FAQ() {
           {FAQ_ITEMS.map((item) => (
             <FaqItem key={item.q} question={item.q} answer={item.a} />
           ))}
+          <p className="pub-faq-more">
+            Still have questions?{" "}
+            <a href={`mailto:${site.email}`}>Email the club</a>.
+          </p>
         </div>
       </div>
     </section>

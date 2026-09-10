@@ -11,7 +11,7 @@ export function Trainers() {
           index="07"
           eyebrow="Coaching"
           title="The coaching team."
-          body="Coach profiles and credentials will be published when our team is confirmed. We will not invent names or qualifications to fill this space."
+          body="Coach profiles and credentials will be published when our team is confirmed."
         />
 
         {TRAINER_PROFILES.length > 0 ? (
