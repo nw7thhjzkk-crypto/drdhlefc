@@ -119,3 +119,72 @@ export function formatLeadNotes(data: NormalizedLead): string {
   if (data.message) lines.push(`Message: ${data.message}`);
   return lines.join("\n");
 }
+
+/* ----------------------------------------------------------------
+ * RPC error mapping (pure, unit-tested)
+ * ---------------------------------------------------------------- */
+
+export type RpcErrorMapping =
+  | { kind: "fallback" }
+  | { kind: "error"; error: string; fieldErrors?: FieldErrors };
+
+/**
+ * Translates a `submit_website_lead` RPC error message into a user-facing
+ * result. Kept pure and unit-tested so the server action stays thin and its
+ * failure behaviour is predictable (never a fake success).
+ */
+export function mapSubmitLeadError(message: string): RpcErrorMapping {
+  const msg = message ?? "";
+
+  if (msg.includes("rate_limited")) {
+    return {
+      kind: "error",
+      error: "Please wait a few minutes before sending another enquiry.",
+    };
+  }
+  if (msg.includes("invalid_phone")) {
+    return {
+      kind: "error",
+      error: "Enter a valid 10-digit Indian mobile number.",
+      fieldErrors: { phone: "Enter a valid 10-digit Indian mobile number." },
+    };
+  }
+  if (msg.includes("invalid_name")) {
+    return {
+      kind: "error",
+      error: "Please enter your name.",
+      fieldErrors: { name: "Please enter your name." },
+    };
+  }
+  if (msg.includes("invalid_email")) {
+    return {
+      kind: "error",
+      error: "Enter a valid email address.",
+      fieldErrors: { email: "Enter a valid email address." },
+    };
+  }
+  if (msg.includes("invalid_goal")) {
+    return {
+      kind: "error",
+      error: "Please choose a fitness goal.",
+      fieldErrors: { goal: "Please choose a fitness goal." },
+    };
+  }
+  if (msg.includes("invalid_interest")) {
+    return {
+      kind: "error",
+      error: "Please choose an interest.",
+      fieldErrors: { interest: "Please choose an interest." },
+    };
+  }
+  if (
+    msg.includes("Could not find the function") ||
+    msg.includes("schema cache")
+  ) {
+    return { kind: "fallback" };
+  }
+  return {
+    kind: "error",
+    error: "We could not receive your enquiry. Please try again, or email us.",
+  };
+}

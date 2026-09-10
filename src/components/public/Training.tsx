@@ -1,27 +1,9 @@
+import { TRAINING_PILLARS } from "@/lib/public-content";
 import { SectionHeader } from "./SectionHeader";
-
-const PILLARS = [
-  {
-    title: "Strength",
-    body: "Heavy, honest work. Progressive training for people who want to get stronger.",
-  },
-  {
-    title: "Conditioning",
-    body: "Capacity, pace, and athletic fitness — trained with intent, not noise.",
-  },
-  {
-    title: "Personal guidance",
-    body: "Coaching for those who want a tighter plan, clearer cues, and accountability.",
-  },
-  {
-    title: "Progress",
-    body: "A club that treats measurement as part of training, not an afterthought.",
-  },
-];
 
 export function Training() {
   return (
-    <section id="training" className="pub-section">
+    <section id="training" className="pub-section pub-training">
       <div className="pub-wrap">
         <SectionHeader
           index="03"
@@ -30,8 +12,11 @@ export function Training() {
           body="We are building a club around serious training. Specific class calendars and named programmes will be published when they are confirmed — not before."
         />
         <div className="pub-pillars">
-          {PILLARS.map((item) => (
+          {TRAINING_PILLARS.map((item, i) => (
             <article key={item.title} className="pub-pillar">
+              <span className="pub-pillar-num" aria-hidden="true">
+                {String(i + 1).padStart(2, "0")}
+              </span>
               <h3>{item.title}</h3>
               <p>{item.body}</p>
             </article>

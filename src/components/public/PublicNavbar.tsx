@@ -24,11 +24,22 @@ export function PublicNavbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Lock scroll while the mobile menu is open.
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
+  }, [open]);
+
+  // Close on Escape for keyboard users.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
   return (
@@ -54,7 +65,10 @@ export function PublicNavbar() {
           <Link href="/login" className="pub-btn pub-btn-ghost pub-btn-sm">
             Login
           </Link>
-          <Link href="/#access" className="pub-btn pub-btn-gold pub-btn-sm">
+          <Link
+            href="/#access"
+            className="pub-btn pub-btn-gold pub-btn-sm pub-nav-cta"
+          >
             Get Early Access
           </Link>
           <button
@@ -65,28 +79,51 @@ export function PublicNavbar() {
             onClick={() => setOpen((v) => !v)}
           >
             <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
-            <span aria-hidden="true">{open ? "Close" : "Menu"}</span>
+            <svg
+              viewBox="0 0 20 20"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              {open ? (
+                <>
+                  <path d="M4 4l12 12M16 4L4 16" />
+                </>
+              ) : (
+                <>
+                  <path d="M3 6h14M3 10h14M3 14h14" />
+                </>
+              )}
+            </svg>
           </button>
         </div>
       </div>
 
       {open ? (
         <div id="pub-mobile-nav" className="pub-nav-mobile">
-          {LINKS.map((l) => (
-            <Link key={l.href} href={l.href} onClick={() => setOpen(false)}>
-              {l.label}
+          <nav aria-label="Mobile">
+            {LINKS.map((l) => (
+              <Link key={l.href} href={l.href} onClick={() => setOpen(false)}>
+                {l.label}
+              </Link>
+            ))}
+          </nav>
+          <div className="pub-nav-mobile-actions">
+            <Link href="/login" onClick={() => setOpen(false)}>
+              Login
             </Link>
-          ))}
-          <Link href="/login" onClick={() => setOpen(false)}>
-            Login
-          </Link>
-          <Link
-            href="/#access"
-            className="pub-btn pub-btn-gold"
-            onClick={() => setOpen(false)}
-          >
-            Get Early Access
-          </Link>
+            <Link
+              href="/#access"
+              className="pub-btn pub-btn-gold"
+              onClick={() => setOpen(false)}
+            >
+              Get Early Access
+            </Link>
+          </div>
         </div>
       ) : null}
     </header>

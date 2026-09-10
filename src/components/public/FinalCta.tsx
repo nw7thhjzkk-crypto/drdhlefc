@@ -4,7 +4,9 @@ export function FinalCta() {
   return (
     <section className="pub-section pub-final">
       <div className="pub-wrap pub-final-inner">
-        <p className="pub-kicker">{site.launchText}</p>
+        <p className="pub-kicker">
+          {site.address.locality} · {site.address.region}
+        </p>
         <h2 className="pub-display-sm">Train at Dr DHL.</h2>
         <p className="pub-lede">
           Premium fitness in Bhuj. Register your interest, or log in if you
