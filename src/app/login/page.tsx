@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { BrandMark } from "@/components/public/BrandMark";
 import { login } from "./actions";
 
 export default function LoginPage({
@@ -17,7 +19,6 @@ export default function LoginPage({
         padding: "1.5rem",
       }}
     >
-      {/* Card */}
       <div
         style={{
           width: "100%",
@@ -29,9 +30,16 @@ export default function LoginPage({
           boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
         }}
       >
-        {/* Brand */}
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>🏆</div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              marginBottom: "0.75rem",
+            }}
+          >
+            <BrandMark size={72} priority />
+          </div>
           <h1
             style={{
               fontSize: "1.5rem",
@@ -42,7 +50,7 @@ export default function LoginPage({
               lineHeight: 1.2,
             }}
           >
-            DR DHL
+            Dr DHL
           </h1>
           <p
             style={{
@@ -70,13 +78,18 @@ export default function LoginPage({
           Sign in to your account
         </p>
 
-        {/* Error */}
         <ErrorBanner searchParams={searchParams} />
 
-        {/* Form */}
-        <form className="space-y-4" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <form
+          className="space-y-4"
+          style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+        >
           <div className="form-group">
-            <label htmlFor="email" className="form-label" style={{ color: "var(--color-silver)" }}>
+            <label
+              htmlFor="email"
+              className="form-label"
+              style={{ color: "var(--color-silver)" }}
+            >
               Email address
             </label>
             <input
@@ -91,7 +104,11 @@ export default function LoginPage({
           </div>
 
           <div className="form-group">
-            <label htmlFor="password" className="form-label" style={{ color: "var(--color-silver)" }}>
+            <label
+              htmlFor="password"
+              className="form-label"
+              style={{ color: "var(--color-silver)" }}
+            >
               Password
             </label>
             <input
@@ -125,26 +142,29 @@ export default function LoginPage({
         >
           Accounts are created by the gym administrator.
           <br />
-          Contact your gym manager for access.
+          This is not a public registration form.
         </p>
       </div>
 
-      {/* Footer */}
       <p
         style={{
           marginTop: "1.5rem",
           fontSize: "0.6875rem",
           color: "var(--color-text-muted)",
           letterSpacing: "0.04em",
+          textAlign: "center",
         }}
       >
-        © {new Date().getFullYear()} DR DHL Elite Fitness Club
+        <Link href="/" style={{ color: "var(--color-gold)" }}>
+          Back to the club
+        </Link>
+        <br />
+        © {new Date().getFullYear()} Dr DHL Elite Fitness Club
       </p>
     </div>
   );
 }
 
-// Async component to resolve searchParams
 async function ErrorBanner({
   searchParams,
 }: {
@@ -155,7 +175,6 @@ async function ErrorBanner({
 
   return (
     <div className="alert alert-error" style={{ marginBottom: "1rem" }}>
-      <span>⚠️</span>
       <span>
         {params.error === "Invalid credentials"
           ? "Invalid email or password. Please try again."
