@@ -1,24 +1,32 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Cormorant_Garamond } from "next/font/google";
+import localFont from "next/font/local";
 import { site, siteOrigin } from "@/lib/site";
 import "./globals.css";
 
-const geistSans = Geist({
+/*
+ * Fonts are self-hosted (variable woff2 from @fontsource-variable).
+ * This removes the build-time network dependency on Google Fonts, serves
+ * the fonts from our own origin (faster, no third-party request), and keeps
+ * the build deterministic offline.
+ */
+const geistSans = localFont({
+  src: "../../node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2",
   variable: "--font-geist-sans",
-  subsets: ["latin"],
+  weight: "100 900",
   display: "swap",
 });
 
-const geistMono = Geist_Mono({
+const geistMono = localFont({
+  src: "../../node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2",
   variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: "100 900",
   display: "swap",
 });
 
-const display = Cormorant_Garamond({
+const display = localFont({
+  src: "../../node_modules/@fontsource-variable/cormorant-garamond/files/cormorant-garamond-latin-wght-normal.woff2",
   variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: "300 700",
   display: "swap",
 });
 
@@ -78,10 +86,6 @@ export const metadata: Metadata = {
   },
   formatDetection: {
     telephone: false,
-  },
-  icons: {
-    icon: [{ url: "/brand/dr-dhl-monogram.png", type: "image/png" }],
-    apple: [{ url: "/brand/dr-dhl-monogram.png", type: "image/png" }],
   },
 };
 

@@ -7,8 +7,8 @@ export function Instagram() {
         <p className="pub-eyebrow">Instagram</p>
         <h2 className="pub-h2">Follow the club.</h2>
         <p className="pub-lede">
-          Updates from Dr DHL Elite Fitness Club live on Instagram. We do not
-          embed a fake feed here.
+          Updates from Dr DHL Elite Fitness Club live on Instagram. Follow
+          along as the club prepares to open.
         </p>
         <a
           href={site.instagramUrl}

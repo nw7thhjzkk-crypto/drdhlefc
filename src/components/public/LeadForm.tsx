@@ -1,11 +1,20 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
+import { useRef, useState, useTransition, type FormEvent } from "react";
 import { submitWebsiteLead } from "@/app/actions/submit-website-lead";
 import { FITNESS_GOALS, INTERESTS, site } from "@/lib/site";
 import type { FieldErrors } from "@/lib/website-lead";
 
+const FIELD_ORDER: Array<keyof FieldErrors> = [
+  "name",
+  "phone",
+  "email",
+  "goal",
+  "interest",
+];
+
 export function LeadForm() {
+  const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,15 +28,23 @@ export function LeadForm() {
     setFieldErrors({});
 
     startTransition(async () => {
-      const result = await submitWebsiteLead({
-        name: String(data.get("name") ?? ""),
-        phone: String(data.get("phone") ?? ""),
-        email: String(data.get("email") ?? ""),
-        goal: String(data.get("goal") ?? ""),
-        interest: String(data.get("interest") ?? ""),
-        message: String(data.get("message") ?? ""),
-        company: String(data.get("company") ?? ""),
-      });
+      let result: Awaited<ReturnType<typeof submitWebsiteLead>>;
+      try {
+        result = await submitWebsiteLead({
+          name: String(data.get("name") ?? ""),
+          phone: String(data.get("phone") ?? ""),
+          email: String(data.get("email") ?? ""),
+          goal: String(data.get("goal") ?? ""),
+          interest: String(data.get("interest") ?? ""),
+          message: String(data.get("message") ?? ""),
+          company: String(data.get("company") ?? ""),
+        });
+      } catch {
+        setError(
+          "We could not receive your enquiry. Please try again, or email us."
+        );
+        return;
+      }
 
       if (result.ok) {
         setSuccess(true);
@@ -37,6 +54,16 @@ export function LeadForm() {
 
       setError(result.error);
       setFieldErrors(result.fieldErrors ?? {});
+
+      // Move focus to the first invalid field so the error is announced.
+      requestAnimationFrame(() => {
+        const field = FIELD_ORDER.find((key) => result.fieldErrors?.[key]);
+        if (field) {
+          formRef.current?.querySelector<HTMLElement>(
+            `[name="${field}"]`
+          )?.focus();
+        }
+      });
     });
   }
 
@@ -61,44 +88,52 @@ export function LeadForm() {
   }
 
   return (
-    <form className="pub-form" onSubmit={onSubmit} noValidate aria-busy={pending}>
-      <div className="pub-field">
-        <label htmlFor="lead-name">Name</label>
-        <input
-          id="lead-name"
-          name="name"
-          type="text"
-          autoComplete="name"
-          required
-          maxLength={80}
-          aria-invalid={Boolean(fieldErrors.name)}
-          aria-describedby={fieldErrors.name ? "lead-name-error" : undefined}
-        />
-        {fieldErrors.name ? (
-          <p id="lead-name-error" className="pub-field-error">
-            {fieldErrors.name}
-          </p>
-        ) : null}
-      </div>
+    <form
+      ref={formRef}
+      className="pub-form"
+      onSubmit={onSubmit}
+      noValidate
+      aria-busy={pending}
+    >
+      <div className="pub-field-row">
+        <div className="pub-field">
+          <label htmlFor="lead-name">Name</label>
+          <input
+            id="lead-name"
+            name="name"
+            type="text"
+            autoComplete="name"
+            required
+            maxLength={80}
+            aria-invalid={Boolean(fieldErrors.name)}
+            aria-describedby={fieldErrors.name ? "lead-name-error" : undefined}
+          />
+          {fieldErrors.name ? (
+            <p id="lead-name-error" className="pub-field-error">
+              {fieldErrors.name}
+            </p>
+          ) : null}
+        </div>
 
-      <div className="pub-field">
-        <label htmlFor="lead-phone">Mobile number</label>
-        <input
-          id="lead-phone"
-          name="phone"
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel"
-          required
-          placeholder="10-digit Indian mobile"
-          aria-invalid={Boolean(fieldErrors.phone)}
-          aria-describedby={fieldErrors.phone ? "lead-phone-error" : undefined}
-        />
-        {fieldErrors.phone ? (
-          <p id="lead-phone-error" className="pub-field-error">
-            {fieldErrors.phone}
-          </p>
-        ) : null}
+        <div className="pub-field">
+          <label htmlFor="lead-phone">Mobile number</label>
+          <input
+            id="lead-phone"
+            name="phone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            required
+            placeholder="10-digit mobile"
+            aria-invalid={Boolean(fieldErrors.phone)}
+            aria-describedby={fieldErrors.phone ? "lead-phone-error" : undefined}
+          />
+          {fieldErrors.phone ? (
+            <p id="lead-phone-error" className="pub-field-error">
+              {fieldErrors.phone}
+            </p>
+          ) : null}
+        </div>
       </div>
 
       <div className="pub-field">

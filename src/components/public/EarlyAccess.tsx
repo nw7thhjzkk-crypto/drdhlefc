@@ -6,7 +6,7 @@ export function EarlyAccess() {
     <section id="access" className="pub-section pub-access">
       <div className="pub-wrap pub-access-grid">
         <SectionHeader
-          index="10"
+          index="12"
           eyebrow="Get Early Access"
           title="Register your interest."
           body="Tell us who you are and how you want to train. We will follow up. This is not a membership, a trial booking, or an account."

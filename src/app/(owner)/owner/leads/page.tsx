@@ -95,6 +95,7 @@ export default async function CRMPage() {
             <thead className="bg-zinc-950">
                 <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Name / Contact</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Enquiry notes</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Source</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Stage</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Assigned To</th>
@@ -111,6 +112,18 @@ export default async function CRMPage() {
                     <form id={`form-${lead.id}`} action={updateLead} className="hidden">
                         <input type="hidden" name="id" value={lead.id} />
                     </form>
+                    </td>
+                    <td className="px-6 py-4 align-top">
+                    {lead.notes ? (
+                        <p
+                          className="text-xs text-zinc-400 whitespace-pre-line max-w-[280px] line-clamp-4"
+                          title={lead.notes}
+                        >
+                          {lead.notes}
+                        </p>
+                    ) : (
+                        <span className="text-xs text-zinc-600">—</span>
+                    )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400 capitalize">
                     {lead.source}
@@ -173,7 +186,7 @@ export default async function CRMPage() {
                 ))}
                 {(!leads || leads.length === 0) && (
                 <tr>
-                    <td colSpan={6} className="px-6 py-8">
+                    <td colSpan={7} className="px-6 py-8">
                       <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
                         <h3 className="text-lg font-semibold text-yellow-500">
                           No leads in the pipeline
