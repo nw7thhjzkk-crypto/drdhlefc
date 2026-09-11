@@ -12,6 +12,7 @@ export function Hero() {
           <PhotoFrame
             label={plate.label}
             src={plate.src}
+            study={plate.study}
             aspect="hero"
             className="pub-hero-plate"
           />
@@ -39,8 +40,8 @@ export function Hero() {
           <a href="#access" className="pub-btn pub-btn-gold pub-btn-lg">
             Get Early Access
           </a>
-          <a href="#club" className="pub-btn pub-btn-outline pub-btn-lg">
-            The Club
+          <a href="#space" className="pub-btn pub-btn-outline pub-btn-lg">
+            See the floor
           </a>
         </div>
       </div>
