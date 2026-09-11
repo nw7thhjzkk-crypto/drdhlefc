@@ -5,18 +5,20 @@ export function PhotoFrame({
   src,
   aspect = "landscape",
   className = "",
+  study = false,
 }: {
   label: string;
   src: string | null;
   aspect?: "landscape" | "portrait" | "square" | "hero";
   className?: string;
+  study?: boolean;
 }) {
   return (
     <figure className={`pub-frame pub-frame-${aspect} ${className}`.trim()}>
       {src ? (
         <Image
           src={src}
-          alt={label}
+          alt={study ? `${label} — visual study of the intended environment` : label}
           fill
           sizes="(max-width: 800px) 100vw, 70vw"
           className="pub-frame-photo"
@@ -29,7 +31,11 @@ export function PhotoFrame({
       )}
       <figcaption>
         <span>{label}</span>
-        {!src ? <span className="pub-frame-status">To be published</span> : null}
+        {!src ? (
+          <span className="pub-frame-status">To be published</span>
+        ) : study ? (
+          <span className="pub-frame-status">Visual study</span>
+        ) : null}
       </figcaption>
     </figure>
   );

@@ -1,4 +1,5 @@
 import { About } from "./About";
+import { Amenities } from "./Amenities";
 import { EarlyAccess } from "./EarlyAccess";
 import { Footer } from "./Footer";
 import { Hero } from "./Hero";
@@ -11,7 +12,7 @@ import { Training } from "./Training";
 
 export function PublicWebsite() {
   return (
-    <div className="public-site">
+    <div className="public-site is-light-rhythm">
       <JsonLd />
       <a href="#main" className="pub-skip">
         Skip to content
@@ -22,6 +23,7 @@ export function PublicWebsite() {
         <About />
         <Training />
         <Space />
+        <Amenities />
         <Membership />
         <Location />
         <EarlyAccess />
