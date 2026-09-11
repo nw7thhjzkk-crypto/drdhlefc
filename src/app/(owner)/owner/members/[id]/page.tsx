@@ -50,28 +50,28 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <Link href="/owner/members" className="text-gray-500 hover:text-gray-900">&larr; Back</Link>
-          <h1 className="text-2xl font-bold text-gray-900">Member Profile: {member.member_code}</h1>
+          <Link href="/owner/members" className="text-zinc-500 hover:text-zinc-100">&larr; Back</Link>
+          <h1 className="text-2xl font-bold text-zinc-100">Member Profile: {member.member_code}</h1>
         </div>
         {member.status === 'active' && (
           <form action={async () => {
             "use server";
             await archiveMember(id);
           }}>
-            <button type="submit" className="bg-red-100 text-red-700 px-4 py-2 rounded hover:bg-red-200">
+            <button type="submit" className="bg-red-900/50 text-red-300 px-4 py-2 rounded hover:bg-red-900/60">
               Archive Member
             </button>
           </form>
         )}
         {member.status === 'inactive' && (
-          <span className="bg-red-100 text-red-800 px-4 py-2 rounded font-semibold">Archived (Inactive)</span>
+          <span className="bg-red-900/50 text-red-400 px-4 py-2 rounded font-semibold">Archived (Inactive)</span>
         )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
         {/* Left Column: Form */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow">
+        <div className="lg:col-span-2 bg-zinc-900 p-6 rounded-lg shadow-xl border border-zinc-800">
           <h2 className="text-xl font-semibold mb-6 border-b pb-2">Details</h2>
 
           <form action={async (formData) => {
@@ -80,39 +80,39 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
           }} className="space-y-6">
 
             <div className="flex items-center gap-6 mb-6">
-              <div className="w-24 h-24 relative bg-gray-200 rounded-full overflow-hidden flex-shrink-0">
+              <div className="w-24 h-24 relative bg-zinc-800 rounded-full overflow-hidden flex-shrink-0">
                 {member.photo_url ? (
                   <Image src={member.photo_url} alt={member.name} fill className="object-cover" />
                 ) : (
-                  <div className="w-full h-full flex justify-center items-center text-gray-500 text-2xl">?</div>
+                  <div className="w-full h-full flex justify-center items-center text-zinc-500 text-2xl">?</div>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Update Photo</label>
-                <input name="photo" type="file" accept="image/*" className="mt-1 block text-sm text-gray-500" />
+                <label className="block text-sm font-medium text-zinc-400">Update Photo</label>
+                <input name="photo" type="file" accept="image/*" className="mt-1 block text-sm text-zinc-500" />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Name</label>
-                <input name="name" type="text" defaultValue={member.name} className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                <label className="block text-sm font-medium text-zinc-400">Name</label>
+                <input name="name" type="text" defaultValue={member.name} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
-                <input name="email" type="email" defaultValue={member.email} className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                <label className="block text-sm font-medium text-zinc-400">Email</label>
+                <input name="email" type="email" defaultValue={member.email} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Phone</label>
-                <input name="phone" type="text" defaultValue={member.phone || ""} className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                <label className="block text-sm font-medium text-zinc-400">Phone</label>
+                <input name="phone" type="text" defaultValue={member.phone || ""} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Date of Birth</label>
-                <input name="dob" type="date" defaultValue={member.dob || ""} className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                <label className="block text-sm font-medium text-zinc-400">Date of Birth</label>
+                <input name="dob" type="date" defaultValue={member.dob || ""} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Gender</label>
-                <select name="gender" defaultValue={member.gender || ""} className="mt-1 block w-full border border-gray-300 rounded p-2">
+                <label className="block text-sm font-medium text-zinc-400">Gender</label>
+                <select name="gender" defaultValue={member.gender || ""} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200">
                   <option value="">Select...</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
@@ -122,35 +122,35 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Address</label>
-              <textarea name="address" rows={2} defaultValue={member.address || ""} className="mt-1 block w-full border border-gray-300 rounded p-2"></textarea>
+              <label className="block text-sm font-medium text-zinc-400">Address</label>
+              <textarea name="address" rows={2} defaultValue={member.address || ""} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"></textarea>
             </div>
 
-            <h3 className="text-lg font-medium text-gray-900 border-b pb-2 pt-4">Emergency Contact</h3>
+            <h3 className="text-lg font-medium text-zinc-100 border-b pb-2 pt-4">Emergency Contact</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Name</label>
-                <input name="emergency_contact_name" type="text" defaultValue={member.emergency_contact_name || ""} className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                <label className="block text-sm font-medium text-zinc-400">Name</label>
+                <input name="emergency_contact_name" type="text" defaultValue={member.emergency_contact_name || ""} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Phone</label>
-                <input name="emergency_contact_phone" type="text" defaultValue={member.emergency_contact_phone || ""} className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                <label className="block text-sm font-medium text-zinc-400">Phone</label>
+                <input name="emergency_contact_phone" type="text" defaultValue={member.emergency_contact_phone || ""} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
               </div>
             </div>
 
-            <h3 className="text-lg font-medium text-gray-900 border-b pb-2 pt-4">Fitness Profile</h3>
+            <h3 className="text-lg font-medium text-zinc-100 border-b pb-2 pt-4">Fitness Profile</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Primary Goal</label>
-                <input name="primary_goal" type="text" defaultValue={member.primary_goal || ""} className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                <label className="block text-sm font-medium text-zinc-400">Primary Goal</label>
+                <input name="primary_goal" type="text" defaultValue={member.primary_goal || ""} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Secondary Goal</label>
-                <input name="secondary_goal" type="text" defaultValue={member.secondary_goal || ""} className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                <label className="block text-sm font-medium text-zinc-400">Secondary Goal</label>
+                <input name="secondary_goal" type="text" defaultValue={member.secondary_goal || ""} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Fitness Level</label>
-                <select name="fitness_level" defaultValue={member.fitness_level || ""} className="mt-1 block w-full border border-gray-300 rounded p-2">
+                <label className="block text-sm font-medium text-zinc-400">Fitness Level</label>
+                <select name="fitness_level" defaultValue={member.fitness_level || ""} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200">
                   <option value="">Select...</option>
                   <option value="Beginner">Beginner</option>
                   <option value="Intermediate">Intermediate</option>
@@ -158,21 +158,21 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Diet Preference</label>
-                <input name="diet_preference" type="text" defaultValue={member.diet_preference || ""} className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                <label className="block text-sm font-medium text-zinc-400">Diet Preference</label>
+                <input name="diet_preference" type="text" defaultValue={member.diet_preference || ""} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700">Training Experience / Injuries</label>
-                <textarea name="training_experience" rows={2} defaultValue={member.training_experience || ""} className="mt-1 block w-full border border-gray-300 rounded p-2"></textarea>
+                <label className="block text-sm font-medium text-zinc-400">Training Experience / Injuries</label>
+                <textarea name="training_experience" rows={2} defaultValue={member.training_experience || ""} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"></textarea>
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700">Internal Notes</label>
-                <textarea name="notes" rows={2} defaultValue={member.notes || ""} className="mt-1 block w-full border border-gray-300 rounded p-2"></textarea>
+                <label className="block text-sm font-medium text-zinc-400">Internal Notes</label>
+                <textarea name="notes" rows={2} defaultValue={member.notes || ""} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"></textarea>
               </div>
             </div>
 
             <div className="flex justify-end pt-4">
-              <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700">
+              <button type="submit" className="bg-yellow-600 text-zinc-950 font-bold px-6 py-2 rounded shadow hover:bg-yellow-500">
                 Save Changes
               </button>
             </div>
@@ -183,40 +183,40 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
         <div className="space-y-6">
 
           {/* Membership Summary */}
-          <div className="bg-white p-6 rounded-lg shadow">
+          <div className="bg-zinc-900 p-6 rounded-lg shadow-xl border border-zinc-800">
             <h2 className="text-xl font-semibold mb-4 border-b pb-2">Membership</h2>
             {membership ? (
               <div className="space-y-2 text-sm mb-4">
-                <p><span className="font-medium text-gray-500">Plan:</span> {membership.membership_plans?.name}</p>
-                <p><span className="font-medium text-gray-500">Status:</span>
-                  <span className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${membership.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                <p><span className="font-medium text-zinc-500">Plan:</span> {membership.membership_plans?.name}</p>
+                <p><span className="font-medium text-zinc-500">Status:</span>
+                  <span className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${membership.status === 'active' ? 'bg-green-900/50 text-green-400' : 'bg-yellow-900/50 text-yellow-400'}`}>
                     {membership.status}
                   </span>
                 </p>
-                <p><span className="font-medium text-gray-500">Start:</span> {membership.start_date}</p>
-                <p><span className="font-medium text-gray-500">End:</span> {membership.end_date}</p>
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <p><span className="font-medium text-gray-500">Total:</span> {formatINR(membership.total_amount)}</p>
-                  <p><span className="font-medium text-gray-500">Paid:</span> {formatINR(membership.paid_amount)}</p>
-                  <p><span className="font-medium text-gray-500">Pending:</span> {formatINR(membership.pending_amount)}</p>
+                <p><span className="font-medium text-zinc-500">Start:</span> {membership.start_date}</p>
+                <p><span className="font-medium text-zinc-500">End:</span> {membership.end_date}</p>
+                <div className="mt-4 pt-4 border-t border-zinc-800">
+                  <p><span className="font-medium text-zinc-500">Total:</span> {formatINR(membership.total_amount)}</p>
+                  <p><span className="font-medium text-zinc-500">Paid:</span> {formatINR(membership.paid_amount)}</p>
+                  <p><span className="font-medium text-zinc-500">Pending:</span> {formatINR(membership.pending_amount)}</p>
                 </div>
 
                 {membership.pending_amount > 0 && (
-                  <details className="group mt-4 pt-4 border-t border-gray-100">
-                    <summary className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-800 list-none">
+                  <details className="group mt-4 pt-4 border-t border-zinc-800">
+                    <summary className="cursor-pointer text-sm font-medium text-yellow-500 hover:text-yellow-400 list-none">
                       + Record Payment
                     </summary>
                     <form action={async (formData) => {
                       "use server";
                       await recordPayment(membership.id, id, formData);
-                    }} className="mt-4 space-y-4 text-sm bg-gray-50 p-4 rounded-md border border-gray-200">
+                    }} className="mt-4 space-y-4 text-sm bg-zinc-950 p-4 rounded-md border border-zinc-800">
                       <div>
-                        <label className="block text-gray-700">Amount to Pay</label>
-                        <input name="amount" type="number" step="0.01" min="0.01" max={membership.pending_amount} defaultValue={membership.pending_amount} required className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                        <label className="block text-zinc-400">Amount to Pay</label>
+                        <input name="amount" type="number" step="0.01" min="0.01" max={membership.pending_amount} defaultValue={membership.pending_amount} required className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
                       </div>
                       <div>
-                        <label className="block text-gray-700">Payment Method</label>
-                        <select name="method" required className="mt-1 block w-full border border-gray-300 rounded p-2">
+                        <label className="block text-zinc-400">Payment Method</label>
+                        <select name="method" required className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200">
                           <option value="cash">Cash</option>
                           <option value="credit_card">Credit Card</option>
                           <option value="bank_transfer">Bank Transfer</option>
@@ -224,14 +224,14 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
                         </select>
                       </div>
                       <div>
-                        <label className="block text-gray-700">Reference (Optional)</label>
-                        <input name="reference" type="text" className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                        <label className="block text-zinc-400">Reference (Optional)</label>
+                        <input name="reference" type="text" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
                       </div>
                       <div>
-                        <label className="block text-gray-700">Notes (Optional)</label>
-                        <input name="notes" type="text" className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                        <label className="block text-zinc-400">Notes (Optional)</label>
+                        <input name="notes" type="text" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
                       </div>
-                      <button type="submit" className="w-full bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">
+                      <button type="submit" className="w-full bg-yellow-600 text-zinc-950 font-bold px-4 py-2 rounded shadow hover:bg-yellow-500">
                         Submit Payment
                       </button>
                     </form>
@@ -239,11 +239,11 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
                 )}
 
                 {membership.payments && membership.payments.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-gray-100">
-                    <p className="font-medium text-gray-700 mb-2">Payment History:</p>
+                  <div className="mt-4 pt-4 border-t border-zinc-800">
+                    <p className="font-medium text-zinc-400 mb-2">Payment History:</p>
                     <ul className="space-y-1">
                       {membership.payments.map((p: Payment, i: number) => (
-                        <li key={i} className="text-xs text-gray-600">
+                        <li key={i} className="text-xs text-zinc-400">
                           {new Date(p.paid_at).toLocaleDateString()} - {formatINR(p.amount)} ({p.method})
                         </li>
                       ))}
@@ -253,12 +253,12 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
               </div>
             ) : (
               <div className="mb-4">
-                <p className="text-gray-500 text-sm">No active membership.</p>
+                <p className="text-zinc-500 text-sm">No active membership.</p>
               </div>
             )}
 
             <details className="group">
-              <summary className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-800 list-none">
+              <summary className="cursor-pointer text-sm font-medium text-yellow-500 hover:text-yellow-400 list-none">
                 + Assign New Membership
               </summary>
               <form action={async (formData) => {
@@ -266,22 +266,22 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
                 await assignMembership(id, formData);
               }} className="mt-4 space-y-4 text-sm border-t pt-4">
                 <div>
-                  <label className="block text-gray-700">Plan</label>
-                  <select name="plan_id" required className="mt-1 block w-full border border-gray-300 rounded p-2">
+                  <label className="block text-zinc-400">Plan</label>
+                  <select name="plan_id" required className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200">
                     <option value="">Select Plan...</option>
                     {plans?.map(p => <option key={p.id} value={p.id}>{p.name} - {formatINR(p.price)}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-gray-700">Start Date</label>
-                  <input name="start_date" type="date" required className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                  <label className="block text-zinc-400">Start Date</label>
+                  <input name="start_date" type="date" required className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
                 </div>
                 <div>
-                  <label className="block text-gray-700">Paid Amount (Initial deposit)</label>
-                  <p className="text-xs text-gray-400 mb-1">Total amount is derived from the plan price. Enter 0 if paying later.</p>
-                  <input name="paid_amount" type="number" step="0.01" min="0" defaultValue="0" className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                  <label className="block text-zinc-400">Paid Amount (Initial deposit)</label>
+                  <p className="text-xs text-zinc-500 mb-1">Total amount is derived from the plan price. Enter 0 if paying later.</p>
+                  <input name="paid_amount" type="number" step="0.01" min="0" defaultValue="0" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
                 </div>
-                <button type="submit" className="w-full bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">
+                <button type="submit" className="w-full bg-yellow-600 text-zinc-950 font-bold px-4 py-2 rounded shadow hover:bg-yellow-500">
                   Assign Plan
                 </button>
               </form>
@@ -289,30 +289,30 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
           </div>
 
           {/* Trainer Summary */}
-          <div className="bg-white p-6 rounded-lg shadow">
+          <div className="bg-zinc-900 p-6 rounded-lg shadow-xl border border-zinc-800">
             <h2 className="text-xl font-semibold mb-4 border-b pb-2">Assigned Trainer</h2>
             {trainer ? (
               <div className="flex justify-between items-center">
-                <p className="text-sm font-medium text-gray-900">{trainer.name}</p>
+                <p className="text-sm font-medium text-zinc-100">{trainer.name}</p>
                 <form action={async () => {
                   "use server";
                   await unassignTrainer(trainerAssignment.id, id);
                 }}>
-                  <button type="submit" className="text-xs text-red-600 hover:text-red-800">Unassign</button>
+                  <button type="submit" className="text-xs text-red-400 hover:text-red-300">Unassign</button>
                 </form>
               </div>
             ) : (
               <div>
-                <p className="text-gray-500 text-sm mb-4">No assigned trainer.</p>
+                <p className="text-zinc-500 text-sm mb-4">No assigned trainer.</p>
                 <form action={async (formData) => {
                   "use server";
                   await assignTrainer(id, formData.get("trainer_id") as string);
                 }} className="flex gap-2 text-sm">
-                  <select name="trainer_id" required className="block w-full border border-gray-300 rounded p-2">
+                  <select name="trainer_id" required className="block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200">
                     <option value="">Select Trainer...</option>
                     {allTrainers?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
-                  <button type="submit" className="bg-blue-600 text-white px-3 py-2 rounded shadow hover:bg-blue-700 whitespace-nowrap">
+                  <button type="submit" className="bg-yellow-600 text-zinc-950 font-bold px-3 py-2 rounded shadow hover:bg-yellow-500 whitespace-nowrap">
                     Assign
                   </button>
                 </form>
@@ -321,23 +321,23 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
           </div>
 
           {/* Assessments */}
-          <div className="bg-white p-6 rounded-lg shadow">
+          <div className="bg-zinc-900 p-6 rounded-lg shadow-xl border border-zinc-800">
             <h2 className="text-xl font-semibold mb-4 border-b pb-2">Latest Assessment</h2>
             {latestAssessment ? (
               <div className="space-y-2 text-sm mb-6">
-                <p><span className="font-medium text-gray-500">Date:</span> {new Date(latestAssessment.recorded_at).toLocaleDateString()}</p>
-                <p><span className="font-medium text-gray-500">Height:</span> {latestAssessment.height_cm} cm</p>
-                <p><span className="font-medium text-gray-500">Weight:</span> {latestAssessment.weight_kg} kg</p>
-                {latestAssessment.bmi && <p><span className="font-medium text-gray-500">BMI:</span> {latestAssessment.bmi}</p>}
-                {latestAssessment.body_fat_pct && <p><span className="font-medium text-gray-500">Body Fat:</span> {latestAssessment.body_fat_pct}%</p>}
-                {latestAssessment.notes && <p><span className="font-medium text-gray-500">Notes:</span> {latestAssessment.notes}</p>}
+                <p><span className="font-medium text-zinc-500">Date:</span> {new Date(latestAssessment.recorded_at).toLocaleDateString()}</p>
+                <p><span className="font-medium text-zinc-500">Height:</span> {latestAssessment.height_cm} cm</p>
+                <p><span className="font-medium text-zinc-500">Weight:</span> {latestAssessment.weight_kg} kg</p>
+                {latestAssessment.bmi && <p><span className="font-medium text-zinc-500">BMI:</span> {latestAssessment.bmi}</p>}
+                {latestAssessment.body_fat_pct && <p><span className="font-medium text-zinc-500">Body Fat:</span> {latestAssessment.body_fat_pct}%</p>}
+                {latestAssessment.notes && <p><span className="font-medium text-zinc-500">Notes:</span> {latestAssessment.notes}</p>}
               </div>
             ) : (
-              <p className="text-gray-500 text-sm mb-6">No assessments recorded.</p>
+              <p className="text-zinc-500 text-sm mb-6">No assessments recorded.</p>
             )}
 
             <details className="group">
-              <summary className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-800 list-none">
+              <summary className="cursor-pointer text-sm font-medium text-yellow-500 hover:text-yellow-400 list-none">
                 + Add Manual Assessment
               </summary>
               <form action={async (formData) => {
@@ -345,22 +345,22 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
                 await addAssessment(id, formData);
               }} className="mt-4 space-y-4 text-sm border-t pt-4">
                 <div>
-                  <label className="block text-gray-700">Height (cm)</label>
-                  <input name="height_cm" type="number" step="0.1" required className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                  <label className="block text-zinc-400">Height (cm)</label>
+                  <input name="height_cm" type="number" step="0.1" required className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
                 </div>
                 <div>
-                  <label className="block text-gray-700">Weight (kg)</label>
-                  <input name="weight_kg" type="number" step="0.1" required className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                  <label className="block text-zinc-400">Weight (kg)</label>
+                  <input name="weight_kg" type="number" step="0.1" required className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
                 </div>
                 <div>
-                  <label className="block text-gray-700">Body Fat (%)</label>
-                  <input name="body_fat_pct" type="number" step="0.1" className="mt-1 block w-full border border-gray-300 rounded p-2" />
+                  <label className="block text-zinc-400">Body Fat (%)</label>
+                  <input name="body_fat_pct" type="number" step="0.1" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
                 </div>
                 <div>
-                  <label className="block text-gray-700">Notes</label>
-                  <textarea name="notes" rows={2} className="mt-1 block w-full border border-gray-300 rounded p-2"></textarea>
+                  <label className="block text-zinc-400">Notes</label>
+                  <textarea name="notes" rows={2} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"></textarea>
                 </div>
-                <button type="submit" className="w-full bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">
+                <button type="submit" className="w-full bg-yellow-600 text-zinc-950 font-bold px-4 py-2 rounded shadow hover:bg-yellow-500">
                   Save Assessment
                 </button>
               </form>

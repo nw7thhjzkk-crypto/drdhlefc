@@ -28,42 +28,42 @@ function NewMemberForm() {
   return (
     <div className="p-8 max-w-3xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Add New Member</h1>
-        <Link href="/owner/members" className="text-blue-600 hover:underline">Back to Members</Link>
+        <h1 className="text-2xl font-bold text-zinc-100">Add New Member</h1>
+        <Link href="/owner/members" className="text-yellow-500 hover:underline">Back to Members</Link>
       </div>
 
       {convertingFromLead && (
-        <div className="bg-yellow-50 border border-yellow-200 text-yellow-900 p-4 rounded mb-6 text-sm">
+        <div className="bg-yellow-950/40 border border-yellow-800 text-yellow-300 p-4 rounded mb-6 text-sm">
           Converting CRM lead{leadId ? ` (${leadId})` : ""} — name, phone, and email are prefilled. Complete the form and create the member.
           {" "}
           <Link href="/owner/leads" className="underline font-medium">Back to leads</Link>
         </div>
       )}
 
-      {error && <div className="bg-red-50 text-red-700 p-4 rounded mb-6">{error}</div>}
+      {error && <div className="bg-red-950/60 text-red-300 p-4 rounded mb-6">{error}</div>}
 
-      <form action={handleSubmit} className="bg-white p-6 rounded-lg shadow space-y-6">
+      <form action={handleSubmit} className="bg-zinc-900 p-6 rounded-lg shadow-xl border border-zinc-800 space-y-6">
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Name *</label>
-            <input name="name" type="text" required defaultValue={defaultName} className="mt-1 block w-full border border-gray-300 rounded p-2" />
+            <label className="block text-sm font-medium text-zinc-400">Name *</label>
+            <input name="name" type="text" required defaultValue={defaultName} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email *</label>
-            <input name="email" type="email" required defaultValue={defaultEmail} className="mt-1 block w-full border border-gray-300 rounded p-2" />
+            <label className="block text-sm font-medium text-zinc-400">Email *</label>
+            <input name="email" type="email" required defaultValue={defaultEmail} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Phone</label>
-            <input name="phone" type="text" defaultValue={defaultPhone} className="mt-1 block w-full border border-gray-300 rounded p-2" />
+            <label className="block text-sm font-medium text-zinc-400">Phone</label>
+            <input name="phone" type="text" defaultValue={defaultPhone} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Date of Birth</label>
-            <input name="dob" type="date" className="mt-1 block w-full border border-gray-300 rounded p-2" />
+            <label className="block text-sm font-medium text-zinc-400">Date of Birth</label>
+            <input name="dob" type="date" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Gender</label>
-            <select name="gender" className="mt-1 block w-full border border-gray-300 rounded p-2">
+            <label className="block text-sm font-medium text-zinc-400">Gender</label>
+            <select name="gender" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200">
               <option value="">Select...</option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
@@ -71,41 +71,41 @@ function NewMemberForm() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Photo</label>
-            <input name="photo" type="file" accept="image/*" className="mt-1 block w-full border border-gray-300 rounded p-2" />
+            <label className="block text-sm font-medium text-zinc-400">Photo</label>
+            <input name="photo" type="file" accept="image/*" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Address</label>
-          <textarea name="address" rows={2} className="mt-1 block w-full border border-gray-300 rounded p-2"></textarea>
+          <label className="block text-sm font-medium text-zinc-400">Address</label>
+          <textarea name="address" rows={2} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"></textarea>
         </div>
 
-        <h3 className="text-lg font-medium text-gray-900 border-b pb-2 pt-4">Emergency Contact</h3>
+        <h3 className="text-lg font-medium text-zinc-100 border-b pb-2 pt-4">Emergency Contact</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Name</label>
-            <input name="emergency_contact_name" type="text" className="mt-1 block w-full border border-gray-300 rounded p-2" />
+            <label className="block text-sm font-medium text-zinc-400">Name</label>
+            <input name="emergency_contact_name" type="text" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Phone</label>
-            <input name="emergency_contact_phone" type="text" className="mt-1 block w-full border border-gray-300 rounded p-2" />
+            <label className="block text-sm font-medium text-zinc-400">Phone</label>
+            <input name="emergency_contact_phone" type="text" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
           </div>
         </div>
 
-        <h3 className="text-lg font-medium text-gray-900 border-b pb-2 pt-4">Fitness Profile</h3>
+        <h3 className="text-lg font-medium text-zinc-100 border-b pb-2 pt-4">Fitness Profile</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Primary Goal</label>
-            <input name="primary_goal" type="text" placeholder="e.g. Weight Loss" className="mt-1 block w-full border border-gray-300 rounded p-2" />
+            <label className="block text-sm font-medium text-zinc-400">Primary Goal</label>
+            <input name="primary_goal" type="text" placeholder="e.g. Weight Loss" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Secondary Goal</label>
-            <input name="secondary_goal" type="text" className="mt-1 block w-full border border-gray-300 rounded p-2" />
+            <label className="block text-sm font-medium text-zinc-400">Secondary Goal</label>
+            <input name="secondary_goal" type="text" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Fitness Level</label>
-            <select name="fitness_level" className="mt-1 block w-full border border-gray-300 rounded p-2">
+            <label className="block text-sm font-medium text-zinc-400">Fitness Level</label>
+            <select name="fitness_level" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200">
               <option value="">Select...</option>
               <option value="Beginner">Beginner</option>
               <option value="Intermediate">Intermediate</option>
@@ -113,20 +113,20 @@ function NewMemberForm() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Diet Preference</label>
-            <input name="diet_preference" type="text" className="mt-1 block w-full border border-gray-300 rounded p-2" />
+            <label className="block text-sm font-medium text-zinc-400">Diet Preference</label>
+            <input name="diet_preference" type="text" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700">Training Experience / Injuries</label>
-            <textarea name="training_experience" rows={2} className="mt-1 block w-full border border-gray-300 rounded p-2"></textarea>
+            <label className="block text-sm font-medium text-zinc-400">Training Experience / Injuries</label>
+            <textarea name="training_experience" rows={2} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"></textarea>
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700">Internal Notes</label>
+            <label className="block text-sm font-medium text-zinc-400">Internal Notes</label>
             <textarea
               name="notes"
               rows={2}
               defaultValue={leadId ? `Converted from CRM lead ${leadId}` : ""}
-              className="mt-1 block w-full border border-gray-300 rounded p-2"
+              className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
             ></textarea>
           </div>
         </div>
@@ -135,7 +135,7 @@ function NewMemberForm() {
           <button
             type="submit"
             disabled={loading}
-            className="bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700 disabled:opacity-50"
+            className="bg-yellow-600 text-zinc-950 font-bold px-6 py-2 rounded shadow hover:bg-yellow-500 disabled:opacity-50"
           >
             {loading ? "Creating..." : "Create Member"}
           </button>
@@ -147,7 +147,7 @@ function NewMemberForm() {
 
 export default function NewMemberPage() {
   return (
-    <Suspense fallback={<div className="p-8 max-w-3xl mx-auto text-gray-500">Loading form…</div>}>
+    <Suspense fallback={<div className="p-8 max-w-3xl mx-auto text-zinc-500">Loading form…</div>}>
       <NewMemberForm />
     </Suspense>
   );
