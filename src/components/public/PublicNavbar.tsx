@@ -8,9 +8,9 @@ import { site } from "@/lib/site";
 const LINKS = [
   { href: "/#club", label: "The Club" },
   { href: "/#training", label: "Training" },
-  { href: "/#memberships", label: "Memberships" },
+  { href: "/#space", label: "Space" },
+  { href: "/#memberships", label: "Membership" },
   { href: "/#visit", label: "Visit" },
-  { href: "/#access", label: "Early Access" },
 ];
 
 export function PublicNavbar() {
@@ -24,7 +24,6 @@ export function PublicNavbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Lock scroll while the mobile menu is open.
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => {
@@ -32,7 +31,6 @@ export function PublicNavbar() {
     };
   }, [open]);
 
-  // Close on Escape for keyboard users.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
