@@ -36,12 +36,6 @@ To create the initial Owner account for the platform:
    ```
 4. **Important**: Never commit your `.env.local` or any file containing real credentials to version control.
 
----
-**Note:** This commit ensures a diff exists to successfully publish the branch.
-
----
-**Note:** Verified on $(date)
-
 ## Public website & early-access leads
 
 The public club website (`/`) renders without Supabase configured, so you can

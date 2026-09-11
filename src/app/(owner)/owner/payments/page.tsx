@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { formatINR } from "@/lib/currency";
 import { redirect } from "next/navigation";
 import { recordPayment } from "./actions";
 import Link from "next/link";
@@ -15,10 +16,6 @@ interface Membership {
 
 interface Member {
   name: string;
-}
-
-function formatInr(amount: number) {
-  return `₹${Number(amount).toLocaleString("en-IN")}`;
 }
 
 export default async function PaymentsPage({
@@ -132,7 +129,7 @@ export default async function PaymentsPage({
                         : ms.membership_plans?.name;
                       return (
                         <option key={ms.id} value={ms.id}>
-                          {m.name} - {planName} ({formatInr(ms.pending_amount)}{" "}
+                          {m.name} - {planName} ({formatINR(ms.pending_amount)}{" "}
                           pending)
                         </option>
                       );
@@ -266,7 +263,7 @@ export default async function PaymentsPage({
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-400">
-                        {formatInr(payment.amount)}
+                        {formatINR(payment.amount)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
                         {payment.method}

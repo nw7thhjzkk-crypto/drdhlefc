@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { formatINR } from "@/lib/currency";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { bookActivity, cancelBooking, claimFirstOwner } from "./actions";
@@ -249,7 +250,7 @@ export default async function MemberHomePage() {
               </div>
               {membership.pending_amount > 0 && (
                 <div style={{ fontSize: "0.75rem", color: "#EAB308", marginTop: "0.2rem" }}>
-                  ₹{Number(membership.pending_amount).toLocaleString()} pending
+                  {formatINR(membership.pending_amount)} pending
                 </div>
               )}
             </div>

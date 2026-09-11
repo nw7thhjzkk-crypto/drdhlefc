@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { formatINR } from "@/lib/currency";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -95,16 +96,16 @@ export default async function MemberPlans() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", background: "rgba(0,0,0,0.2)", padding: "0.75rem", borderRadius: "var(--radius-md)" }}>
                   <div>
                     <div style={{ fontSize: "0.6875rem", color: "var(--color-silver-dark)" }}>Total</div>
-                    <div style={{ fontSize: "0.875rem", fontWeight: 600, color: "#fff" }}>₹{Number(ms.total_amount).toLocaleString()}</div>
+                    <div style={{ fontSize: "0.875rem", fontWeight: 600, color: "#fff" }}>{formatINR(ms.total_amount)}</div>
                   </div>
                   <div>
                     <div style={{ fontSize: "0.6875rem", color: "var(--color-silver-dark)" }}>Paid</div>
-                    <div style={{ fontSize: "0.875rem", fontWeight: 600, color: "#10B981" }}>₹{Number(ms.paid_amount).toLocaleString()}</div>
+                    <div style={{ fontSize: "0.875rem", fontWeight: 600, color: "#10B981" }}>{formatINR(ms.paid_amount)}</div>
                   </div>
                   <div>
                     <div style={{ fontSize: "0.6875rem", color: "var(--color-silver-dark)" }}>Pending</div>
                     <div style={{ fontSize: "0.875rem", fontWeight: 600, color: ms.pending_amount > 0 ? "#EF4444" : "var(--color-silver)" }}>
-                      ₹{Number(ms.pending_amount).toLocaleString()}
+                      {formatINR(ms.pending_amount)}
                     </div>
                   </div>
                 </div>
@@ -166,7 +167,7 @@ export default async function MemberPlans() {
                       </div>
                     </div>
                     <div style={{ fontWeight: 700, color: "#10B981", fontSize: "1rem" }}>
-                      ₹{Number(p.amount).toLocaleString()}
+                      {formatINR(p.amount)}
                     </div>
                   </div>
                 );

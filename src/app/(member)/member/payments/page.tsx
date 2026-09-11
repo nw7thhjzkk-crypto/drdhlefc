@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { formatINR } from "@/lib/currency";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -29,12 +30,6 @@ function planName(plans: MembershipRow["membership_plans"]): string {
   if (!plans) return "Membership";
   if (Array.isArray(plans)) return plans[0]?.name ?? "Membership";
   return plans.name ?? "Membership";
-}
-
-function formatINR(value: number | string | null | undefined): string {
-  const n = Number(value ?? 0);
-  if (Number.isNaN(n)) return "₹0";
-  return `₹${n.toLocaleString("en-IN")}`;
 }
 
 export default async function MemberPaymentsPage() {
