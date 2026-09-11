@@ -40,8 +40,8 @@ export function Footer() {
           <p className="pub-label">Club</p>
           <Link href="/#club">The Club</Link>
           <Link href="/#training">Training</Link>
-          <Link href="/#memberships">Memberships</Link>
-          <Link href="/#coaching">Coaching</Link>
+          <Link href="/#space">Space</Link>
+          <Link href="/#memberships">Membership</Link>
           <Link href="/#visit">Visit</Link>
           <Link href="/#access">Early Access</Link>
           <Link href="/login">Login</Link>
