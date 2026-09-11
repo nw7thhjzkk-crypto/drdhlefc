@@ -1,22 +1,5 @@
 import { site } from "./site";
 
-/**
- * Public website content, as simple typed configuration.
- *
- * Every array below is the single source of truth for its section. When real
- * data becomes available (coach profiles, facility details, a class
- * timetable, membership plans), add it here and the existing components will
- * render it — no redesign required.
- *
- * Empty arrays intentionally render refined "coming soon" states rather than
- * fabricated content. Do not invent names, prices, schedules, credentials,
- * or photography to fill these structures.
- */
-
-/* ---------------------------------------------------------------- */
-/* Training pillars (philosophy — not a fabricated class timetable)  */
-/* ---------------------------------------------------------------- */
-
 export type TrainingPillar = {
   title: string;
   body: string;
@@ -25,25 +8,29 @@ export type TrainingPillar = {
 export const TRAINING_PILLARS: TrainingPillar[] = [
   {
     title: "Strength",
-    body: "Progressive, honest work for people who want to get stronger.",
+    body: "Plate-loaded machines, racks, and progressive work for people who want to get stronger.",
   },
   {
-    title: "Conditioning",
-    body: "Capacity and pace built with intent, not noise.",
+    title: "Free weights",
+    body: "Dumbbells, bars, benches, and room to lift without crowding the floor.",
   },
   {
-    title: "Personal guidance",
+    title: "Cardio",
+    body: "A quieter line of machines for capacity work — not a wall of screens.",
+  },
+  {
+    title: "Functional & group",
+    body: "An open activity floor for conditioning and sessions. Timetables publish when confirmed.",
+  },
+  {
+    title: "Personal training",
     body: "Coaching for a tighter plan, clearer cues, and accountability.",
   },
   {
-    title: "Progress",
-    body: "Measurement treated as part of training, not an afterthought.",
+    title: "Recovery",
+    body: "Changing, shower, and steam after the work — then back onto the street.",
   },
 ];
-
-/* ---------------------------------------------------------------- */
-/* The training experience (structured journey)                      */
-/* ---------------------------------------------------------------- */
 
 export type ExperienceStep = {
   title: string;
@@ -59,10 +46,6 @@ export const EXPERIENCE_STEPS: ExperienceStep[] = [
   { title: "Results", body: "Keep the work honest. Keep the standard high." },
 ];
 
-/* ---------------------------------------------------------------- */
-/* What you can expect (the tone of the club)                        */
-/* ---------------------------------------------------------------- */
-
 export type Expectation = {
   title: string;
   body: string;
@@ -71,7 +54,7 @@ export type Expectation = {
 export const EXPECTATIONS: Expectation[] = [
   {
     title: "A premium room",
-    body: "Calm, ordered, and built for work — not a carnival of screens and slogans.",
+    body: "Black equipment, white light, ordered floor — not a carnival of slogans.",
   },
   {
     title: "A local club",
@@ -82,10 +65,6 @@ export const EXPECTATIONS: Expectation[] = [
     body: "Show up ready. Train with purpose. Leave knowing the session mattered.",
   },
 ];
-
-/* ---------------------------------------------------------------- */
-/* Membership discovery (no invented prices or packages)             */
-/* ---------------------------------------------------------------- */
 
 export type MembershipPillar = {
   title: string;
@@ -111,38 +90,24 @@ export const MEMBERSHIP_PILLARS: MembershipPillar[] = [
   },
 ];
 
-/* ---------------------------------------------------------------- */
-/* Group training / activities (empty until a timetable is confirmed) */
-/* ---------------------------------------------------------------- */
-
 export type Activity = {
   id: string;
   name: string;
   description: string | null;
-  /** Human-readable schedule line, e.g. "Mon · Wed · Fri — 7:00 AM". */
   schedule: string | null;
 };
 
 export const ACTIVITIES: Activity[] = [];
 
-/* ---------------------------------------------------------------- */
-/* Trainers (empty until real coach profiles are confirmed)          */
-/* ---------------------------------------------------------------- */
-
 export type TrainerProfile = {
   id: string;
   name: string;
   role: string;
-  /** Public photo path. Leave null until real photography is supplied. */
   photo: string | null;
   bio: string | null;
 };
 
 export const TRAINER_PROFILES: TrainerProfile[] = [];
-
-/* ---------------------------------------------------------------- */
-/* Facilities (empty until the finished floor is confirmed)          */
-/* ---------------------------------------------------------------- */
 
 export type FacilityHighlight = {
   id: string;
@@ -153,9 +118,48 @@ export type FacilityHighlight = {
 
 export const FACILITY_HIGHLIGHTS: FacilityHighlight[] = [];
 
-/* ---------------------------------------------------------------- */
-/* FAQ                                                               */
-/* ---------------------------------------------------------------- */
+export type SpaceZone = {
+  id: string;
+  title: string;
+  body: string;
+};
+
+export const SPACE_ZONES: SpaceZone[] = [
+  { id: "arrival", title: "Arrival", body: "From the street into a quiet welcome — not a queue under fluorescent light." },
+  { id: "floor", title: "Main training floor", body: "The heart of the club: black machines, racks, and a floor kept ready for work." },
+  { id: "strength", title: "Strength",
+    body: "Plate-loaded stations and machines intended for serious loading, spaced so a set can finish." },
+  { id: "free", title: "Free weights", body: "Dumbbells, bars, benches, and racks — the simple tools, kept in order." },
+  { id: "functional", title: "Activity floor", body: "An open zone for conditioning and group work. Named classes publish when confirmed." },
+  { id: "cardio", title: "Cardio", body: "A short line of machines for capacity — away from the heaviest lifting." },
+  { id: "pt", title: "Personal training", body: "A quieter edge of the floor for coached sessions." },
+  { id: "change", title: "Changing & shower", body: "Lockers, washrooms, and showers after the session." },
+  { id: "steam", title: "Steam room", body: "Heat and quiet after training — not a spa menu." },
+  { id: "store", title: "Supplement store", body: "A small counter for training support. Brands and prices are not listed yet." },
+];
+
+export type Amenity = {
+  id: string;
+  zone: string;
+  title: string;
+  body: string;
+};
+
+export const AMENITIES: Amenity[] = [
+  { id: "floor", zone: "Train", title: "Premium training floor", body: "The main room: strength, free weights, and space to work." },
+  { id: "strength", zone: "Train", title: "Strength area", body: "Machines and racks planned around commercial black equipment." },
+  { id: "free", zone: "Train", title: "Free weights", body: "Dumbbells, plates, bars, and benches." },
+  { id: "functional", zone: "Train", title: "Activity areas", body: "Functional and group work. No timetable is published yet." },
+  { id: "cardio", zone: "Train", title: "Cardio area", body: "Capacity work without turning the club into a screen wall." },
+  { id: "pt", zone: "Coach", title: "Personal training", body: "Coached sessions on the floor when the team is confirmed." },
+  { id: "change", zone: "After", title: "Changing facilities", body: "A place to arrive and leave without carrying the session onto the street." },
+  { id: "shower", zone: "After", title: "Showers", body: "Hot water after the work." },
+  { id: "wash", zone: "After", title: "Washrooms", body: "Toilets and washbasins kept to the same standard as the floor." },
+  { id: "steam", zone: "After", title: "Steam room", body: "Steam after training. No sauna, pool, or jacuzzi is part of this plan." },
+  { id: "store", zone: "Support", title: "Supplement store", body: "A compact store for nutrition and convenience — not an online shop yet." },
+  { id: "recover", zone: "After", title: "Recovery",
+    body: "The rooms after the floor: change, wash, steam, then out." },
+];
 
 export type FaqItem = {
   q: string;
