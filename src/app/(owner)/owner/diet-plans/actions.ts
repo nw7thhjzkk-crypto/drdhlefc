@@ -70,7 +70,7 @@ export async function createDietPlan(formData: FormData) {
 }
 
 export async function softDeleteDietPlan(id: string) {
-  const { supabase, user } = await requireOwner();
+  const { supabase } = await requireOwner();
 
   const { error } = await supabase
     .from("diet_plans")
@@ -126,7 +126,7 @@ export async function assignDietPlan(formData: FormData) {
 }
 
 export async function updateDietPlan(id: string, formData: FormData) {
-  const { supabase, user } = await requireOwner();
+  const { supabase } = await requireOwner();
 
   const { data: existingPlan, error: fetchError } = await supabase
     .from("diet_plans")

@@ -56,7 +56,7 @@ export async function logSelfAttendance() {
       p_member_id: member.id,
       p_details: { method: "manual", check_in: true },
     });
-  } catch (_e) {
+  } catch {
     // Ignore RPC result/errors
   }
 

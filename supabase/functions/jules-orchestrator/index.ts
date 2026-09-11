@@ -51,16 +51,11 @@ function timingSafeEqual(a: string, b: string): boolean {
   const enc = new TextEncoder();
   const aa = enc.encode(a);
   const bb = enc.encode(b);
-  if (aa.length !== bb.length) {
-    let d = 0;
-    const n = Math.max(aa.length, bb.length);
-    for (let i = 0; i < n; i++) {
-      d |= (aa[i] ?? 0) ^ (bb[i] ?? 0);
-    }
-    return false;
-  }
-  let diff = 0;
-  for (let i = 0; i < aa.length; i++) diff |= aa[i] ^ bb[i];
+  // Single constant-time path: length mismatch folds into the accumulator
+  // instead of an early return, so unequal-length inputs do comparable work.
+  let diff = aa.length ^ bb.length;
+  const n = Math.max(aa.length, bb.length);
+  for (let i = 0; i < n; i++) diff |= (aa[i] ?? 0) ^ (bb[i] ?? 0);
   return diff === 0;
 }
 

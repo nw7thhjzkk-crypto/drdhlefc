@@ -62,7 +62,7 @@ export async function createWorkoutPlan(formData: FormData) {
 }
 
 export async function softDeleteWorkoutPlan(id: string) {
-  const { supabase, user } = await requireOwner();
+  const { supabase } = await requireOwner();
 
   const { error } = await supabase
     .from("workout_plans")
@@ -118,7 +118,7 @@ export async function assignWorkoutPlan(formData: FormData) {
 }
 
 export async function updateWorkoutPlan(id: string, formData: FormData) {
-  const { supabase, user } = await requireOwner();
+  const { supabase } = await requireOwner();
 
   const { data: existingPlan, error: fetchError } = await supabase
     .from("workout_plans")
