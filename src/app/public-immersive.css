@@ -5,6 +5,31 @@
   color: #f3efe8;
 }
 
+.logo-plaque {
+  margin: 0;
+  width: min(22rem, 86vw);
+}
+.logo-plaque-face {
+  background: #f7f4ee;
+  padding: 0.6rem;
+  border: 1px solid rgba(201,168,76,0.45);
+  box-shadow:
+    0 0 0 8px #161616,
+    0 24px 60px rgba(0,0,0,0.45);
+}
+.logo-plaque-face img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.logo-plaque figcaption {
+  margin-top: 0.7rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #c9a84c;
+}
+
 .gym-stage {
   position: absolute;
   inset: 0;
@@ -62,8 +87,13 @@
   font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase;
   color: rgba(201,168,76,0.7);
 }
-.gym-stage-arrival .gym-desk { display: block; position: absolute; left: 28%; bottom: 18%; width: 22%; height: 14%; background: #161616; border-top: 2px solid #c9a84c; }
-.gym-stage-office .gym-desk, .gym-stage-office .gym-shelf, .gym-stage-office .gym-mark-wall { display: block; }
+.gym-stage-arrival .gym-desk {
+  display: block; position: absolute; left: 28%; bottom: 18%;
+  width: 22%; height: 14%; background: #161616; border-top: 2px solid #c9a84c;
+}
+.gym-stage-office .gym-desk,
+.gym-stage-office .gym-shelf,
+.gym-stage-office .gym-mark-wall { display: block; }
 .gym-stage-office .gym-mark-wall {
   position: absolute; left: 8%; top: 22%; width: 16%; height: 28%;
   border: 1px solid rgba(201,168,76,0.35);
@@ -73,16 +103,22 @@
   background: repeating-linear-gradient(#141414 0 18%, #1c1c1c 18% 20%);
 }
 .gym-stage-cardio .gym-glass { width: 38%; opacity: 1; }
-.gym-stage-activity .gym-glass { left: 8%; right: 8%; width: auto; top: 14%; bottom: 14%; background: rgba(180,200,220,0.1); }
+.gym-stage-activity .gym-glass {
+  left: 8%; right: 8%; width: auto; top: 14%; bottom: 14%;
+  background: rgba(180,200,220,0.1);
+}
 .gym-stage-activity .gym-equip { display: none; }
 .gym-stage-steam .gym-steam {
   display: block; position: absolute; inset: 20% 20% 18%;
   background: radial-gradient(circle, rgba(220,220,220,0.18), transparent 70%);
 }
-.gym-stage-steam .gym-equip { display: none; }
-.gym-stage-change .gym-equip { display: none; }
-.gym-stage-store .gym-shelf { display: block; position: absolute; left: 22%; bottom: 18%; width: 50%; height: 40%; background: repeating-linear-gradient(#121212 0 16%, #1a1a1a 16% 18%); }
+.gym-stage-steam .gym-equip,
+.gym-stage-change .gym-equip,
 .gym-stage-store .gym-equip { display: none; }
+.gym-stage-store .gym-shelf {
+  display: block; position: absolute; left: 22%; bottom: 18%; width: 50%; height: 40%;
+  background: repeating-linear-gradient(#121212 0 16%, #1a1a1a 16% 18%);
+}
 
 .enter {
   position: relative;
@@ -93,20 +129,26 @@
 .enter-stage { position: absolute; inset: 0; }
 .enter-veil {
   position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(8,8,8,0.2), rgba(8,8,8,0.82));
+  background: linear-gradient(180deg, rgba(8,8,8,0.15), rgba(8,8,8,0.78));
 }
-.enter-copy {
-  position: relative; z-index: 2;
+.enter-grid {
+  position: relative;
+  z-index: 2;
   width: min(1120px, calc(100% - 2.5rem));
   margin: 0 auto;
   padding: 7rem 0 4rem;
+  display: grid;
+  gap: 2rem;
+  align-items: end;
 }
-.enter-logo {
-  display: block;
-  width: min(420px, 86vw);
-  height: auto;
-  margin-bottom: 1.5rem;
-  filter: drop-shadow(0 12px 30px rgba(0,0,0,0.45));
+@media (min-width: 900px) {
+  .enter-grid { grid-template-columns: minmax(16rem, 22rem) 1fr; }
+}
+.enter-copy h1 {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  line-height: 0.95;
+  margin: 0.35rem 0 0.8rem;
 }
 .enter-eyebrow {
   letter-spacing: 0.28em;
@@ -118,11 +160,11 @@
   max-width: 28rem;
   color: #d6d0c6;
   line-height: 1.7;
-  margin: 0.8rem 0 1.6rem;
+  margin: 0 0 1.6rem;
 }
 .enter-cta { display: flex; flex-wrap: wrap; gap: 0.75rem; }
 
-.walk-room { min-height: 100dvh; position: relative; }
+.walk-room { min-height: 140dvh; position: relative; }
 .walk-pin {
   position: sticky; top: 0;
   min-height: 100dvh;
@@ -154,21 +196,16 @@
 .public-site.is-walk .pub-club .pub-lede,
 .public-site.is-walk .pub-club .pub-body,
 .public-site.is-walk .pub-club .pub-convictions p { color: #4a4a4a; }
-.pub-logo-wall {
+.pub-office-row {
   margin-top: 3rem;
-  padding: 2.5rem 1.5rem;
-  background: #111;
   display: grid;
-  place-items: center;
+  gap: 1.5rem;
+  align-items: end;
 }
-.pub-logo-wall img { width: min(520px, 88vw); height: auto; }
-.pub-logo-note {
-  margin: 0.8rem 0 0;
-  font-size: 0.68rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #c9a84c;
+@media (min-width: 800px) {
+  .pub-office-row { grid-template-columns: 18rem 1fr; }
 }
+.pub-office-note { color: #555; max-width: 28rem; }
 
 .public-site.is-walk .pub-training { background: #0d0d0d; }
 .public-site.is-walk .pub-membership { background: #111; }
@@ -217,4 +254,5 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .walk-pin { position: relative; }
+  .walk-room { min-height: auto; }
 }
