@@ -3,13 +3,21 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { DEMO_PASSWORD } from "@/lib/demo-data";
 
 export async function login(formData: FormData) {
+  const password = formData.get("password") as string;
+
+  // Demo mode: intercept before touching Supabase
+  if (password === DEMO_PASSWORD) {
+    redirect("/demo");
+  }
+
   const supabase = await createClient();
 
   const data = {
     email: formData.get("email") as string,
-    password: formData.get("password") as string,
+    password,
   };
 
   const { error, data: authData } = await supabase.auth.signInWithPassword(data);

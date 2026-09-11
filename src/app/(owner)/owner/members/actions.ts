@@ -107,7 +107,8 @@ export async function createMember(formData: FormData) {
     return { error: `Auth user created but profile sync failed: ${roleError.message}` };
   }
 
-  const member_code  = `DHL-${Math.floor(1000 + Math.random() * 9000)}`;
+  const uid = crypto.randomUUID().replace(/-/g, "").slice(0, 6).toUpperCase();
+  const member_code = `DHL-${uid}`;
 
   const { data: memberData, error: memberError } = await supabase
     .from("members")
