@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { formatINR } from "@/lib/currency";
 import { updateMember, archiveMember, addAssessment, assignMembership, assignTrainer, unassignTrainer, recordPayment } from "../actions";
 import Link from "next/link";
 import Image from "next/image";
@@ -195,9 +196,9 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
                 <p><span className="font-medium text-gray-500">Start:</span> {membership.start_date}</p>
                 <p><span className="font-medium text-gray-500">End:</span> {membership.end_date}</p>
                 <div className="mt-4 pt-4 border-t border-gray-100">
-                  <p><span className="font-medium text-gray-500">Total:</span> ${membership.total_amount}</p>
-                  <p><span className="font-medium text-gray-500">Paid:</span> ${membership.paid_amount}</p>
-                  <p><span className="font-medium text-gray-500">Pending:</span> ${membership.pending_amount}</p>
+                  <p><span className="font-medium text-gray-500">Total:</span> {formatINR(membership.total_amount)}</p>
+                  <p><span className="font-medium text-gray-500">Paid:</span> {formatINR(membership.paid_amount)}</p>
+                  <p><span className="font-medium text-gray-500">Pending:</span> {formatINR(membership.pending_amount)}</p>
                 </div>
 
                 {membership.pending_amount > 0 && (
@@ -243,7 +244,7 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
                     <ul className="space-y-1">
                       {membership.payments.map((p: Payment, i: number) => (
                         <li key={i} className="text-xs text-gray-600">
-                          {new Date(p.paid_at).toLocaleDateString()} - ${p.amount} ({p.method})
+                          {new Date(p.paid_at).toLocaleDateString()} - {formatINR(p.amount)} ({p.method})
                         </li>
                       ))}
                     </ul>
@@ -268,7 +269,7 @@ export default async function MemberProfilePage({ params }: { params: Promise<{ 
                   <label className="block text-gray-700">Plan</label>
                   <select name="plan_id" required className="mt-1 block w-full border border-gray-300 rounded p-2">
                     <option value="">Select Plan...</option>
-                    {plans?.map(p => <option key={p.id} value={p.id}>{p.name} - ${p.price}</option>)}
+                    {plans?.map(p => <option key={p.id} value={p.id}>{p.name} - {formatINR(p.price)}</option>)}
                   </select>
                 </div>
                 <div>

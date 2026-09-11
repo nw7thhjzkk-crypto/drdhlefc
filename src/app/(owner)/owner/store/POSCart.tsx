@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { processSale } from "./actions";
+import { formatINR } from "@/lib/currency";
 
 type Member = { id: string; name: string };
 type Product = { id: string; name: string; selling_price: number; stock_quantity: number; status: string };
@@ -89,7 +90,7 @@ export default function POSCart({ members, products }: { members: Member[]; prod
                 <option value="">Select product...</option>
                 {activeProducts.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} - ${p.selling_price} ({p.stock_quantity} in stock)
+                    {p.name} - {formatINR(p.selling_price)} ({p.stock_quantity} in stock)
                   </option>
                 ))}
               </select>
@@ -133,7 +134,7 @@ export default function POSCart({ members, products }: { members: Member[]; prod
                   <tr key={item.product.id}>
                     <td className="px-4 py-2 text-sm text-zinc-200">{item.product.name}</td>
                     <td className="px-4 py-2 text-sm text-zinc-200">{item.quantity}</td>
-                    <td className="px-4 py-2 text-sm text-zinc-200">${(item.product.selling_price * item.quantity).toFixed(2)}</td>
+                    <td className="px-4 py-2 text-sm text-zinc-200">{formatINR(item.product.selling_price * item.quantity)}</td>
                     <td className="px-4 py-2 text-sm text-right">
                       <button
                         type="button"
@@ -149,7 +150,7 @@ export default function POSCart({ members, products }: { members: Member[]; prod
               <tfoot className="bg-zinc-950">
                 <tr>
                   <td colSpan={2} className="px-4 py-3 text-sm font-bold text-zinc-400 text-right">Total:</td>
-                  <td colSpan={2} className="px-4 py-3 text-sm font-bold text-green-400">${totalAmount.toFixed(2)}</td>
+                  <td colSpan={2} className="px-4 py-3 text-sm font-bold text-green-400">{formatINR(totalAmount)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -188,7 +189,7 @@ export default function POSCart({ members, products }: { members: Member[]; prod
               type="submit"
               className="w-full bg-green-600 text-white font-bold px-4 py-3 rounded hover:bg-green-500 transition-colors"
             >
-              Checkout (${totalAmount.toFixed(2)})
+              Checkout ({formatINR(totalAmount)})
             </button>
           </form>
         )}

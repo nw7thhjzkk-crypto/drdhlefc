@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { formatINR } from "@/lib/currency";
 import {
   createProduct,
   restockProduct,
@@ -122,7 +123,7 @@ export default async function StorePage() {
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="block text-xs font-medium text-zinc-400">
-                    Selling Price
+                    Selling Price (₹)
                   </label>
                   <input
                     name="selling_price"
@@ -200,9 +201,8 @@ export default async function StorePage() {
                           {product.name}
                         </div>
                         <div className="text-xs text-zinc-500">
-                          SKU: {product.sku || "—"} · ${
-                            product.selling_price
-                          }{" "}
+                          SKU: {product.sku || "—"} ·{" "}
+                          {formatINR(product.selling_price)}{" "}
                           ·{" "}
                           <span
                             className={`px-2 py-0.5 rounded ${
@@ -300,7 +300,7 @@ export default async function StorePage() {
                         </div>
                         <div>
                           <label className="block text-xs text-zinc-500">
-                            Purchase $
+                            Purchase (₹)
                           </label>
                           <input
                             name="purchase_price"
@@ -312,7 +312,7 @@ export default async function StorePage() {
                         </div>
                         <div>
                           <label className="block text-xs text-zinc-500">
-                            Selling $
+                            Selling (₹)
                           </label>
                           <input
                             name="selling_price"
@@ -407,7 +407,7 @@ export default async function StorePage() {
                         {sale.members?.name || "Walk-in"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-400">
-                        ${sale.total_amount}
+                        {formatINR(sale.total_amount)}
                       </td>
                     </tr>
                   ))}
