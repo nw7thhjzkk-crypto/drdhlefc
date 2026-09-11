@@ -1,17 +1,21 @@
-import { SectionHeader } from "./SectionHeader";
+import { FAQ_ITEMS } from "@/lib/public-content";
 import { site } from "@/lib/site";
 
 export function Location() {
   return (
-    <section id="visit" className="pub-section pub-location">
-      <div className="pub-wrap pub-location-grid">
-        <SectionHeader
-          index="11"
-          eyebrow="Location"
-          title="Find us in Bhuj."
-          body="Bhagwati Heritage, near Sanskar Nagar. Come when the club is open — until then, the address is here so you know exactly where we are."
-        />
-        <div className="pub-location-card">
+    <section id="visit" className="pub-section pub-visit">
+      <div className="pub-wrap pub-visit-grid">
+        <div>
+          <p className="pub-eyebrow">
+            <span className="pub-rule" aria-hidden="true" />
+            Visit
+          </p>
+          <h2 className="pub-h2">Find us in Bhuj.</h2>
+          <p className="pub-lede">
+            Bhagwati Heritage, near Sanskar Nagar. Come when the club is open —
+            until then, the address is here so you know exactly where we are.
+          </p>
+
           <dl className="pub-location-list">
             <div className="pub-location-row">
               <dt className="pub-label">Address</dt>
@@ -49,6 +53,7 @@ export function Location() {
               <dd className="pub-plain">{site.facebookName}</dd>
             </div>
           </dl>
+
           <a
             href={site.mapsSearchUrl}
             className="pub-btn pub-btn-gold"
@@ -57,6 +62,16 @@ export function Location() {
           >
             Open in Maps
           </a>
+        </div>
+
+        <div className="pub-faq">
+          <p className="pub-label">Questions</p>
+          {FAQ_ITEMS.map((item) => (
+            <details key={item.q} className="pub-faq-item">
+              <summary>{item.q}</summary>
+              <p>{item.a}</p>
+            </details>
+          ))}
         </div>
       </div>
     </section>

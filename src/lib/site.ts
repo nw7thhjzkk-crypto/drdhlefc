@@ -75,9 +75,10 @@ export const GALLERY_SLOTS: ReadonlyArray<{
   label: string;
   src: string | null;
 }> = [
-  { id: "floor", label: "The floor", src: null },
-  { id: "work", label: "The work", src: null },
-  { id: "club", label: "The club", src: null },
+  { id: "hero", label: "Arrival", src: null },
+  { id: "floor", label: "Floor", src: null },
+  { id: "work", label: "Work", src: null },
+  { id: "club", label: "Club", src: null },
 ];
 
 export type FitnessGoal = (typeof FITNESS_GOALS)[number]["value"];
