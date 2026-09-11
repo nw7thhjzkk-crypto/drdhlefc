@@ -44,6 +44,7 @@ export const site = {
 
   brand: {
     fullLogo: "/brand/dr-dhl-elite-fitness-club-logo.png",
+    fullLogoClear: "/brand/dr-dhl-elite-fitness-club-logo-transparent.png",
     monogram: "/brand/dr-dhl-monogram.png",
   },
 } as const;
@@ -66,40 +67,16 @@ export const INTERESTS = [
   { value: "general", label: "General Enquiry" },
 ] as const;
 
-/**
- * Visual studies for the intended environment.
- * These are not photographs of the finished Dr DHL floor.
- */
 export const GALLERY_SLOTS: ReadonlyArray<{
   id: string;
   label: string;
   src: string | null;
   study?: boolean;
 }> = [
-  {
-    id: "hero",
-    label: "Training floor",
-    src: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1800&q=80",
-    study: true,
-  },
-  {
-    id: "floor",
-    label: "Strength",
-    src: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1400&q=80",
-    study: true,
-  },
-  {
-    id: "work",
-    label: "Free weights",
-    src: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?auto=format&fit=crop&w=1200&q=80",
-    study: true,
-  },
-  {
-    id: "club",
-    label: "Cardio",
-    src: "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?auto=format&fit=crop&w=1200&q=80",
-    study: true,
-  },
+  { id: "hero", label: "Training floor", src: "/visuals/01-hero-floor.webp", study: true },
+  { id: "floor", label: "Strength", src: "/visuals/04-strength.webp", study: true },
+  { id: "work", label: "Free weights", src: "/visuals/05-free-weights.webp", study: true },
+  { id: "club", label: "Cardio", src: "/visuals/06-cardio.webp", study: true },
 ];
 
 export type FitnessGoal = (typeof FITNESS_GOALS)[number]["value"];
