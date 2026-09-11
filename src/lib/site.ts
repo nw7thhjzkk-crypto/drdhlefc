@@ -44,7 +44,6 @@ export const site = {
 
   brand: {
     fullLogo: "/brand/dr-dhl-elite-fitness-club-logo.png",
-    fullLogoClear: "/brand/dr-dhl-elite-fitness-club-logo-transparent.png",
     monogram: "/brand/dr-dhl-monogram.png",
   },
 } as const;
@@ -73,10 +72,10 @@ export const GALLERY_SLOTS: ReadonlyArray<{
   src: string | null;
   study?: boolean;
 }> = [
-  { id: "hero", label: "Training floor", src: "/visuals/01-hero-floor.webp", study: true },
-  { id: "floor", label: "Strength", src: "/visuals/04-strength.webp", study: true },
-  { id: "work", label: "Free weights", src: "/visuals/05-free-weights.webp", study: true },
-  { id: "club", label: "Cardio", src: "/visuals/06-cardio.webp", study: true },
+  { id: "hero", label: "Training floor", src: null, study: true },
+  { id: "floor", label: "Strength", src: null, study: true },
+  { id: "work", label: "Free weights", src: null, study: true },
+  { id: "club", label: "Cardio", src: null, study: true },
 ];
 
 export type FitnessGoal = (typeof FITNESS_GOALS)[number]["value"];
