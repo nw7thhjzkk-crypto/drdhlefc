@@ -3,13 +3,8 @@ import localFont from "next/font/local";
 import { site, siteOrigin } from "@/lib/site";
 import "./globals.css";
 import "./public-editorial.css";
+import "./public-immersive.css";
 
-/*
- * Fonts are self-hosted (variable woff2 from @fontsource-variable).
- * This removes the build-time network dependency on Google Fonts, serves
- * the fonts from our own origin (faster, no third-party request), and keeps
- * the build deterministic offline.
- */
 const geistSans = localFont({
   src: "../../node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2",
   variable: "--font-geist-sans",
@@ -58,36 +53,27 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: site.name }],
   creator: site.name,
-  alternates: {
-    canonical: "/",
-  },
+  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     locale: "en_IN",
     siteName: site.name,
     title: `${site.name} | Premium Fitness in Bhuj`,
-    description:
-      "A premium fitness club in Bhuj. Coming soon. Get early access.",
+    description: "A premium fitness club in Bhuj. Coming soon. Get early access.",
   },
   twitter: {
     card: "summary_large_image",
     title: `${site.name} | Premium Fitness in Bhuj`,
-    description:
-      "A premium fitness club in Bhuj. Coming soon. Get early access.",
+    description: "A premium fitness club in Bhuj. Coming soon. Get early access.",
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Dr DHL",
   },
-  formatDetection: {
-    telephone: false,
-  },
+  formatDetection: { telephone: false },
 };
 
 export default function RootLayout({

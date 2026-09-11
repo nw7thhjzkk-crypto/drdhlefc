@@ -1,5 +1,4 @@
 import { About } from "./About";
-import { Amenities } from "./Amenities";
 import { EarlyAccess } from "./EarlyAccess";
 import { Footer } from "./Footer";
 import { Hero } from "./Hero";
@@ -7,12 +6,12 @@ import { JsonLd } from "./JsonLd";
 import { Location } from "./Location";
 import { Membership } from "./Membership";
 import { PublicNavbar } from "./PublicNavbar";
-import { Space } from "./Space";
 import { Training } from "./Training";
+import { Walk } from "./Walk";
 
 export function PublicWebsite() {
   return (
-    <div className="public-site is-light-rhythm">
+    <div className="public-site is-walk">
       <JsonLd />
       <a href="#main" className="pub-skip">
         Skip to content
@@ -21,9 +20,8 @@ export function PublicWebsite() {
       <main id="main">
         <Hero />
         <About />
+        <Walk />
         <Training />
-        <Space />
-        <Amenities />
         <Membership />
         <Location />
         <EarlyAccess />
