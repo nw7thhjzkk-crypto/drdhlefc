@@ -1,14 +1,36 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const PROTECTED_PREFIXES = ["/owner", "/trainer", "/member"] as const;
+
+function isProtectedPath(pathname: string): boolean {
+  return PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // Supabase not configured: the public website must still render
+  // (README-documented behavior), but the ERP portals stay fail-closed —
+  // nobody can authenticate without Supabase, so portal routes redirect
+  // to /login rather than crashing every route with a 500.
+  if (!supabaseUrl || !supabaseAnonKey) {
+    if (isProtectedPath(request.nextUrl.pathname)) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
+    }
+    return supabaseResponse;
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
