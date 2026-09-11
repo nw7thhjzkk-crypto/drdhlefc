@@ -40,7 +40,18 @@ const PATH = {
 } as const;
 
 /** Flip a path on only after the file exists in public/visuals. */
-const READY: Partial<Record<VisualId, boolean>> = {};
+const READY: Partial<Record<VisualId, boolean>> = {
+  hero: true,
+  floor: true,
+  strength: true,
+  free: true,
+  cardio: true,
+  activity: true,
+  pt: true,
+  change: true,
+  steam: true,
+  store: true,
+};
 
 export const VISUALS: Record<
   VisualId,
