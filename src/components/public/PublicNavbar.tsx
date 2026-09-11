@@ -7,9 +7,8 @@ import { site } from "@/lib/site";
 
 const LINKS = [
   { href: "/#club", label: "The Club" },
+  { href: "/#space", label: "The Space" },
   { href: "/#training", label: "Training" },
-  { href: "/#space", label: "Space" },
-  { href: "/#amenities", label: "Amenities" },
   { href: "/#visit", label: "Visit" },
 ];
 
@@ -63,10 +62,7 @@ export function PublicNavbar() {
           <Link href="/login" className="pub-btn pub-btn-ghost pub-btn-sm">
             Login
           </Link>
-          <Link
-            href="/#access"
-            className="pub-btn pub-btn-gold pub-btn-sm pub-nav-cta"
-          >
+          <Link href="/#access" className="pub-btn pub-btn-gold pub-btn-sm pub-nav-cta">
             Get Early Access
           </Link>
           <button
@@ -77,16 +73,7 @@ export function PublicNavbar() {
             onClick={() => setOpen((v) => !v)}
           >
             <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
-            <svg
-              viewBox="0 0 20 20"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
+            <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
               {open ? (
                 <>
                   <path d="M4 4l12 12M16 4L4 16" />
@@ -114,11 +101,7 @@ export function PublicNavbar() {
             <Link href="/login" onClick={() => setOpen(false)}>
               Login
             </Link>
-            <Link
-              href="/#access"
-              className="pub-btn pub-btn-gold"
-              onClick={() => setOpen(false)}
-            >
+            <Link href="/#access" className="pub-btn pub-btn-gold" onClick={() => setOpen(false)}>
               Get Early Access
             </Link>
           </div>
