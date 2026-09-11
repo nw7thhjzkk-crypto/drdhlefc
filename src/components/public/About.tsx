@@ -1,6 +1,6 @@
-import { BrandMark } from "./BrandMark";
 import { EXPECTATIONS } from "@/lib/public-content";
 import { site } from "@/lib/site";
+import { LogoPlaque } from "./LogoPlaque";
 
 export function About() {
   return (
@@ -11,16 +11,15 @@ export function About() {
             <span className="pub-rule" aria-hidden="true" />
             The Club
           </p>
-          <h2 className="pub-h2">A gym in Bhuj. Built to be used.</h2>
+          <h2 className="pub-h2">Bhuj. Open floor. Quiet work.</h2>
           <p className="pub-lede">
-            Open floor. Black equipment. White light. Glass to the outside.
-            One mirrored wall. Rooms for changing, steam, and a small store
-            by the office.
+            One room for training. Glass to the street. A mirrored wall.
+            An office at the door. Changing, shower, steam, a small store.
           </p>
           <p className="pub-body">
-            {site.name} is {site.launchText.toLowerCase()}. The visual walk
-            below is a conceptual visualisation of the intended club — not a
-            photograph of a finished building.
+            {site.name} is {site.launchText.toLowerCase()}. What follows is a
+            conceptual walk through the intended building — not a photograph
+            of a finished gym.
           </p>
         </div>
         <ol className="pub-convictions">
@@ -32,9 +31,12 @@ export function About() {
           ))}
         </ol>
       </div>
-      <div className="pub-logo-wall">
-        <BrandMark mark="full" size={520} className="pub-full-logo" />
-        <p className="pub-logo-note">Reception wall mark</p>
+      <div className="pub-wrap pub-office-row">
+        <LogoPlaque size={280} caption="Office wall" />
+        <p className="pub-office-note">
+          The office sits by the entrance. The monogram and the full mark
+          belong on the wall — not floating on the page.
+        </p>
       </div>
     </section>
   );
