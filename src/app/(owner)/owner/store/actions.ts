@@ -228,7 +228,7 @@ export async function processSale(formData: FormData) {
   let items: { product_id: string; quantity: number }[] = [];
   try {
     items = JSON.parse(items_raw);
-  } catch (err) {
+  } catch {
     throw new Error("Invalid items format");
   }
 
