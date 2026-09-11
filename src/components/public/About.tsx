@@ -11,19 +11,18 @@ export function About() {
             <span className="pub-rule" aria-hidden="true" />
             The Club
           </p>
-          <h2 className="pub-h2">Built for training that lasts.</h2>
+          <h2 className="pub-h2">A gym in Bhuj. Built to be used.</h2>
           <p className="pub-lede">
-            Dr DHL Elite Fitness Club is a premium fitness club in Bhuj — a
-            serious, well-run space for strength, conditioning, and personal
-            guidance.
+            Open floor. Black equipment. White light. Glass to the outside.
+            One mirrored wall. Rooms for changing, steam, and a small store
+            by the office.
           </p>
           <p className="pub-body">
-            The club is {site.launchText.toLowerCase()}. Membership details
-            will be shared when they are ready. If you want to train here from
-            the beginning, register your interest and we will be in touch.
+            {site.name} is {site.launchText.toLowerCase()}. The visual walk
+            below is a conceptual visualisation of the intended club — not a
+            photograph of a finished building.
           </p>
         </div>
-
         <ol className="pub-convictions">
           {EXPECTATIONS.map((item) => (
             <li key={item.title}>
@@ -33,9 +32,9 @@ export function About() {
           ))}
         </ol>
       </div>
-
-      <div className="pub-wrap pub-club-mark">
-        <BrandMark mark="full" size={280} className="pub-full-logo" />
+      <div className="pub-logo-wall">
+        <BrandMark mark="full" size={520} className="pub-full-logo" />
+        <p className="pub-logo-note">Reception wall mark</p>
       </div>
     </section>
   );

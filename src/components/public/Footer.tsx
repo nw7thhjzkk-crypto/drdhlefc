@@ -9,7 +9,7 @@ export function Footer() {
     <footer className="pub-footer">
       <div className="pub-wrap pub-footer-grid">
         <div>
-          <BrandMark size={44} />
+          <BrandMark mark="full" size={180} />
           <p className="pub-footer-name">{site.name}</p>
           <p className="pub-footer-tag">{site.tagline}</p>
         </div>
@@ -27,21 +27,15 @@ export function Footer() {
         <div>
           <p className="pub-label">Contact</p>
           <a href={`mailto:${site.email}`}>{site.email}</a>
-          <a
-            href={site.instagramUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <a href={site.instagramUrl} target="_blank" rel="noopener noreferrer">
             Instagram @{site.instagramHandle.toLowerCase()}
           </a>
-          <p className="pub-plain">{site.facebookName}</p>
         </div>
         <nav aria-label="Footer">
           <p className="pub-label">Club</p>
           <Link href="/#club">The Club</Link>
+          <Link href="/#space">The Space</Link>
           <Link href="/#training">Training</Link>
-          <Link href="/#space">Space</Link>
-          <Link href="/#memberships">Membership</Link>
           <Link href="/#visit">Visit</Link>
           <Link href="/#access">Early Access</Link>
           <Link href="/login">Login</Link>
