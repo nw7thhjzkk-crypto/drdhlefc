@@ -9,7 +9,7 @@ const LINKS = [
   { href: "/#club", label: "The Club" },
   { href: "/#training", label: "Training" },
   { href: "/#space", label: "Space" },
-  { href: "/#memberships", label: "Membership" },
+  { href: "/#amenities", label: "Amenities" },
   { href: "/#visit", label: "Visit" },
 ];
 
