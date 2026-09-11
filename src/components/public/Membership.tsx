@@ -1,18 +1,21 @@
 import { MEMBERSHIP_PILLARS } from "@/lib/public-content";
-import { SectionHeader } from "./SectionHeader";
 
 export function Membership() {
   return (
     <section id="memberships" className="pub-section pub-membership">
-      <div className="pub-wrap pub-membership-grid">
+      <div className="pub-wrap pub-membership-split">
         <div>
-          <SectionHeader
-            index="05"
-            eyebrow="Memberships"
-            title="Built around one clear commitment."
-            body="Prices, package names, and benefits will be published together when they are set. When memberships open, details will be shared here — and first with everyone who has registered interest."
-          />
-          <ul className="pub-membership-pillars">
+          <p className="pub-eyebrow">
+            <span className="pub-rule" aria-hidden="true" />
+            Membership
+          </p>
+          <h2 className="pub-h2">Built around one clear commitment.</h2>
+          <p className="pub-lede">
+            Prices, package names, and benefits will be published together when
+            they are set. When memberships open, details will be shared here —
+            and first with everyone who has registered interest.
+          </p>
+          <ul className="pub-membership-lines">
             {MEMBERSHIP_PILLARS.map((item) => (
               <li key={item.title}>
                 <h3>{item.title}</h3>
