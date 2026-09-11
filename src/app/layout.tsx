@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { site, siteOrigin } from "@/lib/site";
 import "./globals.css";
+import "./public-editorial.css";
 
 /*
  * Fonts are self-hosted (variable woff2 from @fontsource-variable).
