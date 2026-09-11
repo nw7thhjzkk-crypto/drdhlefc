@@ -1,15 +1,9 @@
-import { FACILITY_HIGHLIGHTS } from "@/lib/public-content";
+import { SPACE_ZONES } from "@/lib/public-content";
 import { GALLERY_SLOTS } from "@/lib/site";
 import { PhotoFrame } from "./PhotoFrame";
 
-const SPACE_ASPECT: Record<string, "landscape" | "portrait" | "square"> = {
-  floor: "landscape",
-  work: "portrait",
-  club: "square",
-};
-
 export function Space() {
-  const slots = GALLERY_SLOTS.filter((s) => s.id !== "hero");
+  const studies = GALLERY_SLOTS.filter((s) => s.id !== "hero");
 
   return (
     <section id="space" className="pub-section pub-space">
@@ -19,34 +13,40 @@ export function Space() {
             <span className="pub-rule" aria-hidden="true" />
             The Space
           </p>
-          <h2 className="pub-h2">A room prepared for work.</h2>
+          <h2 className="pub-h2">Inside the club.</h2>
           <p className="pub-lede">
-            Photography of the finished floor will live here. Until then the
-            frames stay empty on purpose — reserved, not filled with stock.
+            A planned sequence of rooms: arrival, the training floor, strength,
+            free weights, cardio, changing, steam, and a small supplement store.
+            Images below are visual studies of that intended environment — not
+            photographs of the finished floor.
           </p>
         </header>
 
         <div className="pub-space-composition">
-          {slots.map((slot) => (
+          {studies.map((slot) => (
             <PhotoFrame
               key={slot.id}
               label={slot.label}
               src={slot.src}
-              aspect={SPACE_ASPECT[slot.id] ?? "landscape"}
+              study={slot.study}
+              aspect={slot.id === "floor" ? "landscape" : slot.id === "work" ? "portrait" : "square"}
             />
           ))}
         </div>
 
-        {FACILITY_HIGHLIGHTS.length > 0 ? (
-          <ul className="pub-space-notes">
-            {FACILITY_HIGHLIGHTS.map((h) => (
-              <li key={h.id}>
-                <h3>{h.title}</h3>
-                {h.description ? <p>{h.description}</p> : null}
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        <ol className="pub-zones">
+          {SPACE_ZONES.map((z, i) => (
+            <li key={z.id}>
+              <span className="pub-index" aria-hidden="true">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <div>
+                <h3>{z.title}</h3>
+                <p>{z.body}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
   );
