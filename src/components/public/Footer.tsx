@@ -9,7 +9,7 @@ export function Footer() {
     <footer className="pub-footer">
       <div className="pub-wrap pub-footer-grid">
         <div>
-          <BrandMark mark="full" size={180} />
+          <BrandMark mark="full" size={160} />
           <p className="pub-footer-name">{site.name}</p>
           <p className="pub-footer-tag">{site.tagline}</p>
         </div>
@@ -26,8 +26,8 @@ export function Footer() {
         </div>
         <div>
           <p className="pub-label">Contact</p>
-          <a href={`mailto:${site.email}`}>{site.email}</a>
-          <a href={site.instagramUrl} target="_blank" rel="noopener noreferrer">
+          <a href={`mailto:${site.email}`} aria-label={`Send email to ${site.email}`}>{site.email}</a>
+          <a href={site.instagramUrl} target="_blank" rel="noopener noreferrer" aria-label={`Follow ${site.name} on Instagram`}>
             Instagram @{site.instagramHandle.toLowerCase()}
           </a>
         </div>
@@ -38,16 +38,16 @@ export function Footer() {
           <Link href="/#training">Training</Link>
           <Link href="/#visit">Visit</Link>
           <Link href="/#access">Early Access</Link>
-          <Link href="/login">Login</Link>
+          <Link href="/login">Member Login</Link>
           <Link href="/privacy">Privacy Policy</Link>
           <Link href="/terms">Terms</Link>
         </nav>
       </div>
       <div className="pub-wrap pub-footer-base">
         <p>
-          © {year} {site.name}. All rights reserved.
+          &copy; {year} {site.name}. All rights reserved.
         </p>
-        <p>{site.launchText} · Bhuj, Gujarat</p>
+        <p>{site.launchText} &middot; Bhuj, Gujarat</p>
       </div>
     </footer>
   );

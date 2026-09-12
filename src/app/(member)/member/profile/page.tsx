@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ProfileEditForm } from "./ProfileEditForm";
+import { PasswordChangeForm } from "./PasswordChangeForm";
 
 export const metadata: Metadata = { title: "Profile" };
 
@@ -167,6 +168,22 @@ export default async function MemberProfilePage() {
             emergency_contact_phone: member.emergency_contact_phone ?? "",
           }}
         />
+      </div>
+
+      <div style={card}>
+        <div
+          style={{
+            fontSize: "0.6875rem",
+            fontWeight: 700,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "var(--color-silver-dark)",
+            marginBottom: "0.75rem",
+          }}
+        >
+          Security
+        </div>
+        <PasswordChangeForm />
       </div>
     </div>
   );

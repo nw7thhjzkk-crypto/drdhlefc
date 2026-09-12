@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const PROTECTED_PREFIXES = ["/owner", "/trainer", "/member"] as const;
 
-function isProtectedPath(pathname: string): boolean {
+export function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
 }
 
