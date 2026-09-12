@@ -1,6 +1,6 @@
 # DR DHL EFC — Implementation State
 
-## Current Date: 2026-09-11
+## Current Date: 2026-09-12
 
 ## Repository
 - **Repo:** nw7thhjzkk-crypto/drdhlefc
@@ -33,12 +33,20 @@
 - `middleware.ts`: exported `isProtectedPath` for testability
 - `members/actions.ts`: uses `crypto.randomUUID()` for member codes
 
-### Public Website Polish
-- Hero: centered monogram, gold accents, clear CTAs
-- About: grid layout with expectation cards
-- Footer: accessibility aria-labels on links
-- Navbar: consistent "Member Login" CTA
-- Consistent dark theme, reduced-motion support
+### CRM & Member Improvements (uncommitted → committed)
+- LeadStageSelect component: stage change with optional note
+- Lead conversion eligibility check (duplicate member detection)
+- CRM page KPI stats: total leads, new this week, converted, conversion rate
+- Member creation: duplicate email/phone validation
+- Credentials display after member creation (member code, email, temp password)
+- UI polish with design system classes
+
+### Member Password Reset Flow
+- `/auth/forgot-password`: public page to request reset email via Supabase
+- `/auth/reset-password`: callback page, exchanges token, sets new password
+- Login page: "Forgot your password?" link added
+- Audit logging for password reset events
+- Client-side validation: min 8 chars, uppercase, lowercase, number
 
 ## Verification Results
 - Lint: ✅ clean (0 errors, 0 warnings)
