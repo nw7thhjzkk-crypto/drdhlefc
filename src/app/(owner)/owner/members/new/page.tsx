@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { createMember } from "../actions";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -16,129 +16,240 @@ function NewMemberForm() {
   const defaultEmail = searchParams.get("email") ?? "";
   const convertingFromLead = Boolean(leadId || defaultName || defaultPhone || defaultEmail);
 
+  const [credentials, setCredentials] = useState<{
+    email: string;
+    password: string;
+    memberCode: string;
+    memberId: string;
+  } | null>(null);
+
   const { handleSubmit, isPending: loading, error } = useFormMutation(
     createMember,
-    (res: { memberId?: string }) => {
-      if (res.memberId) {
+    (res: { memberId?: string; member_code?: string; credentials?: { email: string; password: string } }) => {
+      if (res.memberId && res.credentials && res.member_code) {
+        setCredentials({
+          email: res.credentials.email,
+          password: res.credentials.password,
+          memberCode: res.member_code,
+          memberId: res.memberId,
+        });
+      } else if (res.memberId) {
         router.push(`/owner/members/${res.memberId}`);
       }
     }
   );
 
+  if (credentials) {
+    return (
+      <div className="p-8 max-w-3xl mx-auto">
+        <div className="card" style={{ borderColor: "#22C55E", borderWidth: "1px", borderStyle: "solid" }}>
+          <div className="card-header" style={{ backgroundColor: "#F0FDF4", borderBottom: "1px solid #BBF7D0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <span style={{ fontSize: "1.25rem" }}>✅</span>
+              <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#065F46", margin: 0 }}>
+                Member Created Successfully
+              </h2>
+            </div>
+          </div>
+          <div className="card-body">
+            <p style={{ fontSize: "0.875rem", color: "#374151", marginBottom: "1.5rem" }}>
+              The lead has been converted to a member. Share these login credentials with the new member:
+            </p>
+
+            <div style={{
+              backgroundColor: "#F9FAFB",
+              border: "1px solid #E5E7EB",
+              borderRadius: "var(--radius-md)",
+              padding: "1.25rem",
+              marginBottom: "1.5rem",
+            }}>
+              <div style={{ display: "grid", gap: "0.75rem" }}>
+                <div>
+                  <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>
+                    Member Code
+                  </div>
+                  <div style={{ fontSize: "1rem", fontWeight: 700, color: "#111827", fontFamily: "var(--font-mono)" }}>
+                    {credentials.memberCode}
+                  </div>
+                </div>
+                <div style={{ borderTop: "1px solid #E5E7EB", paddingTop: "0.75rem" }}>
+                  <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>
+                    Login Email
+                  </div>
+                  <div style={{ fontSize: "0.9375rem", fontWeight: 600, color: "#111827" }}>
+                    {credentials.email}
+                  </div>
+                </div>
+                <div style={{ borderTop: "1px solid #E5E7EB", paddingTop: "0.75rem" }}>
+                  <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>
+                    Temporary Password
+                  </div>
+                  <div style={{
+                    fontSize: "0.9375rem",
+                    fontWeight: 700,
+                    color: "#111827",
+                    fontFamily: "var(--font-mono)",
+                    backgroundColor: "#FEF3C7",
+                    padding: "0.5rem 0.75rem",
+                    borderRadius: "var(--radius-sm)",
+                    border: "1px solid #FDE68A",
+                    wordBreak: "break-all",
+                  }}>
+                    {credentials.password}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              backgroundColor: "#FEF3C7",
+              border: "1px solid #FDE68A",
+              borderRadius: "var(--radius-md)",
+              padding: "0.75rem 1rem",
+              marginBottom: "1.5rem",
+              fontSize: "0.8125rem",
+              color: "#92400E",
+            }}>
+              ⚠️ Save this password now. It will not be shown again. The member should change it on first login.
+            </div>
+
+            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+              <Link href="/owner/leads" className="btn btn-ghost">
+                Back to Leads
+              </Link>
+              <Link href={`/owner/members/${credentials.memberId}`} className="btn btn-primary">
+                View Member Profile
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8 max-w-3xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-zinc-100">Add New Member</h1>
-        <Link href="/owner/members" className="text-yellow-500 hover:underline">Back to Members</Link>
+      <div className="page-header">
+        <h1 className="page-title">Add New Member</h1>
+        <Link href="/owner/members" className="btn btn-ghost btn-sm">Back to Members</Link>
       </div>
 
       {convertingFromLead && (
-        <div className="bg-yellow-950/40 border border-yellow-800 text-yellow-300 p-4 rounded mb-6 text-sm">
-          Converting CRM lead{leadId ? ` (${leadId})` : ""} — name, phone, and email are prefilled. Complete the form and create the member.
-          {" "}
-          <Link href="/owner/leads" className="underline font-medium">Back to leads</Link>
+        <div className="alert alert-info" style={{ marginBottom: "1.5rem" }}>
+          <span>ℹ️</span>
+          <span>
+            Converting CRM lead{leadId ? ` (${leadId})` : ""} — name, phone, and email are prefilled. Complete the form and create the member.
+            {" "}
+            <Link href="/owner/leads" style={{ fontWeight: 700, textDecoration: "underline" }}>Back to leads</Link>
+          </span>
         </div>
       )}
 
-      {error && <div className="bg-red-950/60 text-red-300 p-4 rounded mb-6">{error}</div>}
+      {error && <div className="alert alert-error" style={{ marginBottom: "1.5rem" }}>{error}</div>}
 
-      <form action={handleSubmit} className="bg-zinc-900 p-6 rounded-lg shadow-xl border border-zinc-800 space-y-6">
+      <form action={handleSubmit} className="card">
+        <div className="card-body" style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-zinc-400">Name *</label>
-            <input name="name" type="text" required defaultValue={defaultName} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="form-group">
+              <label className="form-label">Name *</label>
+              <input name="name" type="text" required defaultValue={defaultName} className="form-input" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Email *</label>
+              <input name="email" type="email" required defaultValue={defaultEmail} className="form-input" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Phone</label>
+              <input name="phone" type="text" defaultValue={defaultPhone} className="form-input" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Date of Birth</label>
+              <input name="dob" type="date" className="form-input" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Gender</label>
+              <select name="gender" className="form-input">
+                <option value="">Select...</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Photo</label>
+              <input name="photo" type="file" accept="image/*" className="form-input" />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-400">Email *</label>
-            <input name="email" type="email" required defaultValue={defaultEmail} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-400">Phone</label>
-            <input name="phone" type="text" defaultValue={defaultPhone} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-400">Date of Birth</label>
-            <input name="dob" type="date" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-400">Gender</label>
-            <select name="gender" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200">
-              <option value="">Select...</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-400">Photo</label>
-            <input name="photo" type="file" accept="image/*" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
-          </div>
-        </div>
 
-        <div>
-          <label className="block text-sm font-medium text-zinc-400">Address</label>
-          <textarea name="address" rows={2} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"></textarea>
-        </div>
+          <div className="form-group">
+            <label className="form-label">Address</label>
+            <textarea name="address" rows={2} className="form-input"></textarea>
+          </div>
 
-        <h3 className="text-lg font-medium text-zinc-100 border-b pb-2 pt-4">Emergency Contact</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-zinc-400">Name</label>
-            <input name="emergency_contact_name" type="text" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
+            <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "#111827", borderBottom: "1px solid #E5E7EB", paddingBottom: "0.5rem", marginBottom: "1rem" }}>Emergency Contact</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="form-group">
+                <label className="form-label">Name</label>
+                <input name="emergency_contact_name" type="text" className="form-input" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Phone</label>
+                <input name="emergency_contact_phone" type="text" className="form-input" />
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-400">Phone</label>
-            <input name="emergency_contact_phone" type="text" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
-          </div>
-        </div>
 
-        <h3 className="text-lg font-medium text-zinc-100 border-b pb-2 pt-4">Fitness Profile</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-zinc-400">Primary Goal</label>
-            <input name="primary_goal" type="text" placeholder="e.g. Weight Loss" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
+            <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "#111827", borderBottom: "1px solid #E5E7EB", paddingBottom: "0.5rem", marginBottom: "1rem" }}>Fitness Profile</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="form-group">
+                <label className="form-label">Primary Goal</label>
+                <input name="primary_goal" type="text" placeholder="e.g. Weight Loss" className="form-input" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Secondary Goal</label>
+                <input name="secondary_goal" type="text" className="form-input" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Fitness Level</label>
+                <select name="fitness_level" className="form-input">
+                  <option value="">Select...</option>
+                  <option value="Beginner">Beginner</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced">Advanced</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Diet Preference</label>
+                <input name="diet_preference" type="text" className="form-input" />
+              </div>
+              <div className="md:col-span-2 form-group">
+                <label className="form-label">Training Experience / Injuries</label>
+                <textarea name="training_experience" rows={2} className="form-input"></textarea>
+              </div>
+              <div className="md:col-span-2 form-group">
+                <label className="form-label">Internal Notes</label>
+                <textarea
+                  name="notes"
+                  rows={2}
+                  defaultValue={leadId ? `Converted from CRM lead ${leadId}` : ""}
+                  className="form-input"
+                ></textarea>
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-400">Secondary Goal</label>
-            <input name="secondary_goal" type="text" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-400">Fitness Level</label>
-            <select name="fitness_level" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200">
-              <option value="">Select...</option>
-              <option value="Beginner">Beginner</option>
-              <option value="Intermediate">Intermediate</option>
-              <option value="Advanced">Advanced</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-400">Diet Preference</label>
-            <input name="diet_preference" type="text" className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200" />
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-zinc-400">Training Experience / Injuries</label>
-            <textarea name="training_experience" rows={2} className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"></textarea>
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-zinc-400">Internal Notes</label>
-            <textarea
-              name="notes"
-              rows={2}
-              defaultValue={leadId ? `Converted from CRM lead ${leadId}` : ""}
-              className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
-            ></textarea>
-          </div>
-        </div>
 
-        <div className="flex justify-end pt-4">
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-yellow-600 text-zinc-950 font-bold px-6 py-2 rounded shadow hover:bg-yellow-500 disabled:opacity-50"
-          >
-            {loading ? "Creating..." : "Create Member"}
-          </button>
+          <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: "0.5rem" }}>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn btn-primary"
+            >
+              {loading ? "Creating..." : "Create Member"}
+            </button>
+          </div>
         </div>
       </form>
     </div>
@@ -147,7 +258,7 @@ function NewMemberForm() {
 
 export default function NewMemberPage() {
   return (
-    <Suspense fallback={<div className="p-8 max-w-3xl mx-auto text-zinc-500">Loading form…</div>}>
+    <Suspense fallback={<div className="p-8 max-w-3xl mx-auto" style={{ color: "#9CA3AF" }}>Loading form…</div>}>
       <NewMemberForm />
     </Suspense>
   );
