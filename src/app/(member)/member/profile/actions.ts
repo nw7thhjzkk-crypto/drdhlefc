@@ -3,6 +3,10 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
+export type ChangePasswordResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
 export type UpdateProfileResult =
   | { ok: true }
   | { ok: false; error: string };
@@ -89,5 +93,70 @@ export async function updateMemberProfile(
 
   revalidatePath("/member/profile");
   revalidatePath("/member/home");
+  return { ok: true };
+}
+
+export async function changePassword(
+  _prev: ChangePasswordResult | null,
+  formData: FormData,
+): Promise<ChangePasswordResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated" };
+
+  const currentPassword = String(formData.get("current_password") ?? "");
+  const newPassword = String(formData.get("new_password") ?? "");
+  const confirmPassword = String(formData.get("confirm_password") ?? "");
+
+  if (!currentPassword) {
+    return { ok: false, error: "Current password is required" };
+  }
+  if (!newPassword) {
+    return { ok: false, error: "New password is required" };
+  }
+  if (newPassword !== confirmPassword) {
+    return { ok: false, error: "New passwords do not match" };
+  }
+  if (newPassword.length < 8) {
+    return { ok: false, error: "Password must be at least 8 characters" };
+  }
+  if (!/[A-Z]/.test(newPassword)) {
+    return { ok: false, error: "Password must contain an uppercase letter" };
+  }
+  if (!/[a-z]/.test(newPassword)) {
+    return { ok: false, error: "Password must contain a lowercase letter" };
+  }
+  if (!/[0-9]/.test(newPassword)) {
+    return { ok: false, error: "Password must contain at least one number" };
+  }
+
+  const { error: signInErr } = await supabase.auth.signInWithPassword({
+    email: user.email!,
+    password: currentPassword,
+  });
+  if (signInErr) {
+    return { ok: false, error: "Current password is incorrect" };
+  }
+
+  const { error: updateErr } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+  if (updateErr) {
+    return { ok: false, error: updateErr.message };
+  }
+
+  try {
+    await supabase.rpc("insert_audit_log", {
+      p_action: "MEMBER_SELF_CHANGE_PASSWORD",
+      p_entity_type: "member",
+      p_entity_id: user.id,
+      p_details: {},
+    });
+  } catch {
+    /* ignore */
+  }
+
   return { ok: true };
 }

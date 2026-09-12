@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     template: `%s | ${site.name}`,
   },
   description:
-    "Dr DHL Elite Fitness Club — premium fitness in Bhuj, Gujarat. Coming soon. Register your interest for early access.",
+    "Dr DHL Elite Fitness Club — premium fitness in Bhuj, Gujarat. Gym management, member portal, and trainer tools.",
   applicationName: site.name,
   keywords: [
     "Dr DHL Elite Fitness Club",
@@ -59,12 +59,12 @@ export const metadata: Metadata = {
     locale: "en_IN",
     siteName: site.name,
     title: `${site.name} | Premium Fitness in Bhuj`,
-    description: "A premium fitness club in Bhuj. Coming soon. Get early access.",
+    description: "A premium fitness club in Bhuj with gym management, member portal, and trainer tools.",
   },
   twitter: {
     card: "summary_large_image",
     title: `${site.name} | Premium Fitness in Bhuj`,
-    description: "A premium fitness club in Bhuj. Coming soon. Get early access.",
+    description: "A premium fitness club in Bhuj with gym management, member portal, and trainer tools.",
   },
   robots: { index: true, follow: true },
   manifest: "/manifest.json",

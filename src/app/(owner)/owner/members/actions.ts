@@ -55,6 +55,30 @@ export async function createMember(formData: FormData) {
   const notes                   = formData.get("notes")                   as string;
   const photo                   = formData.get("photo")                   as File;
 
+  // Edge case: missing required fields
+  if (!name?.trim()) return { error: "Name is required." };
+  if (!email?.trim()) return { error: "Email is required." };
+
+  // Edge case: check if email already exists as a member
+  const { count: emailCount } = await supabase
+    .from("members")
+    .select("id", { count: "exact", head: true })
+    .eq("email", email.trim());
+  if (emailCount && emailCount > 0) {
+    return { error: `A member with email ${email} already exists.` };
+  }
+
+  // Edge case: check if phone already exists as a member
+  if (phone?.trim()) {
+    const { count: phoneCount } = await supabase
+      .from("members")
+      .select("id", { count: "exact", head: true })
+      .eq("phone", phone.trim());
+    if (phoneCount && phoneCount > 0) {
+      return { error: `A member with phone ${phone} already exists.` };
+    }
+  }
+
   let photo_url = null;
 
   if (photo && photo.size > 0) {
@@ -86,9 +110,11 @@ export async function createMember(formData: FormData) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
+  const generatedPassword = crypto.randomUUID() + "A1!";
+
   const { data: authData, error: authError } = await adminAuthClient.auth.admin.createUser({
-    email,
-    password: crypto.randomUUID() + "A1!",
+    email: email.trim(),
+    password: generatedPassword,
     email_confirm: true,
     user_metadata: { full_name: name },
     app_metadata: { role: "member" },
@@ -107,7 +133,8 @@ export async function createMember(formData: FormData) {
     return { error: `Auth user created but profile sync failed: ${roleError.message}` };
   }
 
-  const member_code  = `DHL-${Math.floor(1000 + Math.random() * 9000)}`;
+  const uid = crypto.randomUUID().replace(/-/g, "").slice(0, 6).toUpperCase();
+  const member_code = `DHL-${uid}`;
 
   const { data: memberData, error: memberError } = await supabase
     .from("members")
@@ -115,7 +142,7 @@ export async function createMember(formData: FormData) {
       profile_id,
       member_code,
       name,
-      email,
+      email: email.trim(),
       phone,
       dob:                     dob || null,
       gender,
@@ -151,7 +178,12 @@ export async function createMember(formData: FormData) {
   }
 
   revalidatePath("/owner/members");
-  return { success: true, memberId: memberData.id };
+  return {
+    success: true,
+    memberId: memberData.id,
+    member_code,
+    credentials: { email: email.trim(), password: generatedPassword },
+  };
 }
 
 // ---------------------------------------------------------------------------

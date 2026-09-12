@@ -8,12 +8,22 @@ type Member = { id: string; name: string };
 type Product = { id: string; name: string; selling_price: number; stock_quantity: number; status: string };
 type CartItem = { product: Product; quantity: number };
 
+type SaleReceipt = {
+  saleId: string;
+  items: CartItem[];
+  total: number;
+  method: string;
+  memberName: string;
+  date: string;
+};
+
 export default function POSCart({ members, products }: { members: Member[]; products: Product[] }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [memberId, setMemberId] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [receipt, setReceipt] = useState<SaleReceipt | null>(null);
 
   const activeProducts = products.filter(p => p.stock_quantity > 0 && p.status !== "inactive");
 
@@ -160,7 +170,26 @@ export default function POSCart({ members, products }: { members: Member[]; prod
         {cart.length > 0 && (
           <form
             action={async (formData) => {
-              await processSale(formData);
+              const result = await processSale(formData);
+              if (result?.success && result.sale_id) {
+                const memberName = memberId
+                  ? members.find((m) => m.id === memberId)?.name ?? "—"
+                  : "Walk-in Customer";
+                setReceipt({
+                  saleId: result.sale_id,
+                  items: [...cart],
+                  total: totalAmount,
+                  method: paymentMethod,
+                  memberName,
+                  date: new Date().toLocaleString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }),
+                });
+              }
               setCart([]);
               setMemberId("");
             }}
@@ -194,6 +223,81 @@ export default function POSCart({ members, products }: { members: Member[]; prod
           </form>
         )}
       </div>
+
+      {/* Sale Receipt */}
+      {receipt && (
+        <div className="mt-6" style={{
+          border: "2px dashed #22C55E",
+          borderRadius: "var(--radius-md)",
+          padding: "1.5rem",
+          backgroundColor: "#F0FDF4",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+            <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#065F46", margin: 0 }}>
+              ✅ Sale Complete
+            </h3>
+            <button
+              type="button"
+              onClick={() => setReceipt(null)}
+              className="btn btn-ghost btn-sm"
+              style={{ color: "#065F46" }}
+            >
+              New Sale
+            </button>
+          </div>
+
+          <div style={{
+            backgroundColor: "#fff",
+            border: "1px solid #D1FAE5",
+            borderRadius: "var(--radius-sm)",
+            padding: "1rem",
+            fontFamily: "var(--font-mono, monospace)",
+            fontSize: "0.8125rem",
+          }}>
+            <div style={{ textAlign: "center", marginBottom: "0.75rem", borderBottom: "1px dashed #D1D5DB", paddingBottom: "0.75rem" }}>
+              <div style={{ fontWeight: 700, fontSize: "0.875rem" }}>Dr DHL Elite Fitness Club</div>
+              <div style={{ color: "#6B7280", fontSize: "0.75rem" }}>{receipt.date}</div>
+            </div>
+
+            <div style={{ marginBottom: "0.5rem", color: "#374151" }}>
+              <span>Customer: </span>
+              <span style={{ fontWeight: 600 }}>{receipt.memberName}</span>
+            </div>
+
+            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "0.75rem" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid #E5E7EB" }}>
+                  <th style={{ textAlign: "left", padding: "0.25rem 0", fontWeight: 600 }}>Item</th>
+                  <th style={{ textAlign: "center", padding: "0.25rem 0", fontWeight: 600 }}>Qty</th>
+                  <th style={{ textAlign: "right", padding: "0.25rem 0", fontWeight: 600 }}>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {receipt.items.map((item) => (
+                  <tr key={item.product.id}>
+                    <td style={{ padding: "0.25rem 0" }}>{item.product.name}</td>
+                    <td style={{ padding: "0.25rem 0", textAlign: "center" }}>{item.quantity}</td>
+                    <td style={{ padding: "0.25rem 0", textAlign: "right" }}>{formatINR(item.product.selling_price * item.quantity)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div style={{ display: "flex", justifyContent: "space-between", borderTop: "2px solid #111827", paddingTop: "0.5rem", fontWeight: 700, fontSize: "0.875rem" }}>
+              <span>Total</span>
+              <span>{formatINR(receipt.total)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", color: "#6B7280", fontSize: "0.75rem", marginTop: "0.25rem" }}>
+              <span>Payment</span>
+              <span style={{ textTransform: "capitalize" }}>{receipt.method}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", color: "#6B7280", fontSize: "0.75rem", marginTop: "0.25rem" }}>
+              <span>Receipt</span>
+              <span>{receipt.saleId.slice(0, 8)}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
