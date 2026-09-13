@@ -1,117 +1,83 @@
 # DR DHL EFC — Implementation State
 
-## Current Date: 2026-09-12
+## Current Date: 2026-09-13
 
 ## Repository
 - **Repo:** nw7thhjzkk-crypto/drdhlefc
 - **Production branch:** scaffold-gymsmart-erp-9743545895368865022
 - **Latest production commit:** c8d6533 (feat(public): reception plaque and entrance composition #392)
 - **Active branch:** feat/rls-tests-and-dashboard-improvements
-- **PR:** #415 (RLS policy tests, dashboard improvements, audit filtering, store pagination, PWA fixes)
-- **Previous PR:** #394 (feat(demo): isolated demo mode + 88 tests + security hardening)
+- **PR:** #442 (fix: security hardening, data integrity, accessibility, PWA, performance)
+- **Previous PR:** #415 (closed, superseded by #442)
+- **Earlier PR:** #394 (feat(demo): isolated demo mode + 88 tests + security hardening)
 
 ## What Was Completed (This Session)
 
-### RLS Policy Tests (103 tests)
-- `src/lib/rls-policies.test.ts`: Comprehensive verification of all RLS policies
-  - Verifies RLS enabled on all 23 tables
-  - Verifies auth helper functions (auth.role, auth.is_owner, auth.is_trainer, auth.is_member)
-  - Verifies Owner ALL policies on all tables
-  - Verifies audit log append-only enforcement (migration 000008)
-  - Verifies Member SELECT-only tightening on members, memberships, payments, attendance
-  - Verifies Trainer SELECT-only tightening on trainers, member_trainers
-  - Verifies financial constraints (non-negative stock, positive payments, etc.)
-  - Verifies atomic RPCs (record_payment_atomic, checkout_store_sale, assign_membership)
-  - Verifies activity booking RPCs with FOR UPDATE locking
-  - Verifies schema indexes for RLS performance
-  - Verifies role protection trigger on profiles
+### Security Hardening (CRITICAL)
+- **Private member-photos bucket** (was public: true — violated AGENTS.md policy)
+  - Migration 000021: Updated bucket to private, dropped permissive policies
+  - Owner-only storage policies for SELECT/INSERT/UPDATE/DELETE
+  - Signed URLs for photo access (replaces public URLs)
+  - Fixed gif extension mismatch (storage only allows jpeg/png/webp)
+- **Hidden .env.example password**: Changed from weak placeholder to `change-me-in-production`
 
-### Server Action Authorization Tests (28 tests)
-- `src/lib/server-action-auth.test.ts`: Tests for authorization patterns
-  - verifyOwner pattern tests (authenticated, unauthorized, wrong role, missing profile)
-  - Input validation tests (required fields, positive amounts, valid payment methods)
-  - Photo upload validation tests (file extensions, MIME types)
-  - Member code generation tests (DHL-XXXXXX format)
-  - Store sale item validation tests (empty cart, invalid items)
-  - BMI calculation tests
+### Data Integrity
+- **Atomic restock RPC** (Migration 000022): `restock_product()` with FOR UPDATE locking
+  - Fixes race condition in restockProduct server action (was read-modify-write without lock)
+  - Server action now delegates to RPC
+- **CHECK constraints** (Migration 000021):
+  - Products: non-negative selling_price, purchase_price, stock_quantity, minimum_stock
+  - Store sales: non-negative total_amount, paid_amount
+  - Store sale items: quantity >= 1
+  - Membership plans: non-negative price, duration_days >= 1
+  - Payments: amount > 0
+- **Attendance dedup** (Migration 000023): Partial unique index on (member_id, date) WHERE check_in=true
+- **Lead audit logging** (Migration 000023): Removed silent EXCEPTION handler in submit_website_lead
 
-### Owner Dashboard Improvements
-- Added empty state hints for KPI cards (Active Members, Today's Collection, Attendance, Open Leads)
-- Added ARIA labels to all quick-action links for accessibility
-- Added `aria-hidden="true"` to decorative emoji icons
-- Added `role="status"` to stat cards for screen reader support
+### PWA Improvements
+- **InstallPrompt for all roles**: Moved from member-only layout to root layout
+- **DashboardCharts lazy-loaded**: Client wrapper with next/dynamic, ssr:false (reduces bundle ~200KB)
 
-### Audit Log Filtering and Export
-- `src/app/(owner)/owner/audit/AuditLogFilters.tsx`: New client component
-  - Search by action, entity, member, or details
-  - Filter by action type (20 predefined action types)
-  - Filter by date range (from/to)
-  - CSV export with all columns
-  - Results count display
-  - Empty state handling
+### Performance
+- **next.config.ts**: Removed wildcard `**` hostname (security), added `reactStrictMode: true`, `poweredByHeader: false`
+- **DashboardCharts**: Lazy-loaded via client wrapper component
 
-### Store Sale History Pagination
-- `src/app/(owner)/owner/store/SaleHistory.tsx`: New client component
-  - Paginated table with 10 items per page
-  - Previous/Next navigation
-  - Payment method display
-  - Date formatting (en-IN locale)
-  - Total sales count
+### Accessibility (18 fixes)
+- `aria-hidden="true"` on decorative emojis (dashboard, layouts, POS, member home)
+- `role="alert"` on error messages (new member/trainer forms)
+- `role="status"` on audit log filter count
+- Color contrast fixes (text-zinc-500 → text-zinc-400)
+- `aria-label` on pagination buttons and POS remove button
 
-### PWA and Metadata Fixes
-- Updated `public/manifest.json`:
-  - Removed "Coming soon" from description
-  - Added proper PWA icons (192x192, 512x512) with maskable purpose
-  - Updated shortcuts (Dashboard instead of Home)
-  - Updated description to reflect live product
-- Updated `src/app/layout.tsx`:
-  - Removed "Coming soon" from meta descriptions
-  - Updated OpenGraph and Twitter descriptions
+### Previous Session Work (from PR #415, now in #442)
+- RLS Policy Tests (103 tests), Server Action Auth Tests (28→31 tests)
+- Owner Dashboard improvements (empty states, ARIA labels)
+- Audit Log Filtering and CSV Export
+- Store Sale History Pagination
+- PWA manifest and metadata fixes
+
+## Migrations
+- 000001–000020: Previous (intact)
+- **000021**: Storage security + CHECK constraints
+- **000022**: Atomic restock_product RPC
+- **000023**: Attendance dedup index + lead audit fix
 
 ## Verification Results
-- Lint: ✅ clean (0 errors, 0 warnings)
+- Lint: ✅ clean (0 errors)
 - Typecheck: ✅ clean (0 errors)
-- Build: ✅ 52+ routes pass
-- Tests: ✅ 294/294 pass (134 new + 160 existing)
+- Build: ✅ 52 routes pass
+- Tests: ✅ 294/294 pass
+- SUPERTEAM: ✅ 128 tests pass
 
-## Previous Completed Work (from PR #394)
-### Demo Mode (BIKHU7)
-- `/demo` route with Owner/Trainer/Member role switching
-- Synthetic fixtures in `src/lib/demo-data.ts`
-- Login action intercepts BIKHU7 password → redirects to `/demo`
-- Demo banner, robots=noindex, no real data exposed
-
-### Testing (26 → 160 tests)
-- 13 test files covering demo data, middleware, login, auth, currency, gemini, google drive, BMI
-
-### Security Hardening
-- exercises/actions.ts: "use server" directive
-- gemini.ts: returns null when not configured
-- googleDrive.ts: returns null when not configured
-- middleware.ts: exported isProtectedPath for testability
-
-### CRM & Member Improvements
-- LeadStageSelect component with stage change notes
-- Lead conversion eligibility check
-- CRM page KPI stats
-- Member creation with duplicate validation
-- Credentials display after creation
-- Member password reset flow
-
-## Next Highest-Value Tasks (for continuation)
-1. **Member Onboarding Wizard**: Guide new members through profile setup, membership selection, and initial assessment scheduling
-2. **Branch Cleanup**: Delete ~250 obsolete branches (merged PRs, duplicates)
-3. **Notifications**: Real-time notification polling with unread badge
-4. **Analytics**: More charts (attendance trends, retention, trainer workload)
-5. **Settings**: Phone, timezone, business hours fields
-6. **QR Attendance**: Replace placeholder with actual QR code generation/scanning
-7. **Gemini AI**: Real implementation when API key configured
-8. **Google Drive**: Real upload integration when configured
+## PR #442 Status
+- **State:** OPEN, MERGEABLE, CI GREEN
+- **Author:** nw7thhjzkk-crypto (human)
+- **Note:** Guarded auto-merge requires Jules provenance — will NOT auto-merge. Human review + merge required.
 
 ## Architecture Summary
 - Next.js 16.3.2 + React 19 + TypeScript + Tailwind CSS v4
-- Supabase Auth + PostgreSQL + RLS
-- 20 migrations (000001-000020)
+- Supabase Auth + PostgreSQL + RLS + Storage (private bucket)
+- 23 migrations (000001-000023)
 - 3 roles: Owner, Trainer, Member
 - Server Actions with `verifyOwner()` pattern
 - SECURITY DEFINER RPCs for financial operations
@@ -119,10 +85,23 @@
 - 38 fully implemented pages across Owner, Trainer, Member portals
 - 31 server action files covering all write operations
 
-## Blockers
-- No Vercel deployment credentials configured locally
-- No Supabase credentials for local testing (public site renders without them)
-- Gemini/Google Drive integrations are stubs (return null when not configured)
+## Known Remaining Issues (lower priority)
+- PWA icons are all-black/invisible on dark backgrounds (need design assets)
+- Some form labels lack htmlFor/id associations (30+ instances)
+- `alert()` usage in 3 files (diet/workout plan assignment, check-in)
+- CSS: 3 stylesheets ship to every page (public-editorial, public-immersive may be page-specific)
+- No Suspense boundaries on most data-heavy pages
+- Root page does synchronous Supabase auth check (adds latency to public landing)
+
+## Next Highest-Value Tasks
+1. **Member Onboarding Wizard**: Guide new members through profile setup
+2. **Branch Cleanup**: Delete ~250 obsolete branches
+3. **Notifications**: Real-time polling with unread badge
+4. **Analytics**: Attendance trends, retention, trainer workload charts
+5. **Settings**: Phone, timezone, business hours fields
+6. **QR Attendance**: Real QR code generation/scanning
+7. **Gemini AI**: Real implementation when API key configured
+8. **Google Drive**: Real upload integration when configured
 
 ## Environment
 - Oracle A1 (ARM64, 2 OCPU, 12 GB RAM)
