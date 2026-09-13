@@ -7,7 +7,8 @@
 - **Production branch:** scaffold-gymsmart-erp-9743545895368865022
 - **Latest production commit:** c8d6533 (feat(public): reception plaque and entrance composition #392)
 - **Active branch:** feat/rls-tests-and-dashboard-improvements
-- **PR:** #442 (fix: security hardening, data integrity, accessibility, PWA, performance)
+- **Latest commit:** 059c9c8
+- **PR:** #442 (fix: security hardening, data integrity, accessibility, PWA, performance + JSON.parse hardening, alert elimination, security headers, attendance filtering, settings expansion)
 - **Previous PR:** #415 (closed, superseded by #442)
 - **Earlier PR:** #394 (feat(demo): isolated demo mode + 88 tests + security hardening)
 
@@ -48,6 +49,18 @@
 - `role="status"` on audit log filter count
 - Color contrast fixes (text-zinc-500 → text-zinc-400)
 - `aria-label` on pagination buttons and POS remove button
+- `htmlFor/id` associations on attendance and settings form labels
+
+### Security Hardening (Additional)
+- **JSON.parse try/catch** — Added to 6 unprotected JSON.parse calls in plan creation actions (owner diet-plans, owner workout-plans, trainer plans x4)
+- **Security headers** — Added X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy to next.config.ts
+- **.env.example** — Updated OWNER_PASSWORD placeholder, added documentation for provisioning vars
+
+### UX Improvements
+- **alert() elimination** — Replaced 4 alert() calls with inline success/error UI in ActivityBooking, CheckInButton, and both AssignPlanForm components
+- **Attendance date filtering** — Added from/to date range filtering to owner attendance page with query params
+- **Settings expansion** — Added phone, timezone (with IST/GST/SGT/GMT/EST/PST/AEST options), and business hours fields to gym settings
+- **Migration 000024** — Added timezone, phone, and business_hours (jsonb) columns to gym_settings table
 
 ### Website Quality Audit + Improvements (2026-09-13, finalized)
 - **Playwright audit**: 5 routes tested (/home, /login, /demo, /privacy, /terms) at desktop+mobile
@@ -72,6 +85,7 @@
 - **000021**: Storage security + CHECK constraints
 - **000022**: Atomic restock_product RPC
 - **000023**: Attendance dedup index + lead audit fix
+- **000024**: Settings timezone, phone, business_hours
 
 ## Verification Results
 - Lint: ✅ clean (0 errors)
@@ -83,13 +97,13 @@
 ## PR #442 Status
 - **State:** OPEN, MERGEABLE, CI GREEN, CLEAN
 - **Author:** nw7thhjzkk-crypto (human)
-- **Latest commit:** cef8829 (website-quality audit improvements + demo banner dedup)
+- **Latest commit:** 059c9c8 (fix: security hardening, UX, settings expansion)
 - **Note:** Guarded auto-merge requires Jules provenance — will NOT auto-merge. Human review + merge required.
 
 ## Architecture Summary
 - Next.js 16.3.2 + React 19 + TypeScript + Tailwind CSS v4
 - Supabase Auth + PostgreSQL + RLS + Storage (private bucket)
-- 23 migrations (000001-000023)
+- 24 migrations (000001-000024)
 - 3 roles: Owner, Trainer, Member
 - Server Actions with `verifyOwner()` pattern
 - SECURITY DEFINER RPCs for financial operations
