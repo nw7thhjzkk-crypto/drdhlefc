@@ -48,6 +48,11 @@ jobs:
       - name: Invoke Jules (official action)
         uses: google-labs-code/jules-action@v1.0.0
         with:
+          # Keep the payload bounded. Jules can inspect the repository itself;
+          # injecting a large git show/log through jq can exceed ARG_MAX and
+          # prevent the cloud session from ever being created.
+          include_last_commit: false
+          include_commit_log: false
           # Complete owner task text (after /jules)
           prompt: |
             ${{ steps.task.outputs.prompt }}
