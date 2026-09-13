@@ -16,7 +16,12 @@ function memberName(members: AttendanceRecord["members"]): string {
   return Array.isArray(members) ? (members[0]?.name ?? "—") : members.name;
 }
 
-export default async function OwnerAttendancePage() {
+export default async function OwnerAttendancePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ from?: string; to?: string }>;
+}) {
+  const params = searchParams ? await searchParams : {};
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -42,13 +47,27 @@ export default async function OwnerAttendancePage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const { data: recentAttendance } = await supabase
+  const fromDate = params.from || today.toISOString().slice(0, 10);
+  const toDate = params.to || "";
+
+  const fromISO = `${fromDate}T00:00:00.000Z`;
+  const toISO = toDate ? `${toDate}T23:59:59.999Z` : undefined;
+
+  let query = supabase
     .from("attendance")
     .select("id, occurred_at, method, members(name)")
-    .gte("occurred_at", today.toISOString())
+    .gte("occurred_at", fromISO)
     .order("occurred_at", { ascending: false });
 
+  if (toISO) {
+    query = query.lte("occurred_at", toISO);
+  }
+
+  const { data: recentAttendance } = await query;
+
   const rows = (recentAttendance as AttendanceRecord[] | null) ?? [];
+
+  const isFiltered = !!(params.from || params.to);
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -63,8 +82,9 @@ export default async function OwnerAttendancePage() {
           </h2>
           <form action={logAttendance} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-400">Member</label>
+              <label htmlFor="attendance-member" className="block text-sm font-medium text-zinc-400">Member</label>
               <select
+                id="attendance-member"
                 name="member_id"
                 required
                 className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
@@ -92,8 +112,9 @@ export default async function OwnerAttendancePage() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-400">Notes (Optional)</label>
+              <label htmlFor="attendance-notes" className="block text-sm font-medium text-zinc-400">Notes (Optional)</label>
               <input
+                id="attendance-notes"
                 name="notes"
                 className="mt-1 block w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-200"
               />
@@ -111,29 +132,73 @@ export default async function OwnerAttendancePage() {
           </div>
         </div>
 
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-4">
+          <form className="flex flex-wrap items-end gap-3 bg-zinc-900 p-4 rounded-lg border border-zinc-800">
+            <div>
+              <label htmlFor="filter-from" className="block text-xs font-medium text-zinc-400 mb-1">From</label>
+              <input
+                id="filter-from"
+                type="date"
+                name="from"
+                defaultValue={fromDate}
+                className="bg-zinc-950 border border-zinc-800 rounded p-1.5 text-sm text-zinc-200"
+              />
+            </div>
+            <div>
+              <label htmlFor="filter-to" className="block text-xs font-medium text-zinc-400 mb-1">To</label>
+              <input
+                id="filter-to"
+                type="date"
+                name="to"
+                defaultValue={toDate}
+                className="bg-zinc-950 border border-zinc-800 rounded p-1.5 text-sm text-zinc-200"
+              />
+            </div>
+            <button
+              type="submit"
+              className="bg-zinc-800 text-yellow-500 font-bold px-3 py-1.5 rounded text-sm hover:bg-zinc-700 transition-colors"
+            >
+              Filter
+            </button>
+            {isFiltered && (
+              <Link
+                href="/owner/attendance"
+                className="text-xs text-zinc-400 hover:text-zinc-200 underline"
+              >
+                Clear
+              </Link>
+            )}
+          </form>
+
           <div className="bg-zinc-900 rounded-lg shadow-xl border border-zinc-800 overflow-hidden">
             <div className="px-6 py-4 border-b border-zinc-800">
-              <h2 className="text-lg font-semibold text-zinc-100">Today&apos;s Check-Ins</h2>
+              <h2 className="text-lg font-semibold text-zinc-100">
+                {isFiltered ? "Filtered" : "Today&apos;s"} Check-Ins
+                <span className="ml-2 text-sm font-normal text-zinc-400">({rows.length})</span>
+              </h2>
             </div>
             {rows.length === 0 ? (
               <div className="m-6 flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
-                <h3 className="text-lg font-semibold text-yellow-500">No check-ins today</h3>
+                <h3 className="text-lg font-semibold text-yellow-500">No check-ins found</h3>
                 <p className="max-w-md text-sm text-zinc-500">
-                  Today&apos;s attendance list is empty. Log a manual check-in or open members to get started.
+                  {isFiltered
+                    ? "No attendance records match your filter criteria. Try adjusting the date range."
+                    : "Today&apos;s attendance list is empty. Log a manual check-in or open members to get started."}
                 </p>
-                <Link
-                  href="/owner/members"
-                  className="inline-flex items-center justify-center bg-yellow-600 text-zinc-950 font-bold px-4 py-2 rounded hover:bg-yellow-500 transition-colors"
-                >
-                  View Members
-                </Link>
+                {!isFiltered && (
+                  <Link
+                    href="/owner/members"
+                    className="inline-flex items-center justify-center bg-yellow-600 text-zinc-950 font-bold px-4 py-2 rounded hover:bg-yellow-500 transition-colors"
+                  >
+                    View Members
+                  </Link>
+                )}
               </div>
             ) : (
               <table className="min-w-full divide-y divide-zinc-800">
                 <thead className="bg-zinc-950">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Time</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Date &amp; Time</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Member</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Method</th>
                   </tr>
@@ -142,7 +207,7 @@ export default async function OwnerAttendancePage() {
                   {rows.map((record) => (
                     <tr key={record.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
-                        {new Date(record.occurred_at).toLocaleTimeString()}
+                        {new Date(record.occurred_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-zinc-200">
                         {memberName(record.members)}

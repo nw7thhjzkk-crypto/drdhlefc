@@ -26,6 +26,8 @@ export async function saveGymSettings(formData: FormData) {
   const club_name = formData.get("club_name") as string;
   const support_email = formData.get("support_email") as string;
   const club_address = formData.get("club_address") as string;
+  const phone = formData.get("phone") as string;
+  const timezone = formData.get("timezone") as string;
   const premium_theme = formData.get("premium_theme") === "on";
   const gemini_ai_enabled = formData.get("gemini_ai_enabled") === "on";
   const google_drive_enabled = formData.get("google_drive_enabled") === "on";
@@ -43,6 +45,8 @@ export async function saveGymSettings(formData: FormData) {
       club_name,
       support_email,
       club_address,
+      phone,
+      timezone,
       premium_theme,
       gemini_ai_enabled,
       google_drive_enabled,
@@ -68,6 +72,8 @@ export async function saveGymSettings(formData: FormData) {
         club_name,
         support_email,
         club_address,
+        phone,
+        timezone,
         premium_theme,
         gemini_ai_enabled,
         google_drive_enabled,
