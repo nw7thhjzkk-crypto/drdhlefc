@@ -11,7 +11,7 @@ import { Walk } from "./Walk";
 
 export function PublicWebsite() {
   return (
-    <div className="public-site is-walk">
+    <div className="public-site">
       <JsonLd />
       <a href="#main" className="pub-skip">
         Skip to content

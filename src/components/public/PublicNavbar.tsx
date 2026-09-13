@@ -60,7 +60,7 @@ export function PublicNavbar() {
 
         <div className="pub-nav-actions">
           <Link href="/login" className="pub-btn pub-btn-ghost pub-btn-sm">
-            Login
+            Member Login
           </Link>
           <Link href="/#access" className="pub-btn pub-btn-gold pub-btn-sm pub-nav-cta">
             Get Early Access
@@ -99,7 +99,7 @@ export function PublicNavbar() {
           </nav>
           <div className="pub-nav-mobile-actions">
             <Link href="/login" onClick={() => setOpen(false)}>
-              Login
+              Member Login
             </Link>
             <Link href="/#access" className="pub-btn pub-btn-gold" onClick={() => setOpen(false)}>
               Get Early Access

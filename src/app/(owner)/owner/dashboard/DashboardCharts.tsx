@@ -50,8 +50,8 @@ export default function DashboardCharts({ genderData, revenueData }: { genderDat
           <BarChart data={revenueData}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
-            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} tickFormatter={(val) => `$${val}`} />
-            <BarTooltip formatter={(value) => [`$${value}`, "Revenue"]} />
+            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} tickFormatter={(val) => `₹${val}`} />
+            <BarTooltip formatter={(value) => [`₹${value}`, "Revenue"]} />
             <Bar dataKey="revenue" fill="#10b981" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>

@@ -1,12 +1,15 @@
 import { EXPECTATIONS } from "@/lib/public-content";
 import { site } from "@/lib/site";
-import { LogoPlaque } from "./LogoPlaque";
+import { BrandMark } from "./BrandMark";
 
 export function About() {
   return (
-    <section id="club" className="pub-section pub-club">
-      <div className="pub-wrap pub-club-grid">
-        <div className="pub-club-copy">
+    <section id="club" className="pub-section pub-about">
+      <div className="pub-wrap pub-about-grid">
+        <div className="pub-logo-panel">
+          <BrandMark mark="full" size={380} className="pub-full-logo" />
+        </div>
+        <div>
           <p className="pub-eyebrow">
             <span className="pub-rule" aria-hidden="true" />
             The Club
@@ -21,22 +24,15 @@ export function About() {
             conceptual walk through the intended building — not a photograph
             of a finished gym.
           </p>
+          <div className="pub-expect-grid">
+            {EXPECTATIONS.map((item) => (
+              <div key={item.title} className="pub-expect-card">
+                <h3>{item.title}</h3>
+                <p>{item.body}</p>
+              </div>
+            ))}
+          </div>
         </div>
-        <ol className="pub-convictions">
-          {EXPECTATIONS.map((item) => (
-            <li key={item.title}>
-              <h3>{item.title}</h3>
-              <p>{item.body}</p>
-            </li>
-          ))}
-        </ol>
-      </div>
-      <div className="pub-wrap pub-office-row">
-        <LogoPlaque size={280} caption="Office wall" />
-        <p className="pub-office-note">
-          The office sits by the entrance. The monogram and the full mark
-          belong on the wall — not floating on the page.
-        </p>
       </div>
     </section>
   );

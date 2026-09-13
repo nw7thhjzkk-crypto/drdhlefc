@@ -1,9 +1,17 @@
 import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
+import { Suspense } from "react";
 import DashboardCharts from "./DashboardCharts";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Dashboard" };
+
+interface ExpiringMembership {
+  id?: string;
+  end_date: string;
+  members: { id?: string; name: string; member_code: string }[] | null;
+  membership_plans: { name: string }[] | null;
+}
 
 export default async function OwnerDashboard() {
   const supabase = await createClient();
@@ -39,6 +47,8 @@ export default async function OwnerDashboard() {
     { count: groupActivitiesCount },
     { count: dietPlansCount },
     { count: workoutPlansCount },
+    { data: recentMembers },
+    { data: recentPayments },
   ] = await Promise.all([
     supabase.from("members").select("*", { count: "exact", head: true }),
     supabase.from("members").select("*", { count: "exact", head: true }).eq("status", "active"),
@@ -87,6 +97,16 @@ export default async function OwnerDashboard() {
     supabase.from("group_activities").select("*", { count: "exact", head: true }).neq("status", "cancelled"),
     supabase.from("diet_plans").select("*", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("workout_plans").select("*", { count: "exact", head: true }).eq("status", "active"),
+    supabase
+      .from("members")
+      .select("id, name, member_code, created_at, status")
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("payments")
+      .select("id, amount, method, paid_at, members(name)")
+      .order("paid_at", { ascending: false })
+      .limit(5),
   ]);
 
   // Aggregations
@@ -105,7 +125,7 @@ export default async function OwnerDashboard() {
   const chartGenderData = Object.entries(genderCount).map(([name, value]) => ({ name, value }));
 
   // 6-month revenue trend
-  const { data: recentPayments } = await supabase
+  const { data: revenuePayments } = await supabase
     .from("payments")
     .select("amount, paid_at")
     .gte("paid_at", sixMonthsAgo)
@@ -117,7 +137,7 @@ export default async function OwnerDashboard() {
     const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
     revenueMap[`${monthNames[d.getMonth()]} '${String(d.getFullYear()).slice(-2)}`] = 0;
   }
-  recentPayments?.forEach((p) => {
+  revenuePayments?.forEach((p) => {
     if (p.paid_at) {
       const d   = new Date(p.paid_at);
       const key = `${monthNames[d.getMonth()]} '${String(d.getFullYear()).slice(-2)}`;
@@ -148,6 +168,8 @@ export default async function OwnerDashboard() {
 
   const showChecklist = checklistItems.some(item => item.count === 0);
 
+  const typedExpiring = (expiringMemberships ?? []) as ExpiringMembership[];
+
   return (
     <div>
       {/* Page header */}
@@ -165,14 +187,14 @@ export default async function OwnerDashboard() {
 
       {/* First-Run Checklist */}
       {showChecklist && (
-        <div className="card mb-6" style={{ borderColor: "#EAB308", borderWidth: "1px", borderStyle: "solid" }}>
-          <div className="card-header" style={{ backgroundColor: "#18181B", color: "#FBBF24", borderBottom: "1px solid #27272A" }}>
+        <div className="card mb-6" style={{ borderColor: "var(--color-warning)", borderWidth: "1px", borderStyle: "solid" }}>
+          <div className="card-header" style={{ backgroundColor: "#18181B", color: "var(--color-warning)", borderBottom: "1px solid #27272A" }}>
             <h2 style={{ fontSize: "1rem", fontWeight: 700 }}>🚀 First-Run Checklist</h2>
           </div>
-          <div className="card-body" style={{ padding: "1.25rem", backgroundColor: "#18181B", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
+          <div className="dashboard-checklist-grid">
             {checklistItems.map(item => (
-              <div key={item.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.5rem", borderRadius: "0.25rem", backgroundColor: "#27272A" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <div key={item.name} className="dashboard-checklist-item">
+                <div className="dashboard-checklist-item-name">
                   <span style={{ fontSize: "1.25rem" }}>
                     {item.count > 0 ? "✅" : "⭕"}
                   </span>
@@ -181,7 +203,7 @@ export default async function OwnerDashboard() {
                   </span>
                 </div>
                 {item.count === 0 && (
-                  <Link href={item.link} style={{ fontSize: "0.75rem", color: "#FBBF24", textDecoration: "underline", fontWeight: 600 }}>
+                  <Link href={item.link} style={{ fontSize: "0.75rem", color: "var(--color-warning)", textDecoration: "underline", fontWeight: 600 }}>
                     Add
                   </Link>
                 )}
@@ -192,17 +214,17 @@ export default async function OwnerDashboard() {
       )}
 
       {/* KPI row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+      <div className="dashboard-kpi-grid">
         <StatCard label="Active Members"     value={String(activeMembers ?? 0)}  sub={`${totalMembers ?? 0} total · ${inactiveMembers ?? 0} inactive`} accent="#3B82F6" />
         <StatCard label="Today's Collection" value={`₹${fmt(todaysCollection)}`} sub={`₹${fmt(monthlyCollection)} this month`}                          accent="#22C55E" />
         <StatCard label="Pending Dues"       value={`₹${fmt(totalPending)}`}     sub="across all memberships"                                           accent="#EAB308" />
         <StatCard label="Today's Attendance" value={String(todayAttendance ?? 0)} sub="check-ins today"                                                  accent="#8B5CF6" />
-        <StatCard label="Expiring (30 days)" value={String(expiringMemberships?.length ?? 0)} sub={`${expiredMemberships ?? 0} already expired`}         accent="#EF4444" />
+        <StatCard label="Expiring (30 days)" value={String(typedExpiring.length)} sub={`${expiredMemberships ?? 0} already expired`}         accent="#EF4444" />
         <StatCard label="Open Leads"         value={String(openLeads ?? 0)}      sub={`${newLeadsThisMonth ?? 0} new this month`}                        accent="#F97316" />
       </div>
 
       {/* Main grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "1.5rem", alignItems: "start" }}>
+      <div className="dashboard-main-grid">
 
         {/* Left — charts */}
         <div>
@@ -211,7 +233,9 @@ export default async function OwnerDashboard() {
               <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>Revenue & Members — 6 Months</h2>
             </div>
             <div className="card-body">
-              <DashboardCharts genderData={chartGenderData} revenueData={chartRevenueData} />
+              <Suspense fallback={<div className="dashboard-chart-loading">Loading charts...</div>}>
+                <DashboardCharts genderData={chartGenderData} revenueData={chartRevenueData} />
+              </Suspense>
             </div>
           </div>
 
@@ -233,7 +257,7 @@ export default async function OwnerDashboard() {
               <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>Memberships Expiring — Next 30 Days</h2>
               <Link href="/owner/members" className="btn btn-ghost btn-sm">View all</Link>
             </div>
-            {expiringMemberships && expiringMemberships.length > 0 ? (
+            {typedExpiring.length > 0 ? (
               <div className="table-wrapper" style={{ border: "none", borderRadius: 0 }}>
                 <table className="data-table">
                   <thead>
@@ -245,24 +269,24 @@ export default async function OwnerDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {((expiringMemberships as unknown) as ExpiringMembership[]).map((m) => {
+                    {typedExpiring.map((m) => {
                       const daysLeft = Math.ceil(
                         (new Date(m.end_date).getTime() - today.getTime()) / 86400000
                       );
                       return (
                         <tr key={m.id}>
                           <td>
-                            <div style={{ fontWeight: 600 }}>{m.members?.name ?? "—"}</div>
-                            <div style={{ fontSize: "0.75rem", color: "#9CA3AF" }}>{m.members?.member_code}</div>
+                            <div style={{ fontWeight: 600 }}>{m.members?.[0]?.name ?? "—"}</div>
+                            <div style={{ fontSize: "0.75rem", color: "#9CA3AF" }}>{m.members?.[0]?.member_code}</div>
                           </td>
-                          <td style={{ fontSize: "0.875rem" }}>{m.membership_plans?.name ?? "—"}</td>
+                          <td style={{ fontSize: "0.875rem" }}>{m.membership_plans?.[0]?.name ?? "—"}</td>
                           <td>
                             <span className={`badge ${daysLeft <= 7 ? "badge-danger" : "badge-warning"}`}>
                               {m.end_date} ({daysLeft}d)
                             </span>
                           </td>
                           <td>
-                            <Link href={`/owner/members/${m.members?.id}`} className="btn btn-ghost btn-sm">
+                            <Link href={`/owner/members/${m.members?.[0]?.id}`} className="btn btn-ghost btn-sm">
                               View
                             </Link>
                           </td>
@@ -274,14 +298,13 @@ export default async function OwnerDashboard() {
               </div>
             ) : (
               <div className="card-body">
-                <div className="flex flex-col items-center justify-center space-y-3 rounded-lg border border-zinc-800 bg-zinc-950/60 p-8 text-center">
-                  <h3 className="text-lg font-semibold text-yellow-500">
-                    No memberships expiring soon
-                  </h3>
-                  <p className="max-w-md text-sm text-zinc-500">
+                <div className="empty-state">
+                  <div className="empty-state-icon">📋</div>
+                  <div className="empty-state-title">No memberships expiring soon</div>
+                  <div className="empty-state-body">
                     When active memberships approach their end date in the next
                     30 days, they will appear here for follow-up.
-                  </p>
+                  </div>
                 </div>
               </div>
             )}
@@ -289,14 +312,14 @@ export default async function OwnerDashboard() {
         </div>
 
         {/* Right column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+        <div className="dashboard-right-col">
 
           {/* Quick nav */}
           <div className="card">
             <div className="card-header">
               <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>Quick Actions</h2>
             </div>
-            <div className="card-body" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+            <div className="dashboard-quick-nav">
               {[
                 { href: "/owner/members/new",    label: "New Member",   icon: "👤" },
                 { href: "/owner/payments",        label: "Payments",     icon: "💳" },
@@ -339,9 +362,9 @@ export default async function OwnerDashboard() {
             </div>
             <div className="card-body" style={{ padding: "0.75rem 1.25rem" }}>
               {birthdaysThisMonth.length > 0 ? (
-                <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
+                <ul className="dashboard-list">
                   {birthdaysThisMonth.map((m) => (
-                    <li key={m.id} style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0", borderBottom: "1px solid #F3F4F6", fontSize: "0.875rem" }}>
+                    <li key={m.id} className="dashboard-list-item">
                       <span style={{ fontWeight: 600 }}>{m.name}</span>
                       <span style={{ color: "#9CA3AF" }}>
                         {new Date(m.dob!).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
@@ -350,14 +373,13 @@ export default async function OwnerDashboard() {
                   ))}
                 </ul>
               ) : (
-                <div className="flex flex-col items-center justify-center space-y-3 rounded-lg border border-zinc-800 bg-zinc-950/60 p-6 text-center">
-                  <h3 className="text-lg font-semibold text-yellow-500">
-                    No birthdays this month
-                  </h3>
-                  <p className="max-w-md text-sm text-zinc-500">
+                <div className="empty-state" style={{ padding: "1.5rem" }}>
+                  <div className="empty-state-icon">🎂</div>
+                  <div className="empty-state-title">No birthdays this month</div>
+                  <div className="empty-state-body">
                     Active members with a date of birth on file will show up
                     here when their birthday falls in the current month.
-                  </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -369,16 +391,94 @@ export default async function OwnerDashboard() {
               <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>Revenue Summary</h2>
             </div>
             <div className="card-body" style={{ padding: "0.75rem 1.25rem" }}>
-              {[
-                { label: "Today",      value: `₹${fmt(todaysCollection)}`  },
-                { label: "This Month", value: `₹${fmt(monthlyCollection)}` },
-                { label: "This Year",  value: `₹${fmt(yearlyCollection)}`  },
-              ].map(({ label, value }) => (
-                <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0", borderBottom: "1px solid #F3F4F6", fontSize: "0.875rem" }}>
-                  <span style={{ color: "#6B7280" }}>{label}</span>
-                  <span style={{ fontWeight: 700, color: "#111827" }}>{value}</span>
+              <ul className="dashboard-list">
+                {[
+                  { label: "Today",      value: `₹${fmt(todaysCollection)}`  },
+                  { label: "This Month", value: `₹${fmt(monthlyCollection)}` },
+                  { label: "This Year",  value: `₹${fmt(yearlyCollection)}`  },
+                ].map(({ label, value }) => (
+                  <li key={label} className="dashboard-list-item">
+                    <span style={{ color: "#6B7280" }}>{label}</span>
+                    <span style={{ fontWeight: 700, color: "#111827" }}>{value}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Recent Members */}
+          <div className="card">
+            <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>Recent Members</h2>
+              <Link href="/owner/members" className="btn btn-ghost btn-sm">View all</Link>
+            </div>
+            <div className="card-body" style={{ padding: "0.75rem 1.25rem" }}>
+              {recentMembers && recentMembers.length > 0 ? (
+                <ul className="dashboard-list">
+                  {recentMembers.map((m) => (
+                    <li key={m.id} className="dashboard-list-item">
+                      <div>
+                        <div style={{ fontWeight: 600 }}>{m.name}</div>
+                        <div style={{ fontSize: "0.75rem", color: "#9CA3AF" }}>{m.member_code}</div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <span className={`badge ${m.status === "active" ? "badge-success" : "badge-neutral"}`}>
+                          {m.status}
+                        </span>
+                        <div style={{ fontSize: "0.75rem", color: "#9CA3AF", marginTop: "0.25rem" }}>
+                          {new Date(m.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="empty-state" style={{ padding: "1.5rem" }}>
+                  <div className="empty-state-icon">👤</div>
+                  <div className="empty-state-title">No members yet</div>
+                  <div className="empty-state-body">
+                    New members will appear here once they are added to the system.
+                  </div>
                 </div>
-              ))}
+              )}
+            </div>
+          </div>
+
+          {/* Recent Payments */}
+          <div className="card">
+            <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#111827" }}>Recent Payments</h2>
+              <Link href="/owner/payments" className="btn btn-ghost btn-sm">View all</Link>
+            </div>
+            <div className="card-body" style={{ padding: "0.75rem 1.25rem" }}>
+              {recentPayments && recentPayments.length > 0 ? (
+                <ul className="dashboard-list">
+                  {recentPayments.map((p) => (
+                    <li key={p.id} className="dashboard-list-item">
+                      <div>
+                        <div style={{ fontWeight: 600 }}>{p.members?.[0]?.name ?? "—"}</div>
+                        <div style={{ fontSize: "0.75rem", color: "#9CA3AF" }}>
+                          {p.method ? p.method.charAt(0).toUpperCase() + p.method.slice(1) : "—"}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontWeight: 700, color: "#065F46" }}>₹{fmt(Number(p.amount))}</div>
+                        <div style={{ fontSize: "0.75rem", color: "#9CA3AF" }}>
+                          {new Date(p.paid_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="empty-state" style={{ padding: "1.5rem" }}>
+                  <div className="empty-state-icon">💳</div>
+                  <div className="empty-state-title">No payments recorded</div>
+                  <div className="empty-state-body">
+                    Recent payments will appear here once members start making payments.
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -413,14 +513,4 @@ function StatCard({
       {sub && <div className="stat-card-sub">{sub}</div>}
     </div>
   );
-}
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-interface ExpiringMembership {
-  id?: string;
-  end_date: string;
-  members: { id?: string; name: string; member_code: string } | null;
-  membership_plans: { name: string } | null;
 }

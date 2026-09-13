@@ -33,4 +33,47 @@ describe("formatINR", () => {
   it("formats negative amounts (refund-style displays)", () => {
     expect(formatINR(-250)).toBe("-₹250");
   });
+
+  it("formats large round numbers without trailing decimals", () => {
+    expect(formatINR(100000)).toBe("₹1,00,000");
+    expect(formatINR(1000000)).toBe("₹10,00,000");
+    expect(formatINR(10000000)).toBe("₹1,00,00,000");
+  });
+
+  it("rounds fractional amounts to two decimal places", () => {
+    expect(formatINR(1999.999)).toBe("₹2,000.00");
+    expect(formatINR(0.001)).toBe("₹0.00");
+    expect(formatINR(10.555)).toBe("₹10.56");
+  });
+
+  it("formats the value 1 correctly (boundary)", () => {
+    expect(formatINR(1)).toBe("₹1");
+    expect(formatINR(-1)).toBe("-₹1");
+  });
+
+  it("handles empty string as ₹0", () => {
+    expect(formatINR("")).toBe("₹0");
+  });
+
+  it("handles string '0' and '0.00'", () => {
+    expect(formatINR("0")).toBe("₹0");
+    expect(formatINR("0.00")).toBe("₹0");
+  });
+
+  it("handles Infinity and -Infinity gracefully", () => {
+    const result = formatINR(Infinity);
+    expect(result).toContain("₹");
+    const negResult = formatINR(-Infinity);
+    expect(negResult).toContain("₹");
+  });
+
+  it("handles very small fractional values", () => {
+    expect(formatINR(0.1)).toBe("₹0.10");
+    expect(formatINR(0.01)).toBe("₹0.01");
+  });
+
+  it("preserves negative sign for fractional amounts", () => {
+    expect(formatINR(-1499.5)).toBe("-₹1,499.50");
+    expect(formatINR(-0.5)).toBe("-₹0.50");
+  });
 });

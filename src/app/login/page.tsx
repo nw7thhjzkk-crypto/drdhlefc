@@ -48,6 +48,11 @@ export default function LoginPage({
                 autoComplete="current-password"
                 placeholder="••••••••"
               />
+              <p style={{ fontSize: "0.75rem", textAlign: "right", marginTop: "-0.25rem" }}>
+                <Link href="/auth/forgot-password" style={{ color: "var(--color-gold)" }}>
+                  Forgot your password?
+                </Link>
+              </p>
             </div>
 
             <button
