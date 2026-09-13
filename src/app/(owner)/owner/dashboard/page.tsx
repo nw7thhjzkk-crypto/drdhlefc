@@ -214,12 +214,12 @@ export default async function OwnerDashboard() {
       )}
 
       {/* KPI row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+      <div className="dashboard-kpi-grid">
         <StatCard label="Active Members"     value={String(activeMembers ?? 0)}  sub={`${totalMembers ?? 0} total · ${inactiveMembers ?? 0} inactive`} accent="#3B82F6" emptyHint="Add members to get started" />
         <StatCard label="Today's Collection" value={`₹${fmt(todaysCollection)}`} sub={`₹${fmt(monthlyCollection)} this month`}                          accent="#22C55E" emptyHint="No payments recorded today" />
         <StatCard label="Pending Dues"       value={`₹${fmt(totalPending)}`}     sub="across all memberships"                                           accent="#EAB308" />
         <StatCard label="Today's Attendance" value={String(todayAttendance ?? 0)} sub="check-ins today"                                                  accent="#8B5CF6" emptyHint="No check-ins yet today" />
-        <StatCard label="Expiring (30 days)" value={String(expiringMemberships?.length ?? 0)} sub={`${expiredMemberships ?? 0} already expired`}         accent="#EF4444" />
+        <StatCard label="Expiring (30 days)" value={String(typedExpiring.length)} sub={`${expiredMemberships ?? 0} already expired`}         accent="#EF4444" />
         <StatCard label="Open Leads"         value={String(openLeads ?? 0)}      sub={`${newLeadsThisMonth ?? 0} new this month`}                        accent="#F97316" emptyHint="No open leads" />
       </div>
 
