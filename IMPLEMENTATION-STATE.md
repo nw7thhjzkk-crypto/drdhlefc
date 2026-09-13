@@ -81,8 +81,9 @@
 - SUPERTEAM: ✅ 128 tests pass
 
 ## PR #442 Status
-- **State:** OPEN, MERGEABLE, CI GREEN
+- **State:** OPEN, MERGEABLE, CI GREEN, CLEAN
 - **Author:** nw7thhjzkk-crypto (human)
+- **Latest commit:** cef8829 (website-quality audit improvements + demo banner dedup)
 - **Note:** Guarded auto-merge requires Jules provenance — will NOT auto-merge. Human review + merge required.
 
 ## Architecture Summary
