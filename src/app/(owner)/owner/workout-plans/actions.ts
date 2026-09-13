@@ -31,7 +31,12 @@ export async function createWorkoutPlan(formData: FormData) {
   const instructions = formData.get("instructions") as string;
 
   const contentStr = formData.get("content") as string;
-  const content = contentStr ? JSON.parse(contentStr) : { exercises: [] };
+  let content: Record<string, unknown>;
+  try {
+    content = contentStr ? JSON.parse(contentStr) : { exercises: [] };
+  } catch {
+    content = { exercises: [] };
+  }
 
   const { error, data } = await supabase.from("workout_plans").insert({
     name,

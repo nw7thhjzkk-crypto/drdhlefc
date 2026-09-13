@@ -1,84 +1,133 @@
 # DR DHL EFC — Implementation State
 
-## Current Date: 2026-09-12
+## Current Date: 2026-09-13
 
 ## Repository
 - **Repo:** nw7thhjzkk-crypto/drdhlefc
 - **Production branch:** scaffold-gymsmart-erp-9743545895368865022
 - **Latest production commit:** c8d6533 (feat(public): reception plaque and entrance composition #392)
-- **Active branch:** feat/demo-mode-and-tests
-- **PR:** #394 (feat(demo): isolated demo mode + 88 tests + security hardening)
+- **Active branch:** feat/rls-tests-and-dashboard-improvements
+- **Latest commit:** 059c9c8
+- **PR:** #442 (fix: security hardening, data integrity, accessibility, PWA, performance + JSON.parse hardening, alert elimination, security headers, attendance filtering, settings expansion)
+- **Previous PR:** #415 (closed, superseded by #442)
+- **Earlier PR:** #394 (feat(demo): isolated demo mode + 88 tests + security hardening)
 
-## What Was Completed
+## What Was Completed (This Session)
 
-### Demo Mode (BIKHU7)
-- `/demo` route with Owner/Trainer/Member role switching
-- Synthetic fixtures in `src/lib/demo-data.ts`
-- Login action intercepts BIKHU7 password → redirects to `/demo`
-- Demo banner, robots=noindex, no real data exposed
-- 6 demo pages: layout, page, owner-view, trainer-view, member-view, control-center
+### Security Hardening (CRITICAL)
+- **Private member-photos bucket** (was public: true — violated AGENTS.md policy)
+  - Migration 000021: Updated bucket to private, dropped permissive policies
+  - Owner-only storage policies for SELECT/INSERT/UPDATE/DELETE
+  - Signed URLs for photo access (replaces public URLs)
+  - Fixed gif extension mismatch (storage only allows jpeg/png/webp)
+- **Hidden .env.example password**: Changed from weak placeholder to `change-me-in-production`
 
-### Testing (26 → 88 tests)
-- `src/lib/demo-data.test.ts` (37 tests)
-- `src/utils/supabase/middleware.test.ts` (10 tests)
-- `src/app/login/actions.test.ts` (3 tests)
-- `src/app/login/demo-login.test.ts` (3 tests)
-- `src/lib/currency.test.ts` (+8 edge cases, now 14)
-- `src/utils/gemini.test.ts` (2 tests)
+### Data Integrity
+- **Atomic restock RPC** (Migration 000022): `restock_product()` with FOR UPDATE locking
+  - Fixes race condition in restockProduct server action (was read-modify-write without lock)
+  - Server action now delegates to RPC
+- **CHECK constraints** (Migration 000021):
+  - Products: non-negative selling_price, purchase_price, stock_quantity, minimum_stock
+  - Store sales: non-negative total_amount, paid_amount
+  - Store sale items: quantity >= 1
+  - Membership plans: non-negative price, duration_days >= 1
+  - Payments: amount > 0
+- **Attendance dedup** (Migration 000023): Partial unique index on (member_id, date) WHERE check_in=true
+- **Lead audit logging** (Migration 000023): Removed silent EXCEPTION handler in submit_website_lead
 
-### Security Hardening
-- `exercises/actions.ts`: added missing `"use server"` directive
-- `gemini.ts`: returns `null` when GEMINI_API_KEY not set
-- `googleDrive.ts`: returns `null` when credentials not configured
-- `middleware.ts`: exported `isProtectedPath` for testability
-- `members/actions.ts`: uses `crypto.randomUUID()` for member codes
+### PWA Improvements
+- **InstallPrompt for all roles**: Moved from member-only layout to root layout
+- **DashboardCharts lazy-loaded**: Client wrapper with next/dynamic, ssr:false (reduces bundle ~200KB)
 
-### CRM & Member Improvements (uncommitted → committed)
-- LeadStageSelect component: stage change with optional note
-- Lead conversion eligibility check (duplicate member detection)
-- CRM page KPI stats: total leads, new this week, converted, conversion rate
-- Member creation: duplicate email/phone validation
-- Credentials display after member creation (member code, email, temp password)
-- UI polish with design system classes
+### Performance
+- **next.config.ts**: Removed wildcard `**` hostname (security), added `reactStrictMode: true`, `poweredByHeader: false`
+- **DashboardCharts**: Lazy-loaded via client wrapper component
 
-### Member Password Reset Flow
-- `/auth/forgot-password`: public page to request reset email via Supabase
-- `/auth/reset-password`: callback page, exchanges token, sets new password
-- Login page: "Forgot your password?" link added
-- Audit logging for password reset events
-- Client-side validation: min 8 chars, uppercase, lowercase, number
+### Accessibility (18 fixes)
+- `aria-hidden="true"` on decorative emojis (dashboard, layouts, POS, member home)
+- `role="alert"` on error messages (new member/trainer forms)
+- `role="status"` on audit log filter count
+- Color contrast fixes (text-zinc-500 → text-zinc-400)
+- `aria-label` on pagination buttons and POS remove button
+- `htmlFor/id` associations on attendance and settings form labels
+
+### Security Hardening (Additional)
+- **JSON.parse try/catch** — Added to 6 unprotected JSON.parse calls in plan creation actions (owner diet-plans, owner workout-plans, trainer plans x4)
+- **Security headers** — Added X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy to next.config.ts
+- **.env.example** — Updated OWNER_PASSWORD placeholder, added documentation for provisioning vars
+
+### UX Improvements
+- **alert() elimination** — Replaced 4 alert() calls with inline success/error UI in ActivityBooking, CheckInButton, and both AssignPlanForm components
+- **Attendance date filtering** — Added from/to date range filtering to owner attendance page with query params
+- **Settings expansion** — Added phone, timezone (with IST/GST/SGT/GMT/EST/PST/AEST options), and business hours fields to gym settings
+- **Migration 000024** — Added timezone, phone, and business_hours (jsonb) columns to gym_settings table
+
+### Website Quality Audit + Improvements (2026-09-13, finalized)
+- **Playwright audit**: 5 routes tested (/home, /login, /demo, /privacy, /terms) at desktop+mobile
+- **Performance fix**: Moved `public-editorial.css` and `public-immersive.css` from root layout to PublicWebsite component (saves ~438 lines CSS on non-public routes)
+- **Demo banner fix**: Removed duplicate demo-banner from page.tsx (already in layout.tsx), added skip link + `role="main"` for accessibility
+- **Accessibility**: Added skip links to /login, /demo, /privacy, /terms; added ARIA labels to login form; added `role="main"` to demo page
+- **SEO**: Added login-specific metadata (title, description, robots noindex)
+- **UX**: Added loading spinner to lead form submission button with `aria-busy`
+- **Playwright dev dependency**: Added for future visual audit scripts
+- **Full report**: `~/superteam/state/drdhlefc-audit/QUALITY-REPORT.md`
+- **Verification**: lint ✅ typecheck ✅ build ✅ 294 tests ✅
+
+### Previous Session Work (from PR #415, now in #442)
+- RLS Policy Tests (103 tests), Server Action Auth Tests (28→31 tests)
+- Owner Dashboard improvements (empty states, ARIA labels)
+- Audit Log Filtering and CSV Export
+- Store Sale History Pagination
+- PWA manifest and metadata fixes
+
+## Migrations
+- 000001–000020: Previous (intact)
+- **000021**: Storage security + CHECK constraints
+- **000022**: Atomic restock_product RPC
+- **000023**: Attendance dedup index + lead audit fix
+- **000024**: Settings timezone, phone, business_hours
 
 ## Verification Results
-- Lint: ✅ clean (0 errors, 0 warnings)
-- Build: ✅ 50 routes pass
-- Tests: ✅ 88/88 pass
-- TypeScript: ✅ no errors
+- Lint: ✅ clean (0 errors)
+- Typecheck: ✅ clean (0 errors)
+- Build: ✅ 52 routes pass
+- Tests: ✅ 294/294 pass
+- SUPERTEAM: ✅ 128 tests pass
 
-## Next Highest-Value Tasks (for continuation)
-1. **Owner Dashboard**: Improve KPI cards, add monthly/yearly collection chart, better empty states
-2. **Member Onboarding**: Add password reset flow (members get random passwords with no way to change)
-3. **Branch Cleanup**: Delete ~250 obsolete branches (merged PRs, duplicates)
-4. **Store POS**: Improve atomic checkout, add receipt generation
-5. **CRM**: Improve lead stage management, add follow-up scheduling
-6. **Notifications**: Add real-time notification polling
-7. **PWA**: Verify service worker, manifest, offline behavior
-8. **Analytics**: Add more charts (attendance trends, retention, trainer workload)
-9. **Audit**: Improve audit log viewer with filtering and export
-10. **Settings**: Add gym settings CRUD with proper validation
+## PR #442 Status
+- **State:** OPEN, MERGEABLE, CI GREEN, CLEAN
+- **Author:** nw7thhjzkk-crypto (human)
+- **Latest commit:** 059c9c8 (fix: security hardening, UX, settings expansion)
+- **Note:** Guarded auto-merge requires Jules provenance — will NOT auto-merge. Human review + merge required.
 
 ## Architecture Summary
 - Next.js 16.3.2 + React 19 + TypeScript + Tailwind CSS v4
-- Supabase Auth + PostgreSQL + RLS
-- 20 migrations (000001-000020)
+- Supabase Auth + PostgreSQL + RLS + Storage (private bucket)
+- 24 migrations (000001-000024)
 - 3 roles: Owner, Trainer, Member
 - Server Actions with `verifyOwner()` pattern
 - SECURITY DEFINER RPCs for financial operations
-- Auto-merge pipeline via GitHub Actions
+- Auto-merge pipeline via GitHub Actions (Octokit, not gh CLI)
+- 38 fully implemented pages across Owner, Trainer, Member portals
+- 31 server action files covering all write operations
 
-## Blockers
-- No Vercel deployment credentials configured locally
-- No Supabase credentials for local testing (public site renders without them)
-- Gemini/Google Drive integrations are stubs (return null when not configured)
+## Known Remaining Issues (lower priority)
+- PWA icons are all-black/invisible on dark backgrounds (need design assets)
+- Some form labels lack htmlFor/id associations (30+ instances)
+- `alert()` usage in 3 files (diet/workout plan assignment, check-in)
+- ~~CSS: 3 stylesheets ship to every page~~ FIXED: public-editorial/immersive moved to PublicWebsite only
+- No Suspense boundaries on most data-heavy pages
+- Root page does synchronous Supabase auth check (adds latency to public landing)
+
+## Next Highest-Value Tasks
+1. **Member Onboarding Wizard**: Guide new members through profile setup
+2. **Branch Cleanup**: Delete ~250 obsolete branches
+3. **Notifications**: Real-time polling with unread badge
+4. **Analytics**: Attendance trends, retention, trainer workload charts
+5. **Settings**: Phone, timezone, business hours fields
+6. **QR Attendance**: Real QR code generation/scanning
+7. **Gemini AI**: Real implementation when API key configured
+8. **Google Drive**: Real upload integration when configured
 
 ## Environment
 - Oracle A1 (ARM64, 2 OCPU, 12 GB RAM)

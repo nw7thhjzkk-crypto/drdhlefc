@@ -153,7 +153,7 @@ export default async function TrainerDashboardPage() {
             textDecoration: "none",
           }}
         >
-          <span style={{ fontSize: "1.25rem" }}>🔔</span>
+          <span style={{ fontSize: "1.25rem" }} aria-hidden="true">🔔</span>
           {(unreadCount ?? 0) > 0 && (
             <span
               style={{

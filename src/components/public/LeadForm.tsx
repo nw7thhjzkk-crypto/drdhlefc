@@ -231,8 +231,16 @@ export function LeadForm() {
         type="submit"
         className="pub-btn pub-btn-gold pub-btn-lg pub-btn-full"
         disabled={pending}
+        aria-busy={pending}
       >
-        {pending ? "Sending…" : "Get Early Access"}
+        {pending ? (
+          <span className="pub-btn-loading">
+            <span className="pub-btn-spinner" aria-hidden="true" />
+            Sending…
+          </span>
+        ) : (
+          "Get Early Access"
+        )}
       </button>
       <p className="pub-form-note">
         Submitting this form creates an enquiry for our team. It does not create

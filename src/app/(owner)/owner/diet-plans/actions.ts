@@ -35,7 +35,12 @@ export async function createDietPlan(formData: FormData) {
   const instructions = formData.get("instructions") as string;
 
   const contentStr = formData.get("content") as string;
-  const content = contentStr ? JSON.parse(contentStr) : { meals: [] };
+  let content: Record<string, unknown>;
+  try {
+    content = contentStr ? JSON.parse(contentStr) : { meals: [] };
+  } catch {
+    content = { meals: [] };
+  }
 
   const { error, data } = await supabase.from("diet_plans").insert({
     name,

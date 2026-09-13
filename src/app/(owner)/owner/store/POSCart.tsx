@@ -150,6 +150,7 @@ export default function POSCart({ members, products }: { members: Member[]; prod
                         type="button"
                         onClick={() => handleRemoveItem(item.product.id)}
                         className="text-red-500 hover:text-red-400 font-bold text-xs"
+                        aria-label="Remove item"
                       >
                         ✕
                       </button>
@@ -234,7 +235,7 @@ export default function POSCart({ members, products }: { members: Member[]; prod
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
             <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#065F46", margin: 0 }}>
-              ✅ Sale Complete
+              <span aria-hidden="true">✅</span> Sale Complete
             </h3>
             <button
               type="button"

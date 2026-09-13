@@ -1,6 +1,14 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { BrandMark } from "@/components/public/BrandMark";
 import { login } from "./actions";
+
+export const metadata: Metadata = {
+  title: "Sign In",
+  description:
+    "Sign in to your Dr DHL Elite Fitness Club member account. Access your dashboard, training plans, and progress.",
+  robots: { index: false, follow: false },
+};
 
 export default function LoginPage({
   searchParams,
@@ -9,7 +17,10 @@ export default function LoginPage({
 }) {
   return (
     <div className="public-site pub-login">
-      <main className="pub-login-wrap">
+      <a href="#login-form" className="pub-skip">
+        Skip to login form
+      </a>
+      <main className="pub-login-wrap" id="login-form">
         <div className="pub-login-card">
           <div className="pub-login-brand">
             <div className="pub-login-mark">
@@ -25,7 +36,7 @@ export default function LoginPage({
 
           <ErrorBanner searchParams={searchParams} />
 
-          <form className="pub-login-form">
+          <form className="pub-login-form" aria-label="Sign in to your account">
             <div className="pub-field">
               <label htmlFor="email">Email address</label>
               <input
@@ -35,6 +46,7 @@ export default function LoginPage({
                 required
                 autoComplete="email"
                 placeholder="you@example.com"
+                aria-required="true"
               />
             </div>
 
@@ -47,6 +59,7 @@ export default function LoginPage({
                 required
                 autoComplete="current-password"
                 placeholder="••••••••"
+                aria-required="true"
               />
               <p style={{ fontSize: "0.75rem", textAlign: "right", marginTop: "-0.25rem" }}>
                 <Link href="/auth/forgot-password" style={{ color: "var(--color-gold)" }}>

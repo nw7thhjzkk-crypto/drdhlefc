@@ -65,7 +65,12 @@ export async function createWorkoutPlan(formData: FormData) {
   const instructions = (formData.get("instructions") as string) || "";
 
   const contentStr = formData.get("content") as string;
-  const content = contentStr ? JSON.parse(contentStr) : { exercises: [] };
+  let content: Record<string, unknown>;
+  try {
+    content = contentStr ? JSON.parse(contentStr) : { exercises: [] };
+  } catch {
+    content = { exercises: [] };
+  }
 
   const { error, data } = await supabase
     .from("workout_plans")
@@ -106,7 +111,12 @@ export async function updateWorkoutPlan(planId: string, formData: FormData) {
   const instructions = (formData.get("instructions") as string) || "";
 
   const contentStr = formData.get("content") as string;
-  const content = contentStr ? JSON.parse(contentStr) : { exercises: [] };
+  let content: Record<string, unknown>;
+  try {
+    content = contentStr ? JSON.parse(contentStr) : { exercises: [] };
+  } catch {
+    content = { exercises: [] };
+  }
 
   const { error } = await supabase
     .from("workout_plans")
@@ -147,7 +157,12 @@ export async function createDietPlan(formData: FormData) {
   const instructions = (formData.get("instructions") as string) || "";
 
   const contentStr = formData.get("content") as string;
-  const content = contentStr ? JSON.parse(contentStr) : { meals: [] };
+  let content: Record<string, unknown>;
+  try {
+    content = contentStr ? JSON.parse(contentStr) : { meals: [] };
+  } catch {
+    content = { meals: [] };
+  }
 
   const { error, data } = await supabase
     .from("diet_plans")
@@ -196,7 +211,12 @@ export async function updateDietPlan(planId: string, formData: FormData) {
   const instructions = (formData.get("instructions") as string) || "";
 
   const contentStr = formData.get("content") as string;
-  const content = contentStr ? JSON.parse(contentStr) : { meals: [] };
+  let content: Record<string, unknown>;
+  try {
+    content = contentStr ? JSON.parse(contentStr) : { meals: [] };
+  } catch {
+    content = { meals: [] };
+  }
 
   const { error } = await supabase
     .from("diet_plans")

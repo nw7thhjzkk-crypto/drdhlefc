@@ -83,9 +83,9 @@ export async function createMember(formData: FormData) {
 
   if (photo && photo.size > 0) {
     const fileExt = photo.name.split(".").pop()?.toLowerCase();
-    const allowedExtensions = ["jpg", "jpeg", "png", "webp", "gif"];
+    const allowedExtensions = ["jpg", "jpeg", "png", "webp"];
     if (!fileExt || !allowedExtensions.includes(fileExt)) {
-      return { error: "Invalid file extension. Only jpg, jpeg, png, webp, and gif are allowed." };
+      return { error: "Invalid file extension. Only jpg, jpeg, png, and webp are allowed." };
     }
     if (!photo.type.startsWith("image/")) {
       return { error: "Invalid file type. Only images are allowed." };
@@ -99,8 +99,11 @@ export async function createMember(formData: FormData) {
 
     if (uploadError) return { error: uploadError.message };
 
-    const { data } = supabase.storage.from("member-photos").getPublicUrl(filePath);
-    photo_url = data.publicUrl;
+    // Use signed URL (bucket is private per migration 000021)
+    const { data: signedUrlData } = await supabase.storage
+      .from("member-photos")
+      .createSignedUrl(filePath, 3600);
+    photo_url = signedUrlData?.signedUrl ?? null;
   }
 
   // Create the auth user via the service-role admin client
@@ -211,9 +214,9 @@ export async function updateMember(id: string, formData: FormData) {
   const photo = formData.get("photo") as File;
   if (photo && photo.size > 0) {
     const fileExt = photo.name.split(".").pop()?.toLowerCase();
-    const allowedExtensions = ["jpg", "jpeg", "png", "webp", "gif"];
+    const allowedExtensions = ["jpg", "jpeg", "png", "webp"];
     if (!fileExt || !allowedExtensions.includes(fileExt)) {
-      return { error: "Invalid file extension. Only jpg, jpeg, png, webp, and gif are allowed." };
+      return { error: "Invalid file extension. Only jpg, jpeg, png, and webp are allowed." };
     }
     if (!photo.type.startsWith("image/")) {
       return { error: "Invalid file type. Only images are allowed." };
@@ -227,8 +230,11 @@ export async function updateMember(id: string, formData: FormData) {
 
     if (uploadError) return { error: uploadError.message };
 
-    const { data } = supabase.storage.from("member-photos").getPublicUrl(filePath);
-    updates.photo_url = data.publicUrl;
+    // Use signed URL (bucket is private per migration 000021)
+    const { data: signedUrlData } = await supabase.storage
+      .from("member-photos")
+      .createSignedUrl(filePath, 3600);
+    updates.photo_url = signedUrlData?.signedUrl ?? null;
   }
 
   const { error } = await supabase.from("members").update(updates).eq("id", id);

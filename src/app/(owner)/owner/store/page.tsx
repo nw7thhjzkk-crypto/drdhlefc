@@ -7,6 +7,7 @@ import {
   seedStarterProducts,
 } from "./actions";
 import POSCart from "./POSCart";
+import SaleHistory from "./SaleHistory";
 
 export default async function StorePage() {
   const supabase = await createClient();
@@ -20,7 +21,7 @@ export default async function StorePage() {
     .from("store_sales")
     .select("*, members(name)")
     .order("created_at", { ascending: false })
-    .limit(10);
+    .limit(100);
 
   const { data: members } = await supabase
     .from("members")
@@ -366,55 +367,7 @@ export default async function StorePage() {
           </div>
 
           {/* Recent Sales */}
-          <div className="bg-zinc-900 rounded-lg shadow-xl border border-zinc-800 overflow-hidden">
-            <div className="px-6 py-4 border-b border-zinc-800">
-              <h2 className="text-lg font-semibold text-zinc-100">
-                Recent Sales
-              </h2>
-            </div>
-            {sales.length === 0 ? (
-              <div className="m-6 flex flex-col items-center justify-center space-y-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-10 text-center">
-                <h3 className="text-lg font-semibold text-yellow-500">
-                  No recent sales
-                </h3>
-                <p className="max-w-md text-sm text-zinc-500">
-                  Completed POS checkouts will show up here. Add inventory and
-                  ring up a sale to get started.
-                </p>
-              </div>
-            ) : (
-              <table className="min-w-full divide-y divide-zinc-800">
-                <thead className="bg-zinc-950">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                      Member
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                      Total
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-zinc-900 divide-y divide-zinc-800">
-                  {sales.map((sale) => (
-                    <tr key={sale.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
-                        {new Date(sale.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-200">
-                        {sale.members?.name || "Walk-in"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-400">
-                        {formatINR(sale.total_amount)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+          <SaleHistory sales={sales} />
         </div>
       </div>
     </div>

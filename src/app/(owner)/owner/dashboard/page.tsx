@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
 import { Suspense } from "react";
-import DashboardCharts from "./DashboardCharts";
+import DashboardCharts from "./DashboardChartsLazy";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -195,7 +195,7 @@ export default async function OwnerDashboard() {
             {checklistItems.map(item => (
               <div key={item.name} className="dashboard-checklist-item">
                 <div className="dashboard-checklist-item-name">
-                  <span style={{ fontSize: "1.25rem" }}>
+                  <span style={{ fontSize: "1.25rem" }} aria-hidden="true">
                     {item.count > 0 ? "✅" : "⭕"}
                   </span>
                   <span style={{ color: "#E4E4E7", fontSize: "0.875rem", fontWeight: 500 }}>
@@ -215,12 +215,12 @@ export default async function OwnerDashboard() {
 
       {/* KPI row */}
       <div className="dashboard-kpi-grid">
-        <StatCard label="Active Members"     value={String(activeMembers ?? 0)}  sub={`${totalMembers ?? 0} total · ${inactiveMembers ?? 0} inactive`} accent="#3B82F6" />
-        <StatCard label="Today's Collection" value={`₹${fmt(todaysCollection)}`} sub={`₹${fmt(monthlyCollection)} this month`}                          accent="#22C55E" />
+        <StatCard label="Active Members"     value={String(activeMembers ?? 0)}  sub={`${totalMembers ?? 0} total · ${inactiveMembers ?? 0} inactive`} accent="#3B82F6" emptyHint="Add members to get started" />
+        <StatCard label="Today's Collection" value={`₹${fmt(todaysCollection)}`} sub={`₹${fmt(monthlyCollection)} this month`}                          accent="#22C55E" emptyHint="No payments recorded today" />
         <StatCard label="Pending Dues"       value={`₹${fmt(totalPending)}`}     sub="across all memberships"                                           accent="#EAB308" />
-        <StatCard label="Today's Attendance" value={String(todayAttendance ?? 0)} sub="check-ins today"                                                  accent="#8B5CF6" />
+        <StatCard label="Today's Attendance" value={String(todayAttendance ?? 0)} sub="check-ins today"                                                  accent="#8B5CF6" emptyHint="No check-ins yet today" />
         <StatCard label="Expiring (30 days)" value={String(typedExpiring.length)} sub={`${expiredMemberships ?? 0} already expired`}         accent="#EF4444" />
-        <StatCard label="Open Leads"         value={String(openLeads ?? 0)}      sub={`${newLeadsThisMonth ?? 0} new this month`}                        accent="#F97316" />
+        <StatCard label="Open Leads"         value={String(openLeads ?? 0)}      sub={`${newLeadsThisMonth ?? 0} new this month`}                        accent="#F97316" emptyHint="No open leads" />
       </div>
 
       {/* Main grid */}
@@ -242,7 +242,7 @@ export default async function OwnerDashboard() {
           {/* Low stock alert */}
           {(lowStockProducts?.length ?? 0) > 0 && (
             <div className="alert alert-warning" style={{ marginBottom: "1.5rem" }}>
-              <span>⚠️</span>
+              <span aria-hidden="true">⚠️</span>
               <span>
                 <strong>Low stock alert:</strong>{" "}
                 {lowStockProducts!.map((p) => `${p.name} (${p.stock_quantity})`).join(", ")}.{" "}
@@ -321,16 +321,17 @@ export default async function OwnerDashboard() {
             </div>
             <div className="dashboard-quick-nav">
               {[
-                { href: "/owner/members/new",    label: "New Member",   icon: "👤" },
-                { href: "/owner/payments",        label: "Payments",     icon: "💳" },
-                { href: "/owner/leads",           label: "Leads",        icon: "📞" },
-                { href: "/owner/activities",      label: "Activities",   icon: "🗓️" },
-                { href: "/owner/store",           label: "POS",          icon: "🛒" },
-                { href: "/owner/audit",           label: "Audit Logs",   icon: "🔍" },
+                { href: "/owner/members/new",    label: "New Member",   icon: "👤", ariaLabel: "Create a new member profile" },
+                { href: "/owner/payments",        label: "Payments",     icon: "💳", ariaLabel: "View and record payments" },
+                { href: "/owner/leads",           label: "Leads",        icon: "📞", ariaLabel: "Manage CRM leads" },
+                { href: "/owner/activities",      label: "Activities",   icon: "🗓️", ariaLabel: "Manage group activities" },
+                { href: "/owner/store",           label: "POS",          icon: "🛒", ariaLabel: "Open point of sale" },
+                { href: "/owner/audit",           label: "Audit Logs",   icon: "🔍", ariaLabel: "View audit history" },
               ].map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-label={item.ariaLabel}
                   style={{
                     display: "flex",
                     flexDirection: "column",
@@ -348,7 +349,7 @@ export default async function OwnerDashboard() {
                   }}
                   className="btn-ghost"
                 >
-                  <span style={{ fontSize: "1.25rem" }}>{item.icon}</span>
+                  <span style={{ fontSize: "1.25rem" }} aria-hidden="true">{item.icon}</span>
                   {item.label}
                 </Link>
               ))}
@@ -497,20 +498,30 @@ function StatCard({
   value,
   sub,
   accent,
+  emptyHint,
 }: {
   label: string;
   value: string;
   sub?: string;
   accent: string;
+  emptyHint?: string;
 }) {
+  const isZero = value === "₹0" || value === "0";
   return (
     <div
       className="stat-card"
       style={{ borderLeft: `4px solid ${accent}` }}
+      role="status"
+      aria-label={`${label}: ${value}`}
     >
       <div className="stat-card-label">{label}</div>
       <div className="stat-card-value" style={{ color: "#111827" }}>{value}</div>
       {sub && <div className="stat-card-sub">{sub}</div>}
+      {isZero && emptyHint && (
+        <div style={{ fontSize: "0.7rem", color: "#9CA3AF", marginTop: "0.25rem" }}>
+          {emptyHint}
+        </div>
+      )}
     </div>
   );
 }
