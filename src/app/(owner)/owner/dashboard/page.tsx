@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
 import { Suspense } from "react";
-import DashboardCharts from "./DashboardCharts";
+import DashboardCharts from "./DashboardChartsLazy";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -195,7 +195,7 @@ export default async function OwnerDashboard() {
             {checklistItems.map(item => (
               <div key={item.name} className="dashboard-checklist-item">
                 <div className="dashboard-checklist-item-name">
-                  <span style={{ fontSize: "1.25rem" }}>
+                  <span style={{ fontSize: "1.25rem" }} aria-hidden="true">
                     {item.count > 0 ? "✅" : "⭕"}
                   </span>
                   <span style={{ color: "#E4E4E7", fontSize: "0.875rem", fontWeight: 500 }}>
@@ -242,7 +242,7 @@ export default async function OwnerDashboard() {
           {/* Low stock alert */}
           {(lowStockProducts?.length ?? 0) > 0 && (
             <div className="alert alert-warning" style={{ marginBottom: "1.5rem" }}>
-              <span>⚠️</span>
+              <span aria-hidden="true">⚠️</span>
               <span>
                 <strong>Low stock alert:</strong>{" "}
                 {lowStockProducts!.map((p) => `${p.name} (${p.stock_quantity})`).join(", ")}.{" "}

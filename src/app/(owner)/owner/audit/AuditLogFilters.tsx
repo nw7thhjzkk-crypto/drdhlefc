@@ -151,7 +151,7 @@ export default function AuditLogFilters({ logs }: { logs: AuditLogRow[] }) {
       </div>
 
       {/* Results count */}
-      <div className="text-xs text-zinc-500">
+      <div className="text-xs text-zinc-500" role="status">
         Showing {filteredLogs.length} of {logs.length} entries
       </div>
 

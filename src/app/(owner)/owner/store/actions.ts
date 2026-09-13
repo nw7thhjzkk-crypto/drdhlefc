@@ -87,7 +87,8 @@ export async function createProduct(formData: FormData) {
 
 /**
  * Increase product stock by a positive integer delta.
- * Absolute stock_quantity is never set from the client here.
+ * Delegates to SECURITY DEFINER RPC restock_product() which uses FOR UPDATE
+ * locking to prevent race conditions on concurrent restocks.
  */
 export async function restockProduct(productId: string, quantityDelta: number) {
   const { supabase } = await requireOwner();
@@ -97,41 +98,12 @@ export async function restockProduct(productId: string, quantityDelta: number) {
     throw new Error("quantityDelta must be a positive integer");
   }
 
-  const { data: product, error: fetchError } = await supabase
-    .from("products")
-    .select("id, stock_quantity, name")
-    .eq("id", productId)
-    .single();
-
-  if (fetchError || !product) {
-    throw new Error(fetchError?.message || "Product not found");
-  }
-
-  const current = product.stock_quantity ?? 0;
-  const nextStock = current + quantityDelta;
-
-  const { error } = await supabase
-    .from("products")
-    .update({
-      stock_quantity: nextStock,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", productId);
+  const { error } = await supabase.rpc("restock_product", {
+    p_product_id: productId,
+    p_quantity_delta: quantityDelta,
+  });
 
   if (error) throw new Error(error.message);
-
-  await softFailAudit(supabase, {
-    p_action: "RESTOCK_PRODUCT",
-    p_entity_type: "product",
-    p_entity_id: productId,
-    p_member_id: null,
-    p_details: {
-      name: product.name,
-      quantity_delta: quantityDelta,
-      stock_before: current,
-      stock_after: nextStock,
-    },
-  });
 
   revalidatePath("/owner/store");
 }

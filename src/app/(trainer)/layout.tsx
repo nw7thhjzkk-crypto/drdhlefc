@@ -34,7 +34,7 @@ export default async function TrainerLayout({
     <div className="app-shell">
       {/* Top bar */}
       <header className="app-topbar">
-        <span style={{ fontSize: "1.25rem" }}>🏋️</span>
+        <span style={{ fontSize: "1.25rem" }} aria-hidden="true">🏋️</span>
         <span className="app-topbar-title">DR DHL Fitness</span>
         <span
           style={{

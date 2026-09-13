@@ -1,5 +1,4 @@
 import MemberNav from "@/components/MemberNav";
-import InstallPrompt from "@/components/InstallPrompt";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -36,7 +35,7 @@ export default async function MemberLayout({
     <div className="app-shell">
       {/* Top bar */}
       <header className="app-topbar">
-        <span style={{ fontSize: "1.25rem" }}>🏆</span>
+        <span style={{ fontSize: "1.25rem" }} aria-hidden="true">🏆</span>
         <span className="app-topbar-title">DR DHL Fitness</span>
         <Link
           href="/auth/logout"
@@ -51,7 +50,6 @@ export default async function MemberLayout({
 
       {/* Bottom nav */}
       <MemberNav />
-      <InstallPrompt />
     </div>
   );
 }

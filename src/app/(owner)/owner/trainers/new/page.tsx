@@ -24,7 +24,7 @@ export default function NewTrainerPage() {
         <Link href="/owner/trainers" className="text-yellow-500 hover:underline">Back to Trainers</Link>
       </div>
 
-      {error && <div className="bg-red-950/60 text-red-300 p-4 rounded mb-6">{error}</div>}
+      {error && <div className="bg-red-950/60 text-red-300 p-4 rounded mb-6" role="alert">{error}</div>}
 
       <form action={handleSubmit} className="bg-zinc-900 p-6 rounded-lg shadow-xl border border-zinc-800 space-y-6">
 

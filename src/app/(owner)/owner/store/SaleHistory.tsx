@@ -82,6 +82,7 @@ export default function SaleHistory({ sales }: { sales: Sale[] }) {
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
                 className="text-xs text-zinc-400 hover:text-yellow-500 disabled:opacity-30 disabled:cursor-not-allowed"
+                aria-label="Previous page"
               >
                 ← Previous
               </button>
@@ -92,6 +93,7 @@ export default function SaleHistory({ sales }: { sales: Sale[] }) {
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
                 className="text-xs text-zinc-400 hover:text-yellow-500 disabled:opacity-30 disabled:cursor-not-allowed"
+                aria-label="Next page"
               >
                 Next →
               </button>

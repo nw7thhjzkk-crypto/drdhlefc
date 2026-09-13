@@ -145,7 +145,7 @@ function NewMemberForm() {
         </div>
       )}
 
-      {error && <div className="alert alert-error" style={{ marginBottom: "1.5rem" }}>{error}</div>}
+      {error && <div className="alert alert-error" role="alert" style={{ marginBottom: "1.5rem" }}>{error}</div>}
 
       <form action={handleSubmit} className="card">
         <div className="card-body" style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>

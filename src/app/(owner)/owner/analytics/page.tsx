@@ -199,7 +199,7 @@ export default async function OwnerAnalyticsPage() {
                 key={k.label}
                 className={`bg-zinc-900 border border-zinc-800 rounded-lg p-4 shadow-xl border-l-4 ${k.accent}`}
               >
-                <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <div className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
                   {k.label}
                 </div>
                 <div className="mt-2 text-2xl font-bold text-yellow-500">{k.value}</div>

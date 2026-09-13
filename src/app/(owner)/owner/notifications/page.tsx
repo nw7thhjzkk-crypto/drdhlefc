@@ -123,7 +123,7 @@ export default async function OwnerNotificationsPage() {
                 <div key={notif.id} className="p-4 bg-zinc-950 border border-zinc-800 rounded">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-bold text-zinc-200 text-sm">{notif.title}</h3>
-                    <span className="text-xs text-zinc-500">
+                    <span className="text-xs text-zinc-400">
                       {new Date(notif.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>

@@ -211,7 +211,7 @@ export default async function MemberHomePage() {
               position: "relative",
             }}
           >
-            🔔
+            <span aria-hidden="true">🔔</span>
             {unreadCount !== null && unreadCount > 0 && (
               <span style={{ position: "absolute", top: 0, right: "-8px", background: "#EF4444", color: "white", fontSize: "0.6rem", padding: "0 4px", borderRadius: "8px", fontWeight: "bold" }}>
                 {unreadCount}
@@ -281,17 +281,17 @@ export default async function MemberHomePage() {
       {((pendingDiet?.length ?? 0) + (pendingWorkout?.length ?? 0)) > 0 && (
         <div style={{ ...card, borderLeft: "3px solid #8B5CF6" }}>
           <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#8B5CF6", marginBottom: "0.5rem" }}>
-            📋 Pending Recommendations
+            <span aria-hidden="true">📋</span> Pending Recommendations
           </div>
           {(pendingDiet ?? []).map((r: PendingPlan) => (
             <div key={r.id} style={{ fontSize: "0.8125rem", color: "var(--color-silver)", marginBottom: "0.25rem" }}>
-              🥗 {(r.diet_plans as unknown as { name: string } | null)?.name}
+              <span aria-hidden="true">🥗</span> {(r.diet_plans as unknown as { name: string } | null)?.name}
               <Link href="/member/diet" style={{ marginLeft: "0.5rem", fontSize: "0.6875rem", color: "var(--color-gold)" }}>Review →</Link>
             </div>
           ))}
           {(pendingWorkout ?? []).map((r: PendingWorkoutPlan) => (
             <div key={r.id} style={{ fontSize: "0.8125rem", color: "var(--color-silver)", marginBottom: "0.25rem" }}>
-              💪 {(r.workout_plans as unknown as { name: string } | null)?.name}
+              <span aria-hidden="true">💪</span> {(r.workout_plans as unknown as { name: string } | null)?.name}
               <Link href="/member/workout" style={{ marginLeft: "0.5rem", fontSize: "0.6875rem", color: "var(--color-gold)" }}>Review →</Link>
             </div>
           ))}

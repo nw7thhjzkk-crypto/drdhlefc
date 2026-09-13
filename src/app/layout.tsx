@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { site, siteOrigin } from "@/lib/site";
+import InstallPrompt from "@/components/InstallPrompt";
 import "./globals.css";
 import "./public-editorial.css";
 import "./public-immersive.css";
@@ -86,7 +87,7 @@ export default function RootLayout({
       lang="en-IN"
       className={`${geistSans.variable} ${geistMono.variable} ${display.variable} h-full`}
     >
-      <body className="min-h-full antialiased">{children}</body>
+      <body className="min-h-full antialiased">{children}<InstallPrompt /></body>
     </html>
   );
 }
