@@ -49,6 +49,17 @@
 - Color contrast fixes (text-zinc-500 → text-zinc-400)
 - `aria-label` on pagination buttons and POS remove button
 
+### Website Quality Audit + Improvements (2026-09-13, finalized)
+- **Playwright audit**: 5 routes tested (/home, /login, /demo, /privacy, /terms) at desktop+mobile
+- **Performance fix**: Moved `public-editorial.css` and `public-immersive.css` from root layout to PublicWebsite component (saves ~438 lines CSS on non-public routes)
+- **Demo banner fix**: Removed duplicate demo-banner from page.tsx (already in layout.tsx), added skip link + `role="main"` for accessibility
+- **Accessibility**: Added skip links to /login, /demo, /privacy, /terms; added ARIA labels to login form; added `role="main"` to demo page
+- **SEO**: Added login-specific metadata (title, description, robots noindex)
+- **UX**: Added loading spinner to lead form submission button with `aria-busy`
+- **Playwright dev dependency**: Added for future visual audit scripts
+- **Full report**: `~/superteam/state/drdhlefc-audit/QUALITY-REPORT.md`
+- **Verification**: lint ✅ typecheck ✅ build ✅ 294 tests ✅
+
 ### Previous Session Work (from PR #415, now in #442)
 - RLS Policy Tests (103 tests), Server Action Auth Tests (28→31 tests)
 - Owner Dashboard improvements (empty states, ARIA labels)
@@ -89,7 +100,7 @@
 - PWA icons are all-black/invisible on dark backgrounds (need design assets)
 - Some form labels lack htmlFor/id associations (30+ instances)
 - `alert()` usage in 3 files (diet/workout plan assignment, check-in)
-- CSS: 3 stylesheets ship to every page (public-editorial, public-immersive may be page-specific)
+- ~~CSS: 3 stylesheets ship to every page~~ FIXED: public-editorial/immersive moved to PublicWebsite only
 - No Suspense boundaries on most data-heavy pages
 - Root page does synchronous Supabase auth check (adds latency to public landing)
 

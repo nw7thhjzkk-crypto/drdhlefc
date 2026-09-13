@@ -3,8 +3,6 @@ import localFont from "next/font/local";
 import { site, siteOrigin } from "@/lib/site";
 import InstallPrompt from "@/components/InstallPrompt";
 import "./globals.css";
-import "./public-editorial.css";
-import "./public-immersive.css";
 
 const geistSans = localFont({
   src: "../../node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2",

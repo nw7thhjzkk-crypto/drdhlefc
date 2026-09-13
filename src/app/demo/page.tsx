@@ -15,43 +15,35 @@ import {
 export default function DemoPage() {
   return (
     <div className="demo-root">
-      <div className="demo-banner">
-        <span className="demo-banner-dot" />
-        <span className="demo-banner-text">DEMO MODE</span>
-        <span className="demo-banner-sep">·</span>
-        <span className="demo-banner-hint">
-          Synthetic data only — no real production data is shown
-        </span>
-        <Link href="/login" className="demo-banner-exit">
-          Exit Demo
-        </Link>
-      </div>
-
       <div className="demo-container">
-        <div className="demo-hero">
-          <div className="demo-hero-badge">DEMO EXPERIENCE</div>
-          <h1 className="demo-hero-title">
-            Dr DHL Elite Fitness Club
-          </h1>
-          <p className="demo-hero-sub">
-            Explore the full platform with synthetic demo data.
-            No real member or payment data is shown.
-          </p>
-          <div className="demo-hero-actions">
-            <Link href="/demo/owner" className="demo-hero-btn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-              Owner Dashboard
-            </Link>
-            <Link href="/demo/trainer" className="demo-hero-btn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              Trainer Experience
-            </Link>
-            <Link href="/demo/member" className="demo-hero-btn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              Member Experience
-            </Link>
+        <a href="#demo-content" className="pub-skip">
+          Skip to demo content
+        </a>
+        <main id="demo-content" role="main">
+          <div className="demo-hero">
+            <div className="demo-hero-badge">DEMO EXPERIENCE</div>
+            <h1 className="demo-hero-title">
+              Dr DHL Elite Fitness Club
+            </h1>
+            <p className="demo-hero-sub">
+              Explore the full platform with synthetic demo data.
+              No real member or payment data is shown.
+            </p>
+            <div className="demo-hero-actions">
+              <Link href="/demo/owner" className="demo-hero-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                Owner Dashboard
+              </Link>
+              <Link href="/demo/trainer" className="demo-hero-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Trainer Experience
+              </Link>
+              <Link href="/demo/member" className="demo-hero-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Member Experience
+              </Link>
+            </div>
           </div>
-        </div>
 
         <div className="demo-preview-grid">
           <div className="demo-preview-card">
@@ -164,6 +156,7 @@ export default function DemoPage() {
             </div>
           </div>
         </div>
+        </main>
       </div>
     </div>
   );

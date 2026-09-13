@@ -8,6 +8,8 @@ import { Membership } from "./Membership";
 import { PublicNavbar } from "./PublicNavbar";
 import { Training } from "./Training";
 import { Walk } from "./Walk";
+import "@/app/public-editorial.css";
+import "@/app/public-immersive.css";
 
 export function PublicWebsite() {
   return (
