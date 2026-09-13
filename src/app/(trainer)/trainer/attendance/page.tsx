@@ -3,13 +3,6 @@ import { logAttendance } from "./actions";
 
 type AttendanceMember = { id: string; name: string; member_code?: string | null };
 type AttendanceAssignment = { members: AttendanceMember | AttendanceMember[] | null };
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type AttendanceRecord = {
-  id: string;
-  occurred_at: string;
-  method: string;
-  members: { name: string } | null;
-};
 
 
 export default async function TrainerAttendancePage() {
