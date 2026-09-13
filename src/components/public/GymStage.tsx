@@ -1,19 +1,7 @@
-/**
- * Original architectural stage for the intended Dr DHL floor.
- * Not a photograph of the finished club.
- */
-export type StageKind =
-  | "arrival"
-  | "office"
-  | "floor"
-  | "strength"
-  | "free"
-  | "cardio"
-  | "activity"
-  | "pt"
-  | "change"
-  | "steam"
-  | "store";
+import Image from "next/image";
+import { VISUALS, type VisualId } from "@/lib/visuals";
+
+export type StageKind = VisualId;
 
 export function GymStage({
   kind,
@@ -22,25 +10,23 @@ export function GymStage({
   kind: StageKind;
   className?: string;
 }) {
+  const visual = VISUALS[kind] ?? VISUALS.floor;
+
   return (
-    <div className={`gym-stage gym-stage-${kind} ${className}`.trim()} aria-hidden="true">
-      <div className="gym-ceil" />
-      <div className="gym-lights">
-        <span /><span /><span /><span /><span /><span />
-      </div>
-      <div className="gym-mirror" />
-      <div className="gym-glass" />
-      <div className="gym-floor" />
-      <div className="gym-rubber" />
-      <div className="gym-equip gym-equip-a" />
-      <div className="gym-equip gym-equip-b" />
-      <div className="gym-equip gym-equip-c" />
-      <div className="gym-rack" />
-      <div className="gym-desk" />
-      <div className="gym-shelf" />
-      <div className="gym-mark-wall" />
-      <div className="gym-steam" />
-      <p className="gym-caption">Conceptual visualisation — future club</p>
+    <div className={`gym-stage gym-stage-photo gym-stage-${kind} ${className}`.trim()}>
+      {visual.src ? (
+        <Image
+          src={visual.src}
+          alt={`${visual.label}. ${visual.caption}`}
+          fill
+          sizes="100vw"
+          className="gym-photo"
+          priority={kind === "arrival" || kind === "hero" || kind === "floor"}
+        />
+      ) : (
+        <div className="gym-photo-void" aria-hidden="true" />
+      )}
+      <p className="gym-caption">{visual.caption}</p>
     </div>
   );
 }
